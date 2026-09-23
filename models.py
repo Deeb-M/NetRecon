@@ -13,6 +13,10 @@ class Port:
     service: str | None = None
     product: str | None = None
     version: str | None = None
+    extra_info: str | None = None
+    tunnel: str | None = None
+    detection_method: str | None = None
+    confidence: int | None = None
 
 
 @dataclass(frozen=True)
