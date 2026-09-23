@@ -17,7 +17,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Produce an analyst-friendly text summary
 - Produce structured JSON output for automation
 - Add stable finding IDs and categories for downstream processing
-- Derive deduplicated host platform context from service-detection evidence
+- Separate OS/platform CPE evidence from application/service CPE evidence
 - Surface Windows RPC, NetBIOS, SMB, Telnet, and FTP exposure context
 - Detect explicit SMB signing evidence reported by Nmap without guessing vulnerabilities
 - Detect explicit HTTP directory listing evidence reported by Nmap
