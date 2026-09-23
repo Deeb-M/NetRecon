@@ -6,6 +6,12 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
+class ScriptResult:
+    script_id: str
+    output: str
+
+
+@dataclass(frozen=True)
 class Port:
     port: int
     protocol: str
@@ -17,6 +23,7 @@ class Port:
     tunnel: str | None = None
     detection_method: str | None = None
     confidence: int | None = None
+    scripts: tuple[ScriptResult, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -26,6 +33,7 @@ class Host:
     hostname: str | None = None
     addresses: tuple[tuple[str, str], ...] = field(default_factory=tuple)
     hostnames: tuple[str, ...] = field(default_factory=tuple)
+    scripts: tuple[ScriptResult, ...] = field(default_factory=tuple)
     ports: tuple[Port, ...] = field(default_factory=tuple)
 
 
