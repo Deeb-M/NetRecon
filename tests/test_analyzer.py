@@ -57,6 +57,41 @@ class AnalyzerTests(unittest.TestCase):
         )
         self.assertTrue(all(f.severity == "info" for f in findings))
 
+    def test_service_metadata_creates_deduplicated_host_platform_context(self) -> None:
+        scan = Scan(
+            source="context.xml",
+            hosts=(Host(address="192.0.2.20", status="up", ports=(
+                Port(
+                    port=135,
+                    protocol="tcp",
+                    state="open",
+                    service="msrpc",
+                    os_type="Windows",
+                    cpes=("cpe:/o:microsoft:windows",),
+                ),
+                Port(
+                    port=5357,
+                    protocol="tcp",
+                    state="open",
+                    service="http",
+                    os_type="Windows",
+                    cpes=("cpe:/o:microsoft:windows",),
+                ),
+            )),),
+        )
+
+        findings = analyze_scan(scan)
+        contexts = [
+            finding for finding in findings
+            if finding.finding_id == "host.platform.context"
+        ]
+
+        self.assertEqual(len(contexts), 1)
+        self.assertEqual(contexts[0].category, "context")
+        self.assertIsNone(contexts[0].port)
+        self.assertIn("Windows", contexts[0].evidence)
+        self.assertEqual(contexts[0].evidence.count("cpe:/o:microsoft:windows"), 1)
+
     def test_smb_signing_nse_evidence_creates_medium_finding(self) -> None:
         scan = Scan(
             source="smb.xml",
