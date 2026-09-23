@@ -21,7 +21,10 @@ SAMPLE_XML = """<?xml version="1.0"?>
       <port protocol="tcp" portid="22">
         <state state="open"/>
         <service name="ssh" product="OpenSSH" version="9.6"
-                 extrainfo="Ubuntu Linux" tunnel="ssl" method="probed" conf="10"/>
+                 extrainfo="Ubuntu Linux" tunnel="ssl" method="probed" conf="10"
+                 ostype="Linux" devicetype="general purpose">
+          <cpe>cpe:/o:linux:linux_kernel</cpe>
+        </service>
         <script id="ssh-hostkey" output="2048 SHA256:example RSA"/>
       </port>
       <port protocol="tcp" portid="80">
@@ -76,6 +79,9 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.ports[0].tunnel, "ssl")
         self.assertEqual(host.ports[0].detection_method, "probed")
         self.assertEqual(host.ports[0].confidence, 10)
+        self.assertEqual(host.ports[0].os_type, "Linux")
+        self.assertEqual(host.ports[0].device_type, "general purpose")
+        self.assertEqual(host.ports[0].cpes, ("cpe:/o:linux:linux_kernel",))
         self.assertEqual(host.ports[0].scripts[0].script_id, "ssh-hostkey")
         self.assertIn("RSA", host.ports[0].scripts[0].output)
         self.assertEqual(host.scripts[0].script_id, "uptime")
