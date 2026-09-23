@@ -443,6 +443,48 @@ class AnalyzerTests(unittest.TestCase):
             )
         )
 
+    def test_tls_certificate_not_yet_valid_uses_explicit_reference_time(self) -> None:
+        scan = Scan(
+            source="tls-cert-future.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                ports=(
+                    Port(
+                        port=8443,
+                        protocol="tcp",
+                        state="open",
+                        service="https-alt",
+                        tunnel="ssl",
+                        scripts=(
+                            ScriptResult(
+                                script_id="ssl-cert",
+                                output=(
+                                    "Not valid before: 2026-09-25T00:00:00 "
+                                    "Not valid after: 2026-09-26T00:00:00"
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(
+            scan,
+            now=datetime(2026, 9, 23, 12, 0, tzinfo=timezone.utc),
+        )
+        future = next(
+            finding for finding in findings
+            if finding.finding_id == "tls.certificate.not_yet_valid"
+        )
+
+        self.assertEqual(future.category, "certificate")
+        self.assertEqual(future.severity, "medium")
+        self.assertEqual(future.port, 8443)
+        self.assertEqual(future.protocol, "tcp")
+        self.assertIn("2026-09-25T00:00:00", future.evidence)
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
