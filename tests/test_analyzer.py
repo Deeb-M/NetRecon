@@ -116,6 +116,8 @@ class AnalyzerTests(unittest.TestCase):
             finding for finding in findings
             if finding.finding_id == "service.application.context"
         )
+        self.assertEqual(application.port, 8080)
+        self.assertEqual(application.protocol, "tcp")
         self.assertIn("cpe:/a:python:simplehttpserver:0.6", application.evidence)
 
     def test_modern_smb_protocol_evidence_is_informational(self) -> None:
