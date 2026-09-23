@@ -22,12 +22,16 @@ SAMPLE_XML = """<?xml version="1.0"?>
         <state state="open"/>
         <service name="ssh" product="OpenSSH" version="9.6"
                  extrainfo="Ubuntu Linux" tunnel="ssl" method="probed" conf="10"/>
+        <script id="ssh-hostkey" output="2048 SHA256:example RSA"/>
       </port>
       <port protocol="tcp" portid="80">
         <state state="open"/>
         <service name="http"/>
       </port>
     </ports>
+    <hostscript>
+      <script id="uptime" output="System uptime: 2 days"/>
+    </hostscript>
   </host>
 </nmaprun>
 """
@@ -59,6 +63,10 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.ports[0].tunnel, "ssl")
         self.assertEqual(host.ports[0].detection_method, "probed")
         self.assertEqual(host.ports[0].confidence, 10)
+        self.assertEqual(host.ports[0].scripts[0].script_id, "ssh-hostkey")
+        self.assertIn("RSA", host.ports[0].scripts[0].output)
+        self.assertEqual(host.scripts[0].script_id, "uptime")
+        self.assertIn("2 days", host.scripts[0].output)
 
     def test_rejects_non_nmap_xml(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
