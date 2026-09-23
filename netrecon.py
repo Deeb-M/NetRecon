@@ -6,8 +6,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from analyzer import analyze_scan
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_json, render_text
+from reporter import render_findings, render_json, render_text
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("text", "json"),
         default="text",
         help="Output format (default: text)",
+    )
+    parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Add conservative evidence-based findings",
     )
     return parser
 
@@ -36,6 +42,13 @@ def main() -> int:
 
     renderer = render_json if args.format == "json" else render_text
     print(renderer(scan))
+
+    if args.analyze:
+        if args.format == "json":
+            print("Error: --analyze currently supports text output only")
+            return 2
+        print()
+        print(render_findings(analyze_scan(scan)))
 
     return 0
 
