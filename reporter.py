@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 import json
 
+from analyzer import Finding
 from models import Host, Port, Scan
 
 
@@ -89,3 +90,25 @@ def render_text(scan: Scan) -> str:
 def render_json(scan: Scan) -> str:
     """Render the complete parsed scan as stable, machine-readable JSON."""
     return json.dumps(asdict(scan), indent=2, ensure_ascii=False)
+
+
+def render_findings(findings: tuple[Finding, ...]) -> str:
+    """Render analysis findings separately from raw scan observations."""
+    if not findings:
+        return "Findings: none"
+
+    lines = [f"Findings: {len(findings)}"]
+    for finding in findings:
+        location = finding.host
+        if finding.port is not None:
+            location += f":{finding.port}/{finding.protocol or 'unknown'}"
+        lines.extend(
+            [
+                "",
+                f"[{finding.severity.upper()}] {finding.title}",
+                f"  Location: {location}",
+                f"  Evidence: {finding.evidence}",
+                f"  Recommendation: {finding.recommendation}",
+            ]
+        )
+    return "\n".join(lines)
