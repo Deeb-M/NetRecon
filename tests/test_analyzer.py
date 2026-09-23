@@ -310,6 +310,59 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("review methods: PUT DELETE", review.evidence)
         self.assertNotIn("PUT DELETE PUT DELETE", review.evidence)
 
+    def test_tls_legacy_versions_and_anonymous_key_exchange_are_reviewed(self) -> None:
+        scan = Scan(
+            source="tls.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                ports=(
+                    Port(
+                        port=8443,
+                        protocol="tcp",
+                        state="open",
+                        service="https-alt",
+                        tunnel="ssl",
+                        scripts=(
+                            ScriptResult(
+                                script_id="ssl-enum-ciphers",
+                                output=(
+                                    "TLSv1.0: ciphers: TLS_ECDH_anon_WITH_AES_256_CBC_SHA - F "
+                                    "warnings: Anonymous key exchange, score capped at F "
+                                    "TLSv1.1: ciphers: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA - A "
+                                    "TLSv1.2: ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 - A "
+                                    "least strength: F"
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        legacy = next(
+            finding for finding in findings
+            if finding.finding_id == "tls.protocol.legacy_enabled"
+        )
+        anonymous = next(
+            finding for finding in findings
+            if finding.finding_id == "tls.key_exchange.anonymous"
+        )
+
+        self.assertEqual(legacy.category, "protocol")
+        self.assertEqual(legacy.severity, "medium")
+        self.assertEqual(legacy.port, 8443)
+        self.assertEqual(legacy.protocol, "tcp")
+        self.assertIn("TLSv1.0", legacy.evidence)
+        self.assertIn("TLSv1.1", legacy.evidence)
+
+        self.assertEqual(anonymous.category, "configuration")
+        self.assertEqual(anonymous.severity, "medium")
+        self.assertEqual(anonymous.port, 8443)
+        self.assertEqual(anonymous.protocol, "tcp")
+        self.assertIn("anonymous key exchange", anonymous.evidence.lower())
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
