@@ -114,7 +114,29 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             if script_id == "http-methods" and "supported methods:" in normalized_output:
                 methods_text = output.split(":", 1)[1].strip()
                 methods = tuple(method.upper() for method in methods_text.split())
-                if methods and set(methods).issubset({"GET", "HEAD"}):
+                review_methods = tuple(
+                    method
+                    for method in methods
+                    if method in {"PUT", "DELETE", "TRACE", "CONNECT", "PATCH"}
+                )
+                if review_methods:
+                    findings.append(
+                        Finding(
+                            finding_id="http.methods.review",
+                            category="configuration",
+                            host=host.address,
+                            port=script_port,
+                            protocol=script_protocol,
+                            severity="medium",
+                            title="HTTP methods require review",
+                            evidence=(
+                                "Nmap http-methods reported supported methods: "
+                                f"{' '.join(methods)}; review methods: {' '.join(review_methods)}"
+                            ),
+                            recommendation="Confirm that the reported methods are intentionally enabled and appropriately restricted for this service.",
+                        )
+                    )
+                elif methods and set(methods).issubset({"GET", "HEAD"}):
                     findings.append(
                         Finding(
                             finding_id="http.methods.standard_read_only",
