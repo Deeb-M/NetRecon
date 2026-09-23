@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_text
+from reporter import render_json, render_text
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -16,6 +16,12 @@ def build_parser() -> argparse.ArgumentParser:
         description="Parse Nmap XML and summarize discovered hosts, ports, and services.",
     )
     parser.add_argument("scan", type=Path, help="Path to an Nmap XML (-oX) file")
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text)",
+    )
     return parser
 
 
@@ -28,7 +34,8 @@ def main() -> int:
         print(f"Error: {exc}")
         return 2
 
-    print(render_text(scan))
+    renderer = render_json if args.format == "json" else render_text
+    print(renderer(scan))
 
     return 0
 
