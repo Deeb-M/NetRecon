@@ -579,6 +579,68 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("localhost", mismatch.evidence)
         self.assertIn("wrong.localhost", mismatch.evidence)
 
+    def test_tls_certificate_wildcard_matches_one_dns_label_only(self) -> None:
+        matching_scan = Scan(
+            source="tls-wildcard-match.xml",
+            hosts=(Host(
+                address="192.0.2.20",
+                status="up",
+                hostname="api.example.com",
+                hostnames=("api.example.com",),
+                hostname_records=(("api.example.com", "user"),),
+                ports=(Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    service="https",
+                    scripts=(ScriptResult(
+                        script_id="ssl-cert",
+                        output=(
+                            "Subject: commonName=*.example.com "
+                            "Subject Alternative Name: DNS:*.example.com "
+                            "Issuer: commonName=Example CA"
+                        ),
+                    ),),
+                ),),
+            ),),
+        )
+        nested_scan = Scan(
+            source="tls-wildcard-nested.xml",
+            hosts=(Host(
+                address="192.0.2.21",
+                status="up",
+                hostname="a.b.example.com",
+                hostnames=("a.b.example.com",),
+                hostname_records=(("a.b.example.com", "user"),),
+                ports=(Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    service="https",
+                    scripts=(ScriptResult(
+                        script_id="ssl-cert",
+                        output=(
+                            "Subject: commonName=*.example.com "
+                            "Subject Alternative Name: DNS:*.example.com "
+                            "Issuer: commonName=Example CA"
+                        ),
+                    ),),
+                ),),
+            ),),
+        )
+
+        matching_findings = analyze_scan(matching_scan)
+        nested_findings = analyze_scan(nested_scan)
+
+        self.assertFalse(any(
+            finding.finding_id == "tls.certificate.identity_mismatch"
+            for finding in matching_findings
+        ))
+        self.assertTrue(any(
+            finding.finding_id == "tls.certificate.identity_mismatch"
+            for finding in nested_findings
+        ))
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
