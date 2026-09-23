@@ -3,7 +3,7 @@
 import unittest
 
 from analyzer import analyze_scan
-from models import Host, Port, Scan
+from models import Host, Port, Scan, ScriptResult
 
 
 class AnalyzerTests(unittest.TestCase):
@@ -56,6 +56,36 @@ class AnalyzerTests(unittest.TestCase):
             )
         )
         self.assertTrue(all(f.severity == "info" for f in findings))
+
+    def test_smb_signing_nse_evidence_creates_medium_finding(self) -> None:
+        scan = Scan(
+            source="smb.xml",
+            hosts=(Host(
+                address="192.0.2.20",
+                status="up",
+                scripts=(
+                    ScriptResult(
+                        script_id="smb2-security-mode",
+                        output="3.1.1: Message signing enabled but not required",
+                    ),
+                ),
+                ports=(
+                    Port(port=445, protocol="tcp", state="open", service="microsoft-ds"),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        signing = next(
+            finding
+            for finding in findings
+            if finding.title == "SMB signing configuration requires review"
+        )
+
+        self.assertEqual(signing.severity, "medium")
+        self.assertEqual(signing.port, 445)
+        self.assertIn("smb2-security-mode", signing.evidence)
+        self.assertIn("enabled but not required", signing.evidence)
 
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
