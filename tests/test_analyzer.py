@@ -173,6 +173,31 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("smb2-security-mode", signing.evidence)
         self.assertIn("enabled but not required", signing.evidence)
 
+    def test_http_directory_listing_title_creates_exposure_finding(self) -> None:
+        scan = Scan(
+            source="http.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                scripts=(
+                    ScriptResult(
+                        script_id="http-title",
+                        output="Directory listing for /",
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        directory = next(
+            finding for finding in findings
+            if finding.finding_id == "http.directory_listing.exposed"
+        )
+
+        self.assertEqual(directory.category, "exposure")
+        self.assertEqual(directory.severity, "info")
+        self.assertIn("Directory listing for /", directory.evidence)
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
