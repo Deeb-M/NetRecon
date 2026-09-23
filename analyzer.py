@@ -25,7 +25,7 @@ class Finding:
 def _parse_ssl_cert_time(output: str, label: str) -> datetime | None:
     """Parse an Nmap ssl-cert ISO timestamp as UTC."""
     match = re.search(
-        rf"{re.escape(label)}:\s*(\d{{4}}-\d{{2}}-\d{{2}}T\d{{2}}:\d{{2}}:\d{{2}})",
+        rf"{re.escape(label)}\s*(\d{{4}}-\d{{2}}-\d{{2}}T\d{{2}}:\d{{2}}:\d{{2}})",
         output,
         flags=re.IGNORECASE,
     )
