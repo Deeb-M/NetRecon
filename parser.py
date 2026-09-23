@@ -26,6 +26,25 @@ def parse_nmap_xml(path: str | Path) -> Scan:
     if root.tag != "nmaprun":
         raise NmapParseError("XML root is not <nmaprun>")
 
+    def _int_attr(node: ET.Element | None, name: str) -> int | None:
+        if node is None or not node.get(name):
+            return None
+        try:
+            return int(node.get(name, ""))
+        except ValueError:
+            return None
+
+    def _float_attr(node: ET.Element | None, name: str) -> float | None:
+        if node is None or not node.get(name):
+            return None
+        try:
+            return float(node.get(name, ""))
+        except ValueError:
+            return None
+
+    finished_node = root.find("./runstats/finished")
+    hosts_node = root.find("./runstats/hosts")
+
     hosts: list[Host] = []
 
     for host_node in root.findall("host"):
@@ -121,4 +140,16 @@ def parse_nmap_xml(path: str | Path) -> Scan:
             )
         )
 
-    return Scan(source=str(source), hosts=tuple(hosts))
+    return Scan(
+        source=str(source),
+        scanner=root.get("scanner"),
+        scanner_version=root.get("version"),
+        arguments=root.get("args"),
+        started_at=_int_attr(root, "start"),
+        finished_at=_int_attr(finished_node, "time"),
+        elapsed=_float_attr(finished_node, "elapsed"),
+        hosts_up=_int_attr(hosts_node, "up"),
+        hosts_down=_int_attr(hosts_node, "down"),
+        hosts_total=_int_attr(hosts_node, "total"),
+        hosts=tuple(hosts),
+    )
