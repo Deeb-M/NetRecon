@@ -237,6 +237,42 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(directory.protocol, "tcp")
         self.assertIn("Directory listing for /", directory.evidence)
 
+    def test_standard_http_methods_are_informational_with_port_context(self) -> None:
+        scan = Scan(
+            source="http-methods.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                ports=(
+                    Port(
+                        port=8080,
+                        protocol="tcp",
+                        state="open",
+                        service="http",
+                        product="SimpleHTTPServer",
+                        scripts=(
+                            ScriptResult(
+                                script_id="http-methods",
+                                output="Supported Methods: GET HEAD",
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        methods = next(
+            finding for finding in findings
+            if finding.finding_id == "http.methods.standard_read_only"
+        )
+
+        self.assertEqual(methods.category, "protocol")
+        self.assertEqual(methods.severity, "info")
+        self.assertEqual(methods.port, 8080)
+        self.assertEqual(methods.protocol, "tcp")
+        self.assertIn("GET HEAD", methods.evidence)
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
