@@ -37,6 +37,32 @@ def _parse_ssl_cert_time(output: str, label: str) -> datetime | None:
         return None
 
 
+def _parse_ssl_cert_dns_sans(output: str) -> tuple[str, ...]:
+    """Extract DNS SAN values from Nmap ssl-cert output."""
+    match = re.search(
+        r"Subject Alternative Name:\s*(.*?)(?=\s+Issuer:|\s+Public Key type:|\s+Not valid before:|$)",
+        output,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return ()
+    return tuple(
+        san.strip().rstrip(".").lower()
+        for san in re.findall(r"DNS:([^,\s]+)", match.group(1), flags=re.IGNORECASE)
+        if san.strip()
+    )
+
+
+def _dns_name_matches(hostname: str, pattern: str) -> bool:
+    """Conservative DNS SAN match with support for one-label wildcards."""
+    hostname = hostname.rstrip(".").lower()
+    pattern = pattern.rstrip(".").lower()
+    if pattern.startswith("*."):
+        suffix = pattern[1:]
+        return hostname.endswith(suffix) and hostname.count(".") == pattern.count(".")
+    return hostname == pattern
+
+
 def analyze_scan(scan: Scan, *, now: datetime | None = None) -> tuple[Finding, ...]:
     """Return conservative findings that are directly supported by scan evidence."""
     findings: list[Finding] = []
@@ -45,6 +71,11 @@ def analyze_scan(scan: Scan, *, now: datetime | None = None) -> tuple[Finding, .
         reference_time = reference_time.replace(tzinfo=timezone.utc)
 
     for host in scan.hosts:
+        user_hostnames = tuple(
+            name.rstrip(".").lower()
+            for name, hostname_type in host.hostname_records
+            if hostname_type.lower() == "user"
+        )
         os_types = sorted({
             port.os_type
             for port in host.ports
@@ -178,6 +209,35 @@ def analyze_scan(scan: Scan, *, now: datetime | None = None) -> tuple[Finding, .
                     )
 
             if script_id == "ssl-cert":
+                dns_sans = _parse_ssl_cert_dns_sans(output)
+                if user_hostnames and dns_sans:
+                    unmatched = tuple(
+                        hostname
+                        for hostname in user_hostnames
+                        if not any(_dns_name_matches(hostname, san) for san in dns_sans)
+                    )
+                    if unmatched:
+                        findings.append(
+                            Finding(
+                                finding_id="tls.certificate.identity_mismatch",
+                                category="certificate",
+                                host=host.address,
+                                port=script_port,
+                                protocol=script_protocol,
+                                severity="medium",
+                                title="TLS certificate identity mismatch",
+                                evidence=(
+                                    "Nmap target hostname(s): "
+                                    f"{', '.join(user_hostnames)}; certificate DNS SAN(s): "
+                                    f"{', '.join(dns_sans)}."
+                                ),
+                                recommendation=(
+                                    "Review the certificate deployment and confirm the service presents "
+                                    "a certificate whose DNS SAN covers the hostname used to access it."
+                                ),
+                            )
+                        )
+
                 valid_from = _parse_ssl_cert_time(output, "Not valid before:")
                 valid_until = _parse_ssl_cert_time(output, "Not valid after:")
                 if valid_until is not None and valid_until < reference_time:
