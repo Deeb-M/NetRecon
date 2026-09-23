@@ -22,6 +22,21 @@ class Finding:
     recommendation: str
 
 
+def _parse_ssl_cert_time(output: str, label: str) -> datetime | None:
+    """Parse an Nmap ssl-cert ISO timestamp as UTC."""
+    match = re.search(
+        rf"{re.escape(label)}:\s*(\d{{4}}-\d{{2}}-\d{{2}}T\d{{2}}:\d{{2}}:\d{{2}})",
+        output,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    try:
+        return datetime.fromisoformat(match.group(1)).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
 def analyze_scan(scan: Scan, *, now: datetime | None = None) -> tuple[Finding, ...]:
     """Return conservative findings that are directly supported by scan evidence."""
     findings: list[Finding] = []
@@ -163,31 +178,36 @@ def analyze_scan(scan: Scan, *, now: datetime | None = None) -> tuple[Finding, .
                     )
 
             if script_id == "ssl-cert":
-                expiry_match = re.search(
-                    r"Not valid after:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})",
-                    output,
-                    flags=re.IGNORECASE,
-                )
-                if expiry_match:
-                    expiry_text = expiry_match.group(1)
-                    try:
-                        expiry = datetime.fromisoformat(expiry_text).replace(tzinfo=timezone.utc)
-                    except ValueError:
-                        expiry = None
-                    if expiry is not None and expiry < reference_time:
-                        findings.append(
-                            Finding(
-                                finding_id="tls.certificate.expired",
-                                category="certificate",
-                                host=host.address,
-                                port=script_port,
-                                protocol=script_protocol,
-                                severity="medium",
-                                title="TLS certificate expired",
-                                evidence=f"Nmap ssl-cert reported certificate expiry: {expiry_text} UTC.",
-                                recommendation="Review the certificate deployment and replace or renew the expired certificate where the service is expected to present a valid certificate.",
-                            )
+                valid_from = _parse_ssl_cert_time(output, "Not valid before:")
+                valid_until = _parse_ssl_cert_time(output, "Not valid after:")
+                if valid_until is not None and valid_until < reference_time:
+                    findings.append(
+                        Finding(
+                            finding_id="tls.certificate.expired",
+                            category="certificate",
+                            host=host.address,
+                            port=script_port,
+                            protocol=script_protocol,
+                            severity="medium",
+                            title="TLS certificate expired",
+                            evidence=f"Nmap ssl-cert reported certificate expiry: {valid_until.strftime('%Y-%m-%dT%H:%M:%S')} UTC.",
+                            recommendation="Review the certificate deployment and replace or renew the expired certificate where the service is expected to present a valid certificate.",
                         )
+                    )
+                if valid_from is not None and valid_from > reference_time:
+                    findings.append(
+                        Finding(
+                            finding_id="tls.certificate.not_yet_valid",
+                            category="certificate",
+                            host=host.address,
+                            port=script_port,
+                            protocol=script_protocol,
+                            severity="medium",
+                            title="TLS certificate not yet valid",
+                            evidence=f"Nmap ssl-cert reported certificate validity begins: {valid_from.strftime('%Y-%m-%dT%H:%M:%S')} UTC.",
+                            recommendation="Review certificate deployment and system time; confirm the certificate is not being served before its intended validity period.",
+                        )
+                    )
 
             if script_id == "ssl-enum-ciphers":
                 legacy_versions = tuple(
