@@ -66,11 +66,12 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         status_node = host_node.find("status")
         status = status_node.get("state", "unknown") if status_node is not None else "unknown"
 
-        hostnames = tuple(
-            node.get("name", "")
+        hostname_records = tuple(
+            (node.get("name", ""), node.get("type", "unknown"))
             for node in host_node.findall("./hostnames/hostname")
             if node.get("name")
         )
+        hostnames = tuple(name for name, _ in hostname_records)
         hostname = hostnames[0] if hostnames else None
 
         ports: list[Port] = []
@@ -142,6 +143,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                 hostname=hostname,
                 addresses=addresses,
                 hostnames=hostnames,
+                hostname_records=hostname_records,
                 scripts=host_scripts,
                 ports=tuple(ports),
             )
