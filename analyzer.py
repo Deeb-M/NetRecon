@@ -28,6 +28,49 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                 continue
 
             service = (port.service or "").lower()
+            specific_context = False
+
+            if port.port == 445 or service in {"microsoft-ds", "smb"}:
+                specific_context = True
+                findings.append(
+                    Finding(
+                        host=host.address,
+                        port=port.port,
+                        protocol=port.protocol,
+                        severity="info",
+                        title="SMB service exposed",
+                        evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'SMB-compatible service'}.",
+                        recommendation="Review SMB exposure and authorization. In an authorized assessment, verify protocol configuration, signing, accessible shares, and whether guest or anonymous access is permitted.",
+                    )
+                )
+
+            if port.port == 139 or service == "netbios-ssn":
+                specific_context = True
+                findings.append(
+                    Finding(
+                        host=host.address,
+                        port=port.port,
+                        protocol=port.protocol,
+                        severity="info",
+                        title="NetBIOS session service exposed",
+                        evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'NetBIOS session service'}.",
+                        recommendation="Confirm whether legacy NetBIOS connectivity is required and review its exposure together with SMB.",
+                    )
+                )
+
+            if port.port == 135 or service == "msrpc":
+                specific_context = True
+                findings.append(
+                    Finding(
+                        host=host.address,
+                        port=port.port,
+                        protocol=port.protocol,
+                        severity="info",
+                        title="Windows RPC endpoint mapper exposed",
+                        evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'Microsoft RPC'}.",
+                        recommendation="Confirm that RPC exposure matches the host's intended role and network boundary; investigate exposed RPC services only within authorized scope.",
+                    )
+                )
 
             if service == "telnet" or port.port == 23:
                 findings.append(
@@ -55,7 +98,7 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                     )
                 )
 
-            if port.service and not port.product:
+            if port.service and not port.product and not specific_context:
                 findings.append(
                     Finding(
                         host=host.address,
