@@ -641,6 +641,45 @@ class AnalyzerTests(unittest.TestCase):
             for finding in nested_findings
         ))
 
+    def test_ssh_algorithm_inventory_is_informational_with_port_context(self) -> None:
+        scan = Scan(
+            source="ssh-algos.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                ports=(Port(
+                    port=22,
+                    protocol="tcp",
+                    state="open",
+                    service="ssh",
+                    product="OpenSSH",
+                    scripts=(ScriptResult(
+                        script_id="ssh2-enum-algos",
+                        output=(
+                            "kex_algorithms: (2) curve25519-sha256 ecdh-sha2-nistp256 "
+                            "server_host_key_algorithms: (2) rsa-sha2-512 ssh-ed25519 "
+                            "encryption_algorithms: (2) chacha20-poly1305@openssh.com aes256-gcm@openssh.com "
+                            "mac_algorithms: (2) hmac-sha2-256-etm@openssh.com hmac-sha1 "
+                            "compression_algorithms: (2) none zlib@openssh.com"
+                        ),
+                    ),),
+                ),),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        inventory = next(
+            finding for finding in findings
+            if finding.finding_id == "ssh.algorithms.inventory"
+        )
+
+        self.assertEqual(inventory.severity, "info")
+        self.assertEqual(inventory.category, "protocol")
+        self.assertEqual(inventory.port, 22)
+        self.assertEqual(inventory.protocol, "tcp")
+        self.assertIn("kex_algorithms", inventory.evidence)
+        self.assertIn("mac_algorithms", inventory.evidence)
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
