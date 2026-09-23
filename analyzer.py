@@ -67,6 +67,24 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             output = " ".join(script.output.split())
             normalized_output = output.lower()
 
+            if (
+                script_id == "http-title"
+                and normalized_output.startswith("directory listing for ")
+            ):
+                findings.append(
+                    Finding(
+                        finding_id="http.directory_listing.exposed",
+                        category="exposure",
+                        host=host.address,
+                        port=None,
+                        protocol="tcp",
+                        severity="info",
+                        title="HTTP directory listing exposed",
+                        evidence=f"Nmap http-title reported: {output}",
+                        recommendation="Review whether directory browsing is intended and ensure exposed files are appropriate for the service's audience.",
+                    )
+                )
+
             if script_id == "smb-protocols":
                 smb1_markers = ("nt lm 0.12", "smbv1", "smb 1")
                 smb1_reported = any(marker in normalized_output for marker in smb1_markers)
