@@ -112,10 +112,13 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                 )
 
             if script_id == "http-methods" and "supported methods:" in normalized_output:
-                methods_text = output.split("supported methods:", 1)[1].strip()
+                supported_marker = "supported methods:"
+                supported_start = normalized_output.index(supported_marker) + len(supported_marker)
+                methods_text = output[supported_start:].strip()
                 risky_marker = " potentially risky methods:"
-                if risky_marker in methods_text.lower():
-                    methods_text = methods_text[:methods_text.lower().index(risky_marker)].strip()
+                methods_text_lower = methods_text.lower()
+                if risky_marker in methods_text_lower:
+                    methods_text = methods_text[:methods_text_lower.index(risky_marker)].strip()
                 methods = tuple(method.upper() for method in methods_text.split())
                 review_methods = tuple(
                     method
