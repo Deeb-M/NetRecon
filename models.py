@@ -23,6 +23,9 @@ class Port:
     tunnel: str | None = None
     detection_method: str | None = None
     confidence: int | None = None
+    os_type: str | None = None
+    device_type: str | None = None
+    cpes: tuple[str, ...] = field(default_factory=tuple)
     scripts: tuple[ScriptResult, ...] = field(default_factory=tuple)
 
 
