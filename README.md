@@ -24,6 +24,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Interpret Nmap `http-methods` evidence: standard `GET`/`HEAD` context stays informational, while explicitly reported `PUT`, `DELETE`, `TRACE`, `CONNECT`, or `PATCH` methods are surfaced for configuration review
 - Interpret `ssl-enum-ciphers` evidence for legacy TLS 1.0/1.1 support and explicitly reported anonymous key exchange, preserving port-level provenance
 - Detect explicitly expired or not-yet-valid TLS certificates from `ssl-cert` evidence using time-aware analysis; both states validated end-to-end against controlled HTTPS lab certificates
+- Compare a user-supplied target hostname with certificate DNS SAN evidence and report a TLS identity mismatch only when both sides are explicit; validated with controlled matching and mismatching HTTPS lab cases
 - Handle missing, malformed, non-Nmap, and empty scan input
 - Run automated tests with GitHub Actions
 
