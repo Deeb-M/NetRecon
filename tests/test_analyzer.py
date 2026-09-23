@@ -92,6 +92,32 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("Windows", contexts[0].evidence)
         self.assertEqual(contexts[0].evidence.count("cpe:/o:microsoft:windows"), 1)
 
+    def test_application_cpe_is_not_reported_as_host_platform(self) -> None:
+        scan = Scan(
+            source="http.xml",
+            hosts=(Host(address="127.0.0.1", status="up", ports=(
+                Port(
+                    port=8080,
+                    protocol="tcp",
+                    state="open",
+                    service="http",
+                    product="SimpleHTTPServer",
+                    cpes=("cpe:/a:python:simplehttpserver:0.6",),
+                ),
+            )),),
+        )
+
+        findings = analyze_scan(scan)
+        ids = {finding.finding_id for finding in findings}
+
+        self.assertIn("service.application.context", ids)
+        self.assertNotIn("host.platform.context", ids)
+        application = next(
+            finding for finding in findings
+            if finding.finding_id == "service.application.context"
+        )
+        self.assertIn("cpe:/a:python:simplehttpserver:0.6", application.evidence)
+
     def test_modern_smb_protocol_evidence_is_informational(self) -> None:
         scan = Scan(
             source="smb.xml",
