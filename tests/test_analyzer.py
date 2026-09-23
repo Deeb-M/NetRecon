@@ -205,10 +205,19 @@ class AnalyzerTests(unittest.TestCase):
             hosts=(Host(
                 address="127.0.0.1",
                 status="up",
-                scripts=(
-                    ScriptResult(
-                        script_id="http-title",
-                        output="Directory listing for /",
+                ports=(
+                    Port(
+                        port=8080,
+                        protocol="tcp",
+                        state="open",
+                        service="http",
+                        product="SimpleHTTPServer",
+                        scripts=(
+                            ScriptResult(
+                                script_id="http-title",
+                                output="Directory listing for /",
+                            ),
+                        ),
                     ),
                 ),
             ),),
@@ -222,6 +231,8 @@ class AnalyzerTests(unittest.TestCase):
 
         self.assertEqual(directory.category, "exposure")
         self.assertEqual(directory.severity, "info")
+        self.assertEqual(directory.port, 8080)
+        self.assertEqual(directory.protocol, "tcp")
         self.assertIn("Directory listing for /", directory.evidence)
 
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
