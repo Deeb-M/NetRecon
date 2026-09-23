@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from models import Host, Port, Scan
+from models import Host, Port, Scan, ScriptResult
 
 
 class NmapParseError(ValueError):
@@ -77,6 +77,14 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                 except ValueError:
                     confidence = None
 
+            scripts = tuple(
+                ScriptResult(
+                    script_id=node.get("id", "unknown"),
+                    output=node.get("output", ""),
+                )
+                for node in port_node.findall("script")
+            )
+
             ports.append(
                 Port(
                     port=port_number,
@@ -89,8 +97,17 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                     tunnel=service_node.get("tunnel") if service_node is not None else None,
                     detection_method=service_node.get("method") if service_node is not None else None,
                     confidence=confidence,
+                    scripts=scripts,
                 )
             )
+
+        host_scripts = tuple(
+            ScriptResult(
+                script_id=node.get("id", "unknown"),
+                output=node.get("output", ""),
+            )
+            for node in host_node.findall("./hostscript/script")
+        )
 
         hosts.append(
             Host(
@@ -99,6 +116,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                 hostname=hostname,
                 addresses=addresses,
                 hostnames=hostnames,
+                scripts=host_scripts,
                 ports=tuple(ports),
             )
         )
