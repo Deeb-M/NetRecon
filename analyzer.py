@@ -35,13 +35,15 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             for port in host.ports
             for cpe in port.cpes
         })
+        os_cpes = [cpe for cpe in cpes if cpe.startswith("cpe:/o:")]
+        application_cpes = [cpe for cpe in cpes if cpe.startswith("cpe:/a:")]
 
-        if os_types or cpes:
+        if os_types or os_cpes:
             evidence_parts = []
             if os_types:
                 evidence_parts.append(f"service detection reported OS type(s): {', '.join(os_types)}")
-            if cpes:
-                evidence_parts.append(f"CPE(s): {', '.join(cpes)}")
+            if os_cpes:
+                evidence_parts.append(f"OS CPE(s): {', '.join(os_cpes)}")
             findings.append(
                 Finding(
                     finding_id="host.platform.context",
@@ -53,6 +55,21 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                     title="Host platform context identified",
                     evidence="; ".join(evidence_parts) + ".",
                     recommendation="Use this platform context to guide authorized follow-up checks; do not treat service-derived OS identification as definitive host fingerprinting.",
+                )
+            )
+
+        if application_cpes:
+            findings.append(
+                Finding(
+                    finding_id="service.application.context",
+                    category="context",
+                    host=host.address,
+                    port=None,
+                    protocol=None,
+                    severity="info",
+                    title="Application context identified",
+                    evidence=f"Application CPE(s): {', '.join(application_cpes)}.",
+                    recommendation="Use this application identification as service context and validate it before making version-specific security conclusions.",
                 )
             )
 
