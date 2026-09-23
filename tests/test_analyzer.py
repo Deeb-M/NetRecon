@@ -485,6 +485,100 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(future.protocol, "tcp")
         self.assertIn("2026-09-25T00:00:00", future.evidence)
 
+    def test_tls_certificate_identity_match_is_not_flagged(self) -> None:
+        scan = Scan(
+            source="tls-cert-match.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                hostname="localhost",
+                hostnames=("localhost",),
+                hostname_records=(("localhost", "user"),),
+                ports=(
+                    Port(
+                        port=8446,
+                        protocol="tcp",
+                        state="open",
+                        service="unknown",
+                        tunnel="ssl",
+                        scripts=(
+                            ScriptResult(
+                                script_id="ssl-cert",
+                                output=(
+                                    "Subject: commonName=localhost "
+                                    "Subject Alternative Name: DNS:localhost "
+                                    "Issuer: commonName=localhost "
+                                    "Not valid before: 2026-09-23T20:09:30 "
+                                    "Not valid after: 2026-09-24T20:09:30"
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(
+            scan,
+            now=datetime(2026, 9, 23, 21, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertFalse(
+            any(
+                finding.finding_id == "tls.certificate.identity_mismatch"
+                for finding in findings
+            )
+        )
+
+    def test_tls_certificate_identity_mismatch_uses_user_hostname_and_dns_san(self) -> None:
+        scan = Scan(
+            source="tls-cert-mismatch.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                hostname="localhost",
+                hostnames=("localhost", "localhost"),
+                hostname_records=(("localhost", "user"), ("localhost", "PTR")),
+                ports=(
+                    Port(
+                        port=8447,
+                        protocol="tcp",
+                        state="open",
+                        service="unknown",
+                        tunnel="ssl",
+                        scripts=(
+                            ScriptResult(
+                                script_id="ssl-cert",
+                                output=(
+                                    "Subject: commonName=wrong.localhost "
+                                    "Subject Alternative Name: DNS:wrong.localhost "
+                                    "Issuer: commonName=wrong.localhost "
+                                    "Not valid before: 2026-09-23T20:16:44 "
+                                    "Not valid after: 2026-09-24T20:16:44"
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(
+            scan,
+            now=datetime(2026, 9, 23, 21, 0, tzinfo=timezone.utc),
+        )
+        mismatch = next(
+            finding for finding in findings
+            if finding.finding_id == "tls.certificate.identity_mismatch"
+        )
+
+        self.assertEqual(mismatch.category, "certificate")
+        self.assertEqual(mismatch.severity, "medium")
+        self.assertEqual(mismatch.port, 8447)
+        self.assertEqual(mismatch.protocol, "tcp")
+        self.assertIn("localhost", mismatch.evidence)
+        self.assertIn("wrong.localhost", mismatch.evidence)
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
