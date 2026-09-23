@@ -9,6 +9,8 @@ from models import Scan
 
 @dataclass(frozen=True)
 class Finding:
+    finding_id: str
+    category: str
     host: str
     port: int | None
     protocol: str | None
@@ -40,6 +42,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             ):
                 findings.append(
                     Finding(
+                        finding_id="smb.signing.review",
+                        category="configuration",
                         host=host.address,
                         port=445,
                         protocol="tcp",
@@ -61,6 +65,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                 specific_context = True
                 findings.append(
                     Finding(
+                        finding_id="service.smb.exposed",
+                        category="exposure",
                         host=host.address,
                         port=port.port,
                         protocol=port.protocol,
@@ -75,6 +81,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                 specific_context = True
                 findings.append(
                     Finding(
+                        finding_id="service.netbios.exposed",
+                        category="exposure",
                         host=host.address,
                         port=port.port,
                         protocol=port.protocol,
@@ -89,6 +97,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                 specific_context = True
                 findings.append(
                     Finding(
+                        finding_id="service.rpc.exposed",
+                        category="exposure",
                         host=host.address,
                         port=port.port,
                         protocol=port.protocol,
@@ -102,6 +112,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             if service == "telnet" or port.port == 23:
                 findings.append(
                     Finding(
+                        finding_id="service.telnet.exposed",
+                        category="transport",
                         host=host.address,
                         port=port.port,
                         protocol=port.protocol,
@@ -115,6 +127,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             if service == "ftp" or port.port == 21:
                 findings.append(
                     Finding(
+                        finding_id="service.ftp.exposed",
+                        category="transport",
                         host=host.address,
                         port=port.port,
                         protocol=port.protocol,
@@ -128,6 +142,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             if port.service and not port.product and not specific_context:
                 findings.append(
                     Finding(
+                        finding_id="service.product.unknown",
+                        category="visibility",
                         host=host.address,
                         port=port.port,
                         protocol=port.protocol,
