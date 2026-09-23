@@ -9,6 +9,30 @@ from analyzer import Finding
 from models import Host, Port, Scan
 
 
+_SEVERITY_PRIORITY = {
+    "critical": 0,
+    "high": 1,
+    "medium": 2,
+    "low": 3,
+    "info": 4,
+}
+
+
+def prioritize_findings(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
+    """Return findings in deterministic analyst-attention order."""
+    return tuple(
+        sorted(
+            findings,
+            key=lambda finding: (
+                _SEVERITY_PRIORITY.get(finding.severity.lower(), 5),
+                finding.host,
+                finding.port if finding.port is not None else -1,
+                finding.finding_id,
+            ),
+        )
+    )
+
+
 def _service_label(port: Port) -> str:
     parts = [value for value in (port.product, port.version, port.extra_info) if value]
     detected = " ".join(parts)
@@ -96,7 +120,7 @@ def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
     """Render parsed scan data and findings in one machine-readable envelope."""
     payload = {
         "scan": asdict(scan),
-        "findings": [asdict(finding) for finding in findings],
+        "findings": [asdict(finding) for finding in prioritize_findings(findings)],
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
@@ -106,8 +130,9 @@ def render_findings(findings: tuple[Finding, ...]) -> str:
     if not findings:
         return "Findings: none"
 
-    lines = [f"Findings: {len(findings)}"]
-    for finding in findings:
+    ordered_findings = prioritize_findings(findings)
+    lines = [f"Findings: {len(ordered_findings)}"]
+    for finding in ordered_findings:
         location = finding.host
         if finding.port is not None:
             location += f":{finding.port}/{finding.protocol or 'unknown'}"
