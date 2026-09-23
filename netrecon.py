@@ -8,7 +8,7 @@ from pathlib import Path
 
 from analyzer import analyze_scan
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_findings, render_json, render_text
+from reporter import render_analysis_json, render_findings, render_json, render_text
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -40,15 +40,21 @@ def main() -> int:
         print(f"Error: {exc}")
         return 2
 
-    renderer = render_json if args.format == "json" else render_text
-    print(renderer(scan))
+    findings = analyze_scan(scan) if args.analyze else ()
 
+    if args.format == "json":
+        output = (
+            render_analysis_json(scan, findings)
+            if args.analyze
+            else render_json(scan)
+        )
+        print(output)
+        return 0
+
+    print(render_text(scan))
     if args.analyze:
-        if args.format == "json":
-            print("Error: --analyze currently supports text output only")
-            return 2
         print()
-        print(render_findings(analyze_scan(scan)))
+        print(render_findings(findings))
 
     return 0
 
