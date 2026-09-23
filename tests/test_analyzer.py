@@ -288,7 +288,7 @@ class AnalyzerTests(unittest.TestCase):
                         scripts=(
                             ScriptResult(
                                 script_id="http-methods",
-                                output="Supported Methods: GET HEAD PUT DELETE",
+                                output="Supported Methods: GET HEAD PUT DELETE OPTIONS Potentially risky methods: PUT DELETE",
                             ),
                         ),
                     ),
@@ -306,7 +306,9 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(review.severity, "medium")
         self.assertEqual(review.port, 8081)
         self.assertEqual(review.protocol, "tcp")
-        self.assertIn("PUT DELETE", review.evidence)
+        self.assertIn("GET HEAD PUT DELETE OPTIONS", review.evidence)
+        self.assertIn("review methods: PUT DELETE", review.evidence)
+        self.assertNotIn("PUT DELETE PUT DELETE", review.evidence)
 
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
