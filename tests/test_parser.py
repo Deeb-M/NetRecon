@@ -8,7 +8,7 @@ from parser import NmapParseError, parse_nmap_xml
 
 
 SAMPLE_XML = """<?xml version="1.0"?>
-<nmaprun scanner="nmap">
+<nmaprun scanner="nmap" version="7.95" args="nmap -sV -oX scan.xml 192.0.2.10" start="1790180000">
   <host>
     <status state="up"/>
     <address addr="192.0.2.10" addrtype="ipv4"/>
@@ -33,6 +33,10 @@ SAMPLE_XML = """<?xml version="1.0"?>
       <script id="uptime" output="System uptime: 2 days"/>
     </hostscript>
   </host>
+  <runstats>
+    <finished time="1790180012" elapsed="12.34"/>
+    <hosts up="1" down="0" total="1"/>
+  </runstats>
 </nmaprun>
 """
 
@@ -45,6 +49,15 @@ class ParserTests(unittest.TestCase):
 
             scan = parse_nmap_xml(path)
 
+        self.assertEqual(scan.scanner, "nmap")
+        self.assertEqual(scan.scanner_version, "7.95")
+        self.assertIn("-sV", scan.arguments or "")
+        self.assertEqual(scan.started_at, 1790180000)
+        self.assertEqual(scan.finished_at, 1790180012)
+        self.assertEqual(scan.elapsed, 12.34)
+        self.assertEqual(scan.hosts_up, 1)
+        self.assertEqual(scan.hosts_down, 0)
+        self.assertEqual(scan.hosts_total, 1)
         self.assertEqual(len(scan.hosts), 1)
         host = scan.hosts[0]
         self.assertEqual(host.address, "192.0.2.10")
