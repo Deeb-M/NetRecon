@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import re
 
 from models import Scan
 
@@ -20,9 +22,12 @@ class Finding:
     recommendation: str
 
 
-def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
+def analyze_scan(scan: Scan, *, now: datetime | None = None) -> tuple[Finding, ...]:
     """Return conservative findings that are directly supported by scan evidence."""
     findings: list[Finding] = []
+    reference_time = now or datetime.now(timezone.utc)
+    if reference_time.tzinfo is None:
+        reference_time = reference_time.replace(tzinfo=timezone.utc)
 
     for host in scan.hosts:
         os_types = sorted({
@@ -156,6 +161,33 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                             recommendation="Retain the supported-method evidence as HTTP service context; no unusual method is indicated by this result.",
                         )
                     )
+
+            if script_id == "ssl-cert":
+                expiry_match = re.search(
+                    r"Not valid after:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})",
+                    output,
+                    flags=re.IGNORECASE,
+                )
+                if expiry_match:
+                    expiry_text = expiry_match.group(1)
+                    try:
+                        expiry = datetime.fromisoformat(expiry_text).replace(tzinfo=timezone.utc)
+                    except ValueError:
+                        expiry = None
+                    if expiry is not None and expiry < reference_time:
+                        findings.append(
+                            Finding(
+                                finding_id="tls.certificate.expired",
+                                category="certificate",
+                                host=host.address,
+                                port=script_port,
+                                protocol=script_protocol,
+                                severity="medium",
+                                title="TLS certificate expired",
+                                evidence=f"Nmap ssl-cert reported certificate expiry: {expiry_text} UTC.",
+                                recommendation="Review the certificate deployment and replace or renew the expired certificate where the service is expected to present a valid certificate.",
+                            )
+                        )
 
             if script_id == "ssl-enum-ciphers":
                 legacy_versions = tuple(
