@@ -82,6 +82,8 @@ class AnalyzerTests(unittest.TestCase):
             if finding.title == "SMB signing configuration requires review"
         )
 
+        self.assertEqual(signing.finding_id, "smb.signing.review")
+        self.assertEqual(signing.category, "configuration")
         self.assertEqual(signing.severity, "medium")
         self.assertEqual(signing.port, 445)
         self.assertIn("smb2-security-mode", signing.evidence)
