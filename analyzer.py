@@ -67,6 +67,35 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             output = " ".join(script.output.split())
             normalized_output = output.lower()
 
+            if script_id == "smb-protocols":
+                smb1_markers = ("nt lm 0.12", "smbv1", "smb 1")
+                smb1_reported = any(marker in normalized_output for marker in smb1_markers)
+                findings.append(
+                    Finding(
+                        finding_id=(
+                            "smb.protocol.smb1.reported"
+                            if smb1_reported
+                            else "smb.protocol.modern_only"
+                        ),
+                        category="protocol",
+                        host=host.address,
+                        port=445,
+                        protocol="tcp",
+                        severity="medium" if smb1_reported else "info",
+                        title=(
+                            "SMBv1 protocol reported"
+                            if smb1_reported
+                            else "Modern SMB dialects reported"
+                        ),
+                        evidence=f"Nmap smb-protocols reported: {output}",
+                        recommendation=(
+                            "Review whether SMBv1 is required and disable it where possible."
+                            if smb1_reported
+                            else "Retain this protocol evidence as context and continue reviewing SMB configuration."
+                        ),
+                    )
+                )
+
             if (
                 script_id == "smb2-security-mode"
                 and "message signing enabled but not required" in normalized_output
