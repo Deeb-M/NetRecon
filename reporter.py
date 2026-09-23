@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
+import json
+
 from models import Host, Port, Scan
 
 
@@ -81,3 +84,8 @@ def render_text(scan: Scan) -> str:
         lines.extend(_host_lines(host))
 
     return "\n".join(lines)
+
+
+def render_json(scan: Scan) -> str:
+    """Render the complete parsed scan as stable, machine-readable JSON."""
+    return json.dumps(asdict(scan), indent=2, ensure_ascii=False)
