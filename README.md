@@ -4,7 +4,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 
 ## Status
 
-**Core v0 complete.** The project can reliably ingest Nmap XML, preserve useful scan context, and produce both human-readable and machine-readable output. The next milestone is the analysis layer.
+**Core v0 complete; Intelligence layer in active development.** NetRecon reliably ingests Nmap XML, preserves scan context, and adds conservative evidence-based findings for analyst review.
 
 ## Core v0
 
@@ -12,10 +12,14 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Preserve scan metadata and run statistics
 - Extract IPv4, IPv6, MAC addresses, and hostnames
 - Extract TCP/UDP ports and states
-- Preserve service name, product, version, extra info, tunnel, detection method, and confidence
+- Preserve service name, product, version, extra info, tunnel, detection method, confidence, OS type, device type, and CPE data
 - Preserve port-level and host-level Nmap NSE script results
 - Produce an analyst-friendly text summary
 - Produce structured JSON output for automation
+- Add stable finding IDs and categories for downstream processing
+- Derive deduplicated host platform context from service-detection evidence
+- Surface Windows RPC, NetBIOS, SMB, Telnet, and FTP exposure context
+- Detect explicit SMB signing evidence reported by Nmap without guessing vulnerabilities
 - Handle missing, malformed, non-Nmap, and empty scan input
 - Run automated tests with GitHub Actions
 
@@ -39,6 +43,18 @@ Produce JSON:
 python netrecon.py scan.xml --format json
 ```
 
+Add evidence-based analysis:
+
+```bash
+python netrecon.py scan.xml --analyze
+```
+
+Return scan data and findings in one JSON document:
+
+```bash
+python netrecon.py scan.xml --analyze --format json
+```
+
 Try the included safe sample:
 
 ```bash
@@ -56,13 +72,16 @@ python -m unittest discover -s tests -v
 - `netrecon.py` — CLI entry point
 - `parser.py` — Nmap XML ingestion and validation
 - `models.py` — immutable scan, host, port, and script data models
+- `analyzer.py` — conservative evidence-based findings
 - `reporter.py` — text and JSON rendering
 - `tests/` — automated tests
 - `examples/` — safe example input
 
-## Next milestone: Intelligence
+## Intelligence principles
 
-The next development stage will analyze the normalized scan data and surface useful findings without pretending that an open port or a detected version is automatically a vulnerability. Findings will be evidence-based and kept separate from raw scan data.
+NetRecon keeps observations separate from findings. An open port is not automatically treated as a vulnerability, and service or OS detection is not treated as definitive proof. Findings are created from explicit scan evidence and include stable IDs, categories, evidence, and recommended follow-up.
+
+Current Intelligence coverage is intentionally conservative. New rules are added incrementally and tested against representative Nmap XML before being relied on in analyst workflows.
 
 ## Responsible use
 
