@@ -14,8 +14,8 @@ SAMPLE_XML = """<?xml version="1.0"?>
     <address addr="192.0.2.10" addrtype="ipv4"/>
     <address addr="00:11:22:33:44:55" addrtype="mac"/>
     <hostnames>
-      <hostname name="lab.example"/>
-      <hostname name="alias.example"/>
+      <hostname name="lab.example" type="user"/>
+      <hostname name="alias.example" type="PTR"/>
     </hostnames>
     <ports>
       <port protocol="tcp" portid="22">
@@ -66,6 +66,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.address, "192.0.2.10")
         self.assertEqual(host.hostname, "lab.example")
         self.assertEqual(host.hostnames, ("lab.example", "alias.example"))
+        self.assertEqual(host.hostname_records, (("lab.example", "user"), ("alias.example", "PTR")))
         self.assertEqual(
             host.addresses,
             (("192.0.2.10", "ipv4"), ("00:11:22:33:44:55", "mac")),
