@@ -2,8 +2,9 @@
 
 import unittest
 
+from analyzer import Finding
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_text
+from reporter import render_findings, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -55,6 +56,19 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("ssh - OpenSSH 9.6", report)
         self.assertIn("[confidence:10]", report)
         self.assertIn("script ssh-hostkey:", report)
+
+
+    def test_findings_are_prioritized_by_severity(self) -> None:
+        findings = (
+            Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
+            Finding("medium.config", "configuration", "192.0.2.10", 445, "tcp", "medium", "Configuration review", "medium evidence", "Review."),
+            Finding("low.review", "configuration", "192.0.2.10", 80, "tcp", "low", "Low review", "low evidence", "Review."),
+        )
+
+        report = render_findings(findings)
+
+        self.assertLess(report.index("[MEDIUM]"), report.index("[LOW]"))
+        self.assertLess(report.index("[LOW]"), report.index("[INFO]"))
 
 
 if __name__ == "__main__":
