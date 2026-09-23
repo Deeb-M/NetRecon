@@ -208,6 +208,39 @@ def analyze_scan(scan: Scan, *, now: datetime | None = None) -> tuple[Finding, .
                         )
                     )
 
+            if script_id == "ssh2-enum-algos":
+                sections = tuple(
+                    section
+                    for section in (
+                        "kex_algorithms",
+                        "server_host_key_algorithms",
+                        "encryption_algorithms",
+                        "mac_algorithms",
+                        "compression_algorithms",
+                    )
+                    if f"{section}:" in normalized_output
+                )
+                if sections:
+                    findings.append(
+                        Finding(
+                            finding_id="ssh.algorithms.inventory",
+                            category="protocol",
+                            host=host.address,
+                            port=script_port,
+                            protocol=script_protocol,
+                            severity="info",
+                            title="SSH algorithm inventory collected",
+                            evidence=(
+                                "Nmap ssh2-enum-algos reported: "
+                                f"{', '.join(sections)}."
+                            ),
+                            recommendation=(
+                                "Use the reported SSH algorithm inventory as configuration context "
+                                "and review individual algorithms against the system's security policy."
+                            ),
+                        )
+                    )
+
             if script_id == "ssl-cert":
                 dns_sans = _parse_ssl_cert_dns_sans(output)
                 if user_hostnames and dns_sans:
