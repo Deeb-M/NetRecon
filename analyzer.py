@@ -157,6 +157,45 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                         )
                     )
 
+            if script_id == "ssl-enum-ciphers":
+                legacy_versions = tuple(
+                    version
+                    for version in ("TLSv1.0", "TLSv1.1")
+                    if f"{version.lower()}:" in normalized_output
+                )
+                if legacy_versions:
+                    findings.append(
+                        Finding(
+                            finding_id="tls.protocol.legacy_enabled",
+                            category="protocol",
+                            host=host.address,
+                            port=script_port,
+                            protocol=script_protocol,
+                            severity="medium",
+                            title="Legacy TLS protocol versions enabled",
+                            evidence=(
+                                "Nmap ssl-enum-ciphers reported: "
+                                f"{', '.join(legacy_versions)}"
+                            ),
+                            recommendation="Review whether TLS 1.0 or TLS 1.1 compatibility is still required and disable legacy protocol versions where appropriate.",
+                        )
+                    )
+
+                if "anonymous key exchange" in normalized_output:
+                    findings.append(
+                        Finding(
+                            finding_id="tls.key_exchange.anonymous",
+                            category="configuration",
+                            host=host.address,
+                            port=script_port,
+                            protocol=script_protocol,
+                            severity="medium",
+                            title="Anonymous TLS key exchange reported",
+                            evidence="Nmap ssl-enum-ciphers reported anonymous key exchange support.",
+                            recommendation="Review the TLS cipher configuration and disable anonymous key-exchange suites unless they are explicitly required.",
+                        )
+                    )
+
             if script_id == "smb-protocols":
                 smb1_markers = ("nt lm 0.12", "smbv1", "smb 1")
                 smb1_reported = any(marker in normalized_output for marker in smb1_markers)
