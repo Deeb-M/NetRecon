@@ -73,13 +73,17 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                 )
             )
 
-        all_scripts = tuple(host.scripts) + tuple(
-            script
+        script_contexts = [
+            (script, None, None)
+            for script in host.scripts
+        ]
+        script_contexts.extend(
+            (script, port.port, port.protocol)
             for port in host.ports
             for script in port.scripts
         )
 
-        for script in all_scripts:
+        for script, script_port, script_protocol in script_contexts:
             script_id = script.script_id.lower()
             output = " ".join(script.output.split())
             normalized_output = output.lower()
@@ -93,8 +97,8 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                         finding_id="http.directory_listing.exposed",
                         category="exposure",
                         host=host.address,
-                        port=None,
-                        protocol="tcp",
+                        port=script_port,
+                        protocol=script_protocol,
                         severity="info",
                         title="HTTP directory listing exposed",
                         evidence=f"Nmap http-title reported: {output}",
