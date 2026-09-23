@@ -20,6 +20,8 @@ class Host:
     address: str
     status: str
     hostname: str | None = None
+    addresses: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+    hostnames: tuple[str, ...] = field(default_factory=tuple)
     ports: tuple[Port, ...] = field(default_factory=tuple)
 
 
