@@ -81,6 +81,28 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.scripts[0].script_id, "uptime")
         self.assertIn("2 days", host.scripts[0].output)
 
+    def test_rejects_missing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "missing.xml"
+            with self.assertRaises(NmapParseError):
+                parse_nmap_xml(path)
+
+    def test_rejects_malformed_xml(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text("<nmaprun><host>", encoding="utf-8")
+            with self.assertRaises(NmapParseError):
+                parse_nmap_xml(path)
+
+    def test_accepts_empty_nmap_scan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text("<nmaprun scanner=\"nmap\"/>", encoding="utf-8")
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(scan.scanner, "nmap")
+        self.assertEqual(scan.hosts, ())
+
     def test_rejects_non_nmap_xml(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "scan.xml"
