@@ -36,7 +36,12 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
             for cpe in port.cpes
         })
         os_cpes = [cpe for cpe in cpes if cpe.startswith("cpe:/o:")]
-        application_cpes = [cpe for cpe in cpes if cpe.startswith("cpe:/a:")]
+        application_contexts = sorted({
+            (port.port, port.protocol, cpe)
+            for port in host.ports
+            for cpe in port.cpes
+            if cpe.startswith("cpe:/a:")
+        })
 
         if os_types or os_cpes:
             evidence_parts = []
@@ -58,17 +63,17 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                 )
             )
 
-        if application_cpes:
+        for application_port, application_protocol, application_cpe in application_contexts:
             findings.append(
                 Finding(
                     finding_id="service.application.context",
                     category="context",
                     host=host.address,
-                    port=None,
-                    protocol=None,
+                    port=application_port,
+                    protocol=application_protocol,
                     severity="info",
                     title="Application context identified",
-                    evidence=f"Application CPE(s): {', '.join(application_cpes)}.",
+                    evidence=f"Application CPE: {application_cpe}.",
                     recommendation="Use this application identification as service context and validate it before making version-specific security conclusions.",
                 )
             )
