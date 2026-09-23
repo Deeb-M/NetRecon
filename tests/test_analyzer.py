@@ -92,6 +92,55 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("Windows", contexts[0].evidence)
         self.assertEqual(contexts[0].evidence.count("cpe:/o:microsoft:windows"), 1)
 
+    def test_modern_smb_protocol_evidence_is_informational(self) -> None:
+        scan = Scan(
+            source="smb.xml",
+            hosts=(Host(
+                address="192.0.2.20",
+                status="up",
+                scripts=(
+                    ScriptResult(
+                        script_id="smb-protocols",
+                        output="dialects: 2.0.2 2.1 3.0 3.0.2 3.1.1",
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        protocol = next(
+            finding for finding in findings
+            if finding.finding_id == "smb.protocol.modern_only"
+        )
+
+        self.assertEqual(protocol.severity, "info")
+        self.assertEqual(protocol.category, "protocol")
+        self.assertIn("3.1.1", protocol.evidence)
+
+    def test_explicit_smb1_protocol_evidence_is_medium(self) -> None:
+        scan = Scan(
+            source="smb.xml",
+            hosts=(Host(
+                address="192.0.2.20",
+                status="up",
+                scripts=(
+                    ScriptResult(
+                        script_id="smb-protocols",
+                        output="dialects: NT LM 0.12 (SMBv1) 2.0.2 3.1.1",
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        protocol = next(
+            finding for finding in findings
+            if finding.finding_id == "smb.protocol.smb1.reported"
+        )
+
+        self.assertEqual(protocol.severity, "medium")
+        self.assertIn("SMBv1", protocol.title)
+
     def test_smb_signing_nse_evidence_creates_medium_finding(self) -> None:
         scan = Scan(
             source="smb.xml",
