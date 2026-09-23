@@ -92,6 +92,15 @@ def render_json(scan: Scan) -> str:
     return json.dumps(asdict(scan), indent=2, ensure_ascii=False)
 
 
+def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
+    """Render parsed scan data and findings in one machine-readable envelope."""
+    payload = {
+        "scan": asdict(scan),
+        "findings": [asdict(finding) for finding in findings],
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
 def render_findings(findings: tuple[Finding, ...]) -> str:
     """Render analysis findings separately from raw scan observations."""
     if not findings:
