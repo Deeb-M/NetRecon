@@ -23,6 +23,33 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
     findings: list[Finding] = []
 
     for host in scan.hosts:
+        all_scripts = tuple(host.scripts) + tuple(
+            script
+            for port in host.ports
+            for script in port.scripts
+        )
+
+        for script in all_scripts:
+            script_id = script.script_id.lower()
+            output = " ".join(script.output.split())
+            normalized_output = output.lower()
+
+            if (
+                script_id == "smb2-security-mode"
+                and "message signing enabled but not required" in normalized_output
+            ):
+                findings.append(
+                    Finding(
+                        host=host.address,
+                        port=445,
+                        protocol="tcp",
+                        severity="medium",
+                        title="SMB signing configuration requires review",
+                        evidence=f"Nmap smb2-security-mode reported: {output}",
+                        recommendation="Review the SMB signing policy and require signing where appropriate for the environment.",
+                    )
+                )
+
         for port in host.ports:
             if port.state != "open":
                 continue
