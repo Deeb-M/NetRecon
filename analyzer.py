@@ -25,6 +25,37 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
     findings: list[Finding] = []
 
     for host in scan.hosts:
+        os_types = sorted({
+            port.os_type
+            for port in host.ports
+            if port.os_type
+        })
+        cpes = sorted({
+            cpe
+            for port in host.ports
+            for cpe in port.cpes
+        })
+
+        if os_types or cpes:
+            evidence_parts = []
+            if os_types:
+                evidence_parts.append(f"service detection reported OS type(s): {', '.join(os_types)}")
+            if cpes:
+                evidence_parts.append(f"CPE(s): {', '.join(cpes)}")
+            findings.append(
+                Finding(
+                    finding_id="host.platform.context",
+                    category="context",
+                    host=host.address,
+                    port=None,
+                    protocol=None,
+                    severity="info",
+                    title="Host platform context identified",
+                    evidence="; ".join(evidence_parts) + ".",
+                    recommendation="Use this platform context to guide authorized follow-up checks; do not treat service-derived OS identification as definitive host fingerprinting.",
+                )
+            )
+
         all_scripts = tuple(host.scripts) + tuple(
             script
             for port in host.ports
