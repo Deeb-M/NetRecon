@@ -20,7 +20,8 @@ SAMPLE_XML = """<?xml version="1.0"?>
     <ports>
       <port protocol="tcp" portid="22">
         <state state="open"/>
-        <service name="ssh" product="OpenSSH" version="9.6"/>
+        <service name="ssh" product="OpenSSH" version="9.6"
+                 extrainfo="Ubuntu Linux" tunnel="ssl" method="probed" conf="10"/>
       </port>
       <port protocol="tcp" portid="80">
         <state state="open"/>
@@ -54,6 +55,10 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.ports[0].service, "ssh")
         self.assertEqual(host.ports[0].product, "OpenSSH")
         self.assertEqual(host.ports[0].version, "9.6")
+        self.assertEqual(host.ports[0].extra_info, "Ubuntu Linux")
+        self.assertEqual(host.ports[0].tunnel, "ssl")
+        self.assertEqual(host.ports[0].detection_method, "probed")
+        self.assertEqual(host.ports[0].confidence, 10)
 
     def test_rejects_non_nmap_xml(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
