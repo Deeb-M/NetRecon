@@ -111,6 +111,24 @@ def analyze_scan(scan: Scan) -> tuple[Finding, ...]:
                     )
                 )
 
+            if script_id == "http-methods" and "supported methods:" in normalized_output:
+                methods_text = output.split(":", 1)[1].strip()
+                methods = tuple(method.upper() for method in methods_text.split())
+                if methods and set(methods).issubset({"GET", "HEAD"}):
+                    findings.append(
+                        Finding(
+                            finding_id="http.methods.standard_read_only",
+                            category="protocol",
+                            host=host.address,
+                            port=script_port,
+                            protocol=script_protocol,
+                            severity="info",
+                            title="Standard read-only HTTP methods reported",
+                            evidence=f"Nmap http-methods reported supported methods: {' '.join(methods)}",
+                            recommendation="Retain the supported-method evidence as HTTP service context; no unusual method is indicated by this result.",
+                        )
+                    )
+
             if script_id == "smb-protocols":
                 smb1_markers = ("nt lm 0.12", "smbv1", "smb 1")
                 smb1_reported = any(marker in normalized_output for marker in smb1_markers)
