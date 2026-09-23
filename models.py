@@ -40,4 +40,13 @@ class Host:
 @dataclass(frozen=True)
 class Scan:
     source: str
+    scanner: str | None = None
+    scanner_version: str | None = None
+    arguments: str | None = None
+    started_at: int | None = None
+    finished_at: int | None = None
+    elapsed: float | None = None
+    hosts_up: int | None = None
+    hosts_down: int | None = None
+    hosts_total: int | None = None
     hosts: tuple[Host, ...] = field(default_factory=tuple)
