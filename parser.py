@@ -29,15 +29,30 @@ def parse_nmap_xml(path: str | Path) -> Scan:
     hosts: list[Host] = []
 
     for host_node in root.findall("host"):
-        address_node = host_node.find("address")
-        if address_node is None or not address_node.get("addr"):
+        address_nodes = [
+            node for node in host_node.findall("address") if node.get("addr")
+        ]
+        if not address_nodes:
             continue
+
+        addresses = tuple(
+            (node.get("addr", ""), node.get("addrtype", "unknown"))
+            for node in address_nodes
+        )
+        primary_node = next(
+            (node for node in address_nodes if node.get("addrtype") in {"ipv4", "ipv6"}),
+            address_nodes[0],
+        )
 
         status_node = host_node.find("status")
         status = status_node.get("state", "unknown") if status_node is not None else "unknown"
 
-        hostname_node = host_node.find("./hostnames/hostname")
-        hostname = hostname_node.get("name") if hostname_node is not None else None
+        hostnames = tuple(
+            node.get("name", "")
+            for node in host_node.findall("./hostnames/hostname")
+            if node.get("name")
+        )
+        hostname = hostnames[0] if hostnames else None
 
         ports: list[Port] = []
         for port_node in host_node.findall("./ports/port"):
@@ -68,9 +83,11 @@ def parse_nmap_xml(path: str | Path) -> Scan:
 
         hosts.append(
             Host(
-                address=address_node.get("addr", ""),
+                address=primary_node.get("addr", ""),
                 status=status,
                 hostname=hostname,
+                addresses=addresses,
+                hostnames=hostnames,
                 ports=tuple(ports),
             )
         )
