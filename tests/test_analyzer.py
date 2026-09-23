@@ -273,6 +273,41 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(methods.protocol, "tcp")
         self.assertIn("GET HEAD", methods.evidence)
 
+    def test_http_methods_requiring_review_create_medium_finding(self) -> None:
+        scan = Scan(
+            source="http-methods-review.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                ports=(
+                    Port(
+                        port=8081,
+                        protocol="tcp",
+                        state="open",
+                        service="http",
+                        scripts=(
+                            ScriptResult(
+                                script_id="http-methods",
+                                output="Supported Methods: GET HEAD PUT DELETE",
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        review = next(
+            finding for finding in findings
+            if finding.finding_id == "http.methods.review"
+        )
+
+        self.assertEqual(review.category, "configuration")
+        self.assertEqual(review.severity, "medium")
+        self.assertEqual(review.port, 8081)
+        self.assertEqual(review.protocol, "tcp")
+        self.assertIn("PUT DELETE", review.evidence)
+
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
             source="scan.xml",
