@@ -36,6 +36,7 @@ class Host:
     hostname: str | None = None
     addresses: tuple[tuple[str, str], ...] = field(default_factory=tuple)
     hostnames: tuple[str, ...] = field(default_factory=tuple)
+    hostname_records: tuple[tuple[str, str], ...] = field(default_factory=tuple)
     scripts: tuple[ScriptResult, ...] = field(default_factory=tuple)
     ports: tuple[Port, ...] = field(default_factory=tuple)
 
