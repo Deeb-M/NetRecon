@@ -12,7 +12,11 @@ SAMPLE_XML = """<?xml version="1.0"?>
   <host>
     <status state="up"/>
     <address addr="192.0.2.10" addrtype="ipv4"/>
-    <hostnames><hostname name="lab.example"/></hostnames>
+    <address addr="00:11:22:33:44:55" addrtype="mac"/>
+    <hostnames>
+      <hostname name="lab.example"/>
+      <hostname name="alias.example"/>
+    </hostnames>
     <ports>
       <port protocol="tcp" portid="22">
         <state state="open"/>
@@ -40,6 +44,11 @@ class ParserTests(unittest.TestCase):
         host = scan.hosts[0]
         self.assertEqual(host.address, "192.0.2.10")
         self.assertEqual(host.hostname, "lab.example")
+        self.assertEqual(host.hostnames, ("lab.example", "alias.example"))
+        self.assertEqual(
+            host.addresses,
+            (("192.0.2.10", "ipv4"), ("00:11:22:33:44:55", "mac")),
+        )
         self.assertEqual(host.status, "up")
         self.assertEqual(len(host.ports), 2)
         self.assertEqual(host.ports[0].service, "ssh")
