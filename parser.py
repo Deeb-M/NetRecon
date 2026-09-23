@@ -116,6 +116,13 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                     tunnel=service_node.get("tunnel") if service_node is not None else None,
                     detection_method=service_node.get("method") if service_node is not None else None,
                     confidence=confidence,
+                    os_type=service_node.get("ostype") if service_node is not None else None,
+                    device_type=service_node.get("devicetype") if service_node is not None else None,
+                    cpes=tuple(
+                        node.text.strip()
+                        for node in service_node.findall("cpe")
+                        if node.text and node.text.strip()
+                    ) if service_node is not None else (),
                     scripts=scripts,
                 )
             )
