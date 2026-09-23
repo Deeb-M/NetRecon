@@ -1,6 +1,7 @@
 """Tests for NetRecon analysis findings."""
 
 import unittest
+from datetime import datetime, timezone
 
 from analyzer import analyze_scan
 from models import Host, Port, Scan, ScriptResult
@@ -362,6 +363,85 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(anonymous.port, 8443)
         self.assertEqual(anonymous.protocol, "tcp")
         self.assertIn("anonymous key exchange", anonymous.evidence.lower())
+
+    def test_expired_tls_certificate_uses_explicit_reference_time(self) -> None:
+        scan = Scan(
+            source="tls-cert.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                ports=(
+                    Port(
+                        port=8443,
+                        protocol="tcp",
+                        state="open",
+                        service="https-alt",
+                        tunnel="ssl",
+                        scripts=(
+                            ScriptResult(
+                                script_id="ssl-cert",
+                                output=(
+                                    "Subject: commonName=localhost Issuer: commonName=localhost "
+                                    "Not valid before: 2026-09-20T00:00:00 "
+                                    "Not valid after: 2026-09-22T00:00:00"
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(
+            scan,
+            now=datetime(2026, 9, 23, 12, 0, tzinfo=timezone.utc),
+        )
+        expired = next(
+            finding for finding in findings
+            if finding.finding_id == "tls.certificate.expired"
+        )
+
+        self.assertEqual(expired.category, "certificate")
+        self.assertEqual(expired.severity, "medium")
+        self.assertEqual(expired.port, 8443)
+        self.assertEqual(expired.protocol, "tcp")
+        self.assertIn("2026-09-22T00:00:00", expired.evidence)
+
+    def test_valid_tls_certificate_is_not_flagged_as_expired(self) -> None:
+        scan = Scan(
+            source="tls-cert.xml",
+            hosts=(Host(
+                address="127.0.0.1",
+                status="up",
+                ports=(
+                    Port(
+                        port=8443,
+                        protocol="tcp",
+                        state="open",
+                        service="https-alt",
+                        tunnel="ssl",
+                        scripts=(
+                            ScriptResult(
+                                script_id="ssl-cert",
+                                output="Not valid after: 2026-09-24T19:35:21",
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(
+            scan,
+            now=datetime(2026, 9, 23, 19, 45, tzinfo=timezone.utc),
+        )
+
+        self.assertFalse(
+            any(
+                finding.finding_id == "tls.certificate.expired"
+                for finding in findings
+            )
+        )
 
     def test_unknown_product_is_informational_not_vulnerability(self) -> None:
         scan = Scan(
