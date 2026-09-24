@@ -81,7 +81,7 @@ def _platform_state(scan: Scan, finding: Finding) -> tuple[tuple[str, ...], tupl
             cpe
             for port in host.ports
             for cpe in port.cpes
-            if cpe.startswith("cpe:/o:")
+            if cpe.lower().startswith("cpe:/o:")
         }))
         return os_types, os_cpes
     return (), ()
@@ -98,7 +98,7 @@ def _application_cpes(scan: Scan, finding: Finding) -> tuple[str, ...]:
                 continue
             if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
                 continue
-            return tuple(sorted({cpe for cpe in port.cpes if cpe.startswith("cpe:/a:")}))
+            return tuple(sorted({cpe for cpe in port.cpes if cpe.lower().startswith("cpe:/a:")}))
     return ()
 
 
@@ -130,7 +130,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
     if source == "service:platform":
         return any(
             port.os_type
-            or any(cpe.startswith("cpe:/o:") for cpe in port.cpes)
+            or any(cpe.lower().startswith("cpe:/o:") for cpe in port.cpes)
             for port in host.ports
         )
 
@@ -138,7 +138,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
         return any(
             port.port == finding.port
             and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
-            and any(cpe.startswith("cpe:/a:") for cpe in port.cpes)
+            and any(cpe.lower().startswith("cpe:/a:") for cpe in port.cpes)
             for port in host.ports
         )
 
