@@ -67,7 +67,7 @@ def main() -> int:
             return 2
         before_findings = analyze_scan(scan)
         after_findings = analyze_scan(compare_scan)
-        print(render_analysis_diff(compare_findings(before_findings, after_findings)))
+        print(render_analysis_diff(compare_findings(before_findings, after_findings, scan, compare_scan)))
         return 0
 
     findings = analyze_scan(scan) if args.analyze else ()
