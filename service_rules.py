@@ -159,7 +159,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 )
             )
 
-        if display_service and not port.product and not specific_context:
+        if display_service and not (port.product and port.product.strip()) and not specific_context:
             findings.append(
                 Finding(
                     finding_id="service.product.unknown",
