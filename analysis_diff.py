@@ -35,6 +35,21 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
     )
 
 
+def _application_cpes(scan: Scan, finding: Finding) -> tuple[str, ...]:
+    """Return normalized application CPE state for a finding's endpoint."""
+    finding_host = _host_identity(finding.host)
+    for host in scan.hosts:
+        if _host_identity(host.address) != finding_host:
+            continue
+        for port in host.ports:
+            if port.port != finding.port:
+                continue
+            if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
+                continue
+            return tuple(sorted({cpe for cpe in port.cpes if cpe.startswith("cpe:/a:")}))
+    return ()
+
+
 def _detected_service(scan: Scan, finding: Finding) -> str | None:
     """Return the service identity observed for a finding's endpoint."""
     finding_host = _host_identity(finding.host)
@@ -134,6 +149,11 @@ def compare_findings(
                 semantic_changed = (
                     _detected_service(before_scan, old_finding)
                     != _detected_service(after_scan, new_finding)
+                )
+            elif old_finding.finding_id == "service.application.context":
+                semantic_changed = (
+                    _application_cpes(before_scan, old_finding)
+                    != _application_cpes(after_scan, new_finding)
                 )
             else:
                 semantic_changed = (
