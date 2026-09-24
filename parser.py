@@ -139,7 +139,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
 
         host_scripts = tuple(
             ScriptResult(
-                script_id=node.get("id", "unknown"),
+                script_id=node.get("id", "").strip() or "unknown",
                 output=node.get("output", ""),
             )
             for node in host_node.findall("./hostscript/script")
