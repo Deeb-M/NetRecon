@@ -13,6 +13,7 @@ from scan_diff import _host_identity, _port_was_scanned
 class FindingChange:
     change: str
     finding: Finding
+    before_evidence: str | None = None
 
 
 def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
@@ -103,6 +104,12 @@ def compare_findings(
                 else "newly_observed"
             )
             changes.append(FindingChange(change, new_finding))
+        elif old_finding is not None and new_finding is not None:
+            if (
+                old_finding.finding_id == "service.application.context"
+                and old_finding.evidence != new_finding.evidence
+            ):
+                changes.append(FindingChange("changed", new_finding, old_finding.evidence))
         elif new_finding is None and old_finding is not None:
             if old_finding.port is not None:
                 if old_finding.protocol is None or not _port_was_scanned(
