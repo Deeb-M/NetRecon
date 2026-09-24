@@ -59,6 +59,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 title="Application context identified",
                 evidence=f"Application CPE: {application_cpe}.",
                 recommendation="Use this application identification as service context and validate it before making version-specific security conclusions.",
+                evidence_source="service:application",
             )
         )
 
