@@ -1865,6 +1865,22 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(scan.finished_at, 0)
 
+    def test_non_finite_elapsed_becomes_none(self) -> None:
+        for elapsed in ("nan", "inf", "-inf"):
+            with self.subTest(elapsed=elapsed):
+                xml = f"""<nmaprun scanner="nmap">
+  <runstats>
+    <finished time="1790180012" elapsed="{elapsed}"/>
+  </runstats>
+</nmaprun>"""
+                with tempfile.TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "scan.xml"
+                    path.write_text(xml, encoding="utf-8")
+
+                    scan = parse_nmap_xml(path)
+
+                self.assertIsNone(scan.elapsed)
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
