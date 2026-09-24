@@ -41,7 +41,7 @@ def _open_ports(scan: Scan) -> dict[tuple[str, int, str], Port]:
 
 def _port_was_scanned(scan: Scan, port_number: int, protocol: str) -> bool:
     for scope in scan.scan_scopes:
-        if scope.protocol.lower() != protocol.lower():
+        if scope.protocol.strip().lower() != protocol.strip().lower():
             continue
         for part in scope.services.split(","):
             part = part.strip()
