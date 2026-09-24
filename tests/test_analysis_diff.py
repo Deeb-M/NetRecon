@@ -306,6 +306,35 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].finding, after_finding)
         self.assertEqual(changes[0].before_evidence, before_finding.evidence)
 
+    def test_platform_context_evidence_wording_change_does_not_create_semantic_change(self) -> None:
+        before_finding = Finding(
+            finding_id="host.platform.context", category="context", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="Host platform context identified",
+            evidence="Platform evidence: Linux; cpe:/o:linux:linux_kernel.", recommendation="review",
+            evidence_source="service:platform",
+        )
+        after_finding = Finding(
+            finding_id="host.platform.context", category="context", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="Host platform context identified",
+            evidence="Detected platform context: Linux, cpe:/o:linux:linux_kernel.", recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                22, "tcp", "open", "ssh", os_type="Linux", cpes=("cpe:/o:linux:linux_kernel",)
+            ),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                22, "tcp", "open", "ssh", os_type="Linux", cpes=("cpe:/o:linux:linux_kernel",)
+            ),),
+        ),))
+
+        self.assertEqual(
+            compare_findings((before_finding,), (after_finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_platform_context_change_is_reported_with_previous_evidence(self) -> None:
         before_finding = Finding(
             finding_id="host.platform.context", category="context", host="192.0.2.10",
