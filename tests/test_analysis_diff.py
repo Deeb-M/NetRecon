@@ -3066,6 +3066,44 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_platform_os_type_removal_across_ports_is_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context",
+            category="context",
+            host="192.0.2.10",
+            port=None,
+            protocol=None,
+            severity="info",
+            title="Platform context observed",
+            evidence="Platform evidence reported by Nmap.",
+            recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(
+                    Port(22, "tcp", "open", "ssh", os_type="Linux"),
+                    Port(80, "tcp", "open", "http", os_type="Unix"),
+                ),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(22, "tcp", "open", "ssh", os_type="Linux"),),
+            ),),
+        )
+
+        changes = compare_findings((finding,), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "changed")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
