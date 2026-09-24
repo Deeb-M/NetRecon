@@ -205,6 +205,21 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("53/udp open", report)
         self.assertNotIn("53/ UDP ", report)
 
+    def test_text_report_normalizes_state_in_host_detail(self) -> None:
+        scan = Scan(
+            source="host-state-normalization.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol="tcp", state=" OPEN ", service="http"),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("80/tcp open         http", report)
+        self.assertNotIn(" OPEN ", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
