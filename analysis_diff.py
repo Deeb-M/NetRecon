@@ -9,6 +9,16 @@ from models import Scan
 from scan_diff import _host_identity, _port_was_scanned
 
 
+# For these findings, the rendered evidence represents semantic state rather than
+# incidental descriptive text. A change in evidence is therefore meaningful.
+_SEMANTIC_EVIDENCE_FINDING_IDS = frozenset({
+    "host.platform.context",
+    "service.application.context",
+    "service.product.unknown",
+    "ssh.algorithms.inventory",
+})
+
+
 @dataclass(frozen=True)
 class FindingChange:
     change: str
@@ -106,12 +116,7 @@ def compare_findings(
             changes.append(FindingChange(change, new_finding))
         elif old_finding is not None and new_finding is not None:
             if (
-                old_finding.finding_id in {
-                    "service.application.context",
-                    "host.platform.context",
-                    "ssh.algorithms.inventory",
-                    "service.product.unknown",
-                }
+                old_finding.finding_id in _SEMANTIC_EVIDENCE_FINDING_IDS
                 and old_finding.evidence != new_finding.evidence
             ):
                 changes.append(FindingChange("changed", new_finding, old_finding.evidence))
