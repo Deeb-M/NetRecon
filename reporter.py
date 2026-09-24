@@ -119,6 +119,22 @@ def render_text(scan: Scan) -> str:
         )
         lines.append(f"Open Services: {services}")
 
+    shared_services = summarize_shared_services(scan)
+    if shared_services:
+        lines.extend(["", "Shared Services", "---------------"])
+        for shared in shared_services:
+            lines.append(f"{shared.service}: {shared.host_count} hosts")
+            for endpoint in shared.endpoints:
+                details = " ".join(
+                    value
+                    for value in (endpoint.product, endpoint.version, endpoint.extra_info)
+                    if value
+                )
+                suffix = f"  {details}" if details else ""
+                lines.append(
+                    f"  {endpoint.host}:{endpoint.port}/{endpoint.protocol}{suffix}"
+                )
+
     for host in scan.hosts:
         lines.append("")
         lines.extend(_host_lines(host))
