@@ -9,7 +9,7 @@ from analysis_summary import summarize_analysis
 from findings import Finding
 from host_summary import summarize_hosts
 from models import Host, Port, Scan
-from network_summary import summarize_network
+from network_summary import summarize_network, summarize_shared_services
 
 
 _SEVERITY_PRIORITY = {
@@ -137,6 +137,7 @@ def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
         "scan": asdict(scan),
         "summary": asdict(summarize_network(scan)),
         "analysis_summary": asdict(summarize_analysis(findings)),
+        "shared_services": [asdict(service) for service in summarize_shared_services(scan)],
         "host_summaries": [asdict(summary) for summary in summarize_hosts(scan, findings)],
         "findings": [asdict(finding) for finding in prioritize_findings(findings)],
     }
