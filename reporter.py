@@ -162,6 +162,25 @@ def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
+
+def render_diff_json(changes: tuple[ExposureChange, ...]) -> str:
+    """Render exposure changes as stable, machine-readable JSON."""
+    payload = {
+        "change_type": "exposure",
+        "changes": [asdict(change) for change in changes],
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def render_analysis_diff_json(changes: tuple[FindingChange, ...]) -> str:
+    """Render finding changes as stable, machine-readable JSON."""
+    payload = {
+        "change_type": "analysis",
+        "changes": [asdict(change) for change in changes],
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
 def render_findings(findings: tuple[Finding, ...]) -> str:
     """Render analysis findings separately from raw scan observations."""
     if not findings:
