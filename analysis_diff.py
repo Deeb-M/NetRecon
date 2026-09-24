@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from findings import Finding
 from models import Scan
-from scan_diff import _port_was_scanned
+from scan_diff import _host_identity, _port_was_scanned
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class FindingChange:
 def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
     return (
         finding.finding_id,
-        finding.host,
+        _host_identity(finding.host),
         finding.port,
         finding.protocol.lower() if finding.protocol is not None else None,
     )
@@ -30,7 +30,8 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
         return True
 
     script_id = source.removeprefix("nse:").lower()
-    host = next((host for host in scan.hosts if host.address == finding.host), None)
+    finding_host = _host_identity(finding.host)
+    host = next((host for host in scan.hosts if _host_identity(host.address) == finding_host), None)
     if host is None:
         return False
 
@@ -53,11 +54,11 @@ def compare_findings(
 ) -> tuple[FindingChange, ...]:
     """Compare findings only for hosts observed in both scans."""
     observed_hosts = (
-        {host.address for host in before_scan.hosts if host.status.lower() == "up"}
-        & {host.address for host in after_scan.hosts if host.status.lower() == "up"}
+        {_host_identity(host.address) for host in before_scan.hosts if host.status.lower() == "up"}
+        & {_host_identity(host.address) for host in after_scan.hosts if host.status.lower() == "up"}
     )
-    old = {_identity(finding): finding for finding in before if finding.host in observed_hosts}
-    new = {_identity(finding): finding for finding in after if finding.host in observed_hosts}
+    old = {_identity(finding): finding for finding in before if _host_identity(finding.host) in observed_hosts}
+    new = {_identity(finding): finding for finding in after if _host_identity(finding.host) in observed_hosts}
     changes: list[FindingChange] = []
 
     for key in sorted(old.keys() | new.keys(), key=lambda item: (
