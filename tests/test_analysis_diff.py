@@ -714,6 +714,29 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "new")
 
+    def test_application_cpe_prefix_case_counts_as_collected_evidence(self) -> None:
+        finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=443, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPE(s): CPE:/A:Example:Web:1.0.", recommendation="review",
+            evidence_source="service:application",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                443, "tcp", "open", "https", cpes=("CPE:/A:Example:Old:1.0",)
+            ),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                443, "tcp", "open", "https", cpes=("CPE:/A:Example:Web:1.0",)
+            ),),
+        ),))
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "new")
+
     def test_new_application_context_is_new_when_application_evidence_was_collected_before(self) -> None:
         finding = Finding(
             finding_id="service.application.context", category="context", host="192.0.2.10",
