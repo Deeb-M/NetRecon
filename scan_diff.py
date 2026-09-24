@@ -30,6 +30,30 @@ def _open_ports(scan: Scan) -> dict[tuple[str, int, str], Port]:
     }
 
 
+def _port_was_scanned(scan: Scan, port_number: int, protocol: str) -> bool:
+    for scope in scan.scan_scopes:
+        if scope.protocol.lower() != protocol.lower():
+            continue
+        for part in scope.services.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if "-" in part:
+                start_text, end_text = part.split("-", 1)
+                try:
+                    if int(start_text) <= port_number <= int(end_text):
+                        return True
+                except ValueError:
+                    continue
+            else:
+                try:
+                    if int(part) == port_number:
+                        return True
+                except ValueError:
+                    continue
+    return False
+
+
 def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
     """Compare open-port exposure without assigning risk or severity."""
     old = _open_ports(before)
@@ -59,6 +83,8 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
             continue
 
         if new_port is None and old_port is not None:
+            if not _port_was_scanned(after, port_number, protocol):
+                continue
             changes.append(ExposureChange(
                 "closed", host, port_number, protocol,
                 before_service=old_port.service,
