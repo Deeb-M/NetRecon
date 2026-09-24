@@ -114,6 +114,8 @@ def parse_nmap_xml(path: str | Path) -> Scan:
             if service_node is not None and service_node.get("conf"):
                 try:
                     confidence = int(service_node.get("conf", ""))
+                    if not 0 <= confidence <= 10:
+                        confidence = None
                 except ValueError:
                     confidence = None
 
