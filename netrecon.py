@@ -46,7 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.compare_scan is not None and not (args.diff or args.analysis_diff):
+        parser.error("a second scan file requires --diff or --analysis-diff")
 
     try:
         scan = parse_nmap_xml(args.scan)
