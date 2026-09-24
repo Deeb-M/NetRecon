@@ -191,6 +191,10 @@ def render_diff(changes: tuple[ExposureChange, ...]) -> str:
 
     lines = ["Exposure Changes", "----------------"]
     for change in changes:
+        if change.change == "host_not_observed":
+            lines.append(f"HOST_NOT_OBSERVED {change.host}")
+            continue
+
         location = f"{change.host}:{change.port}/{change.protocol}"
         if change.change == "new":
             details = " ".join(
