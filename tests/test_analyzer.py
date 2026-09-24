@@ -189,6 +189,23 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(application.protocol, "tcp")
         self.assertIn("cpe:/a:python:simplehttpserver:0.6", application.evidence)
 
+    def test_application_cpe_prefix_is_case_insensitive(self) -> None:
+        original_cpe = "CPE:/A:Example:Web:1.0"
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(443, "tcp", "open", "https", cpes=(original_cpe,)),
+            ),
+        ),))
+
+        findings = tuple(
+            finding
+            for finding in analyze_scan(scan)
+            if finding.finding_id == "service.application.context"
+        )
+
+        self.assertEqual(len(findings), 1)
+        self.assertIn(original_cpe, findings[0].evidence)
+
     def test_application_context_protocol_case_is_aggregated_as_one_endpoint(self) -> None:
         scan = Scan(source="test.xml", hosts=(Host(
             address="192.0.2.10", status="up", ports=(
