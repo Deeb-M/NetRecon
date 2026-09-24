@@ -71,7 +71,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
         service = (port.service or "").lower()
         specific_context = False
 
-        if port.port == 445 or service in {"microsoft-ds", "smb"}:
+        if service in {"microsoft-ds", "smb"} or (port.port == 445 and not service):
             specific_context = True
             findings.append(
                 Finding(
@@ -87,7 +87,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 )
             )
 
-        if port.port == 139 or service == "netbios-ssn":
+        if service == "netbios-ssn" or (port.port == 139 and not service):
             specific_context = True
             findings.append(
                 Finding(
@@ -103,7 +103,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 )
             )
 
-        if port.port == 135 or service == "msrpc":
+        if service == "msrpc" or (port.port == 135 and not service):
             specific_context = True
             findings.append(
                 Finding(
@@ -119,7 +119,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 )
             )
 
-        if service == "telnet" or port.port == 23:
+        if service == "telnet" or (port.port == 23 and not service):
             findings.append(
                 Finding(
                     finding_id="service.telnet.exposed",
@@ -134,7 +134,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 )
             )
 
-        if service == "ftp" or port.port == 21:
+        if service == "ftp" or (port.port == 21 and not service):
             findings.append(
                 Finding(
                     finding_id="service.ftp.exposed",
