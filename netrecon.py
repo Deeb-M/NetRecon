@@ -26,17 +26,18 @@ def build_parser() -> argparse.ArgumentParser:
         default="text",
         help="Output format (default: text)",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--analyze",
         action="store_true",
         help="Add conservative evidence-based findings",
     )
-    parser.add_argument(
+    mode.add_argument(
         "--diff",
         action="store_true",
         help="Compare two Nmap XML scans and report exposure changes",
     )
-    parser.add_argument(
+    mode.add_argument(
         "--analysis-diff",
         action="store_true",
         help="Compare evidence-based findings between two Nmap XML scans",
