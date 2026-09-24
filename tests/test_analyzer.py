@@ -169,6 +169,32 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(application.protocol, "tcp")
         self.assertIn("cpe:/a:python:simplehttpserver:0.6", application.evidence)
 
+    def test_multiple_application_cpes_on_same_endpoint_are_aggregated(self) -> None:
+        scan = Scan(
+            source="multi-app.xml",
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(
+                    port=8080,
+                    protocol="tcp",
+                    state="open",
+                    service="http",
+                    product="Example",
+                    cpes=(
+                        "cpe:/a:vendor:first:1.0",
+                        "cpe:/a:vendor:second:2.0",
+                    ),
+                ),
+            )),),
+        )
+
+        application_findings = tuple(
+            finding for finding in analyze_scan(scan)
+            if finding.finding_id == "service.application.context"
+        )
+        self.assertEqual(len(application_findings), 1)
+        self.assertIn("cpe:/a:vendor:first:1.0", application_findings[0].evidence)
+        self.assertIn("cpe:/a:vendor:second:2.0", application_findings[0].evidence)
+
     def test_modern_smb_protocol_evidence_is_informational(self) -> None:
         scan = Scan(
             source="smb.xml",
