@@ -132,7 +132,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
 
     if source == "service:platform":
         return any(
-            port.os_type
+            (port.os_type and port.os_type.strip())
             or any(cpe.strip().lower().startswith("cpe:/o:") for cpe in port.cpes)
             for port in host.ports
         )
