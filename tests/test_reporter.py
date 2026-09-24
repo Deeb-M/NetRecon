@@ -255,7 +255,7 @@ class ReporterTests(unittest.TestCase):
 
         report = render_text(scan)
         self.assertIn("Network Summary: 1 up, 1 open ports, 1 unique services", report)
-        self.assertIn("80/tcp OPEN", report)
+        self.assertIn("80/tcp open", report)
 
 
 if __name__ == "__main__":
