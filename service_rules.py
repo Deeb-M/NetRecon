@@ -18,11 +18,11 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
         for port in host.ports
         for cpe in port.cpes
     })
-    os_cpes = [cpe for cpe in cpes if cpe.startswith("cpe:/o:")]
+    os_cpes = [cpe for cpe in cpes if cpe.lower().startswith("cpe:/o:")]
     application_contexts: dict[tuple[int, str], set[str]] = {}
     for port in host.ports:
         for cpe in port.cpes:
-            if cpe.startswith("cpe:/a:"):
+            if cpe.lower().startswith("cpe:/a:"):
                 application_contexts.setdefault((port.port, port.protocol.lower()), set()).add(cpe)
 
     if os_types or os_cpes:
