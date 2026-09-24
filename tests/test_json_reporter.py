@@ -138,6 +138,27 @@ class JsonReporterTests(unittest.TestCase):
         )
 
 
+    def test_analysis_json_host_summary_normalizes_open_state_whitespace(self) -> None:
+        scan = Scan(
+            source="host-summary-state.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=80, protocol="tcp", state=" OPEN ", service="http"),
+                    ),
+                ),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+
+        self.assertEqual(data["summary"]["open_ports"], 1)
+        self.assertEqual(data["host_summaries"][0]["open_ports"], 1)
+        self.assertEqual(data["host_summaries"][0]["services"], ["http"])
+
+
     def test_shared_services_normalize_service_name_whitespace_and_case(self) -> None:
         scan = Scan(
             source="multi.xml",
