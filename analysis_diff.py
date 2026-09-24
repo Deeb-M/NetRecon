@@ -20,7 +20,7 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
         finding.finding_id,
         finding.host,
         finding.port,
-        finding.protocol,
+        finding.protocol.lower() if finding.protocol is not None else None,
     )
 
 
