@@ -35,6 +35,21 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
     )
 
 
+def _detected_service(scan: Scan, finding: Finding) -> str | None:
+    """Return the service identity observed for a finding's endpoint."""
+    finding_host = _host_identity(finding.host)
+    for host in scan.hosts:
+        if _host_identity(host.address) != finding_host:
+            continue
+        for port in host.ports:
+            if port.port != finding.port:
+                continue
+            if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
+                continue
+            return port.service.lower() if port.service else None
+    return None
+
+
 def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
     source = finding.evidence_source
     if not source:
@@ -115,10 +130,17 @@ def compare_findings(
             )
             changes.append(FindingChange(change, new_finding))
         elif old_finding is not None and new_finding is not None:
-            if (
-                old_finding.finding_id in _SEMANTIC_EVIDENCE_FINDING_IDS
-                and old_finding.evidence != new_finding.evidence
-            ):
+            if old_finding.finding_id == "service.product.unknown":
+                semantic_changed = (
+                    _detected_service(before_scan, old_finding)
+                    != _detected_service(after_scan, new_finding)
+                )
+            else:
+                semantic_changed = (
+                    old_finding.finding_id in _SEMANTIC_EVIDENCE_FINDING_IDS
+                    and old_finding.evidence != new_finding.evidence
+                )
+            if semantic_changed:
                 changes.append(FindingChange("changed", new_finding, old_finding.evidence))
         elif new_finding is None and old_finding is not None:
             if old_finding.port is not None:
