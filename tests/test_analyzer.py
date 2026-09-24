@@ -896,5 +896,20 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("cpe:/o:example:os:1.0", platform_findings[0].evidence)
 
 
+    def test_whitespace_only_os_type_does_not_create_platform_context(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", os_type="   ",
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        self.assertFalse(any(
+            finding.finding_id == "host.platform.context"
+            for finding in findings
+        ))
+
+
 if __name__ == "__main__":
     unittest.main()
