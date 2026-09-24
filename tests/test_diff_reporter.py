@@ -64,6 +64,17 @@ class DiffReporterTests(unittest.TestCase):
         self.assertEqual(payload["coverage"]["before"], [{"protocol": "tcp", "services": "80,443"}])
         self.assertEqual(payload["coverage"]["after"], [{"protocol": "tcp", "services": "443"}])
 
+    def test_renders_scan_coverage_when_there_are_no_changes(self) -> None:
+        before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
+        after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "443"),))
+
+        report = render_diff((), before, after)
+
+        self.assertIn("Summary: none", report)
+        self.assertIn("Before Coverage: tcp:80,443", report)
+        self.assertIn("After Coverage:  tcp:443", report)
+        self.assertIn("Changes: none", report)
+
 
 if __name__ == "__main__":
     unittest.main()
