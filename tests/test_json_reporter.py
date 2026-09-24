@@ -194,6 +194,35 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["shared_services"][0]["endpoints"][0]["protocol"], "tcp")
 
 
+    def test_analysis_json_strips_metadata_in_shared_service_endpoint(self) -> None:
+        scan = Scan(
+            source="shared-metadata-json.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(
+                        port=80,
+                        protocol="tcp",
+                        state="open",
+                        service="http",
+                        product=" Apache httpd ",
+                        version=" 2.4.68 ",
+                        extra_info=" Ubuntu ",
+                    ),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=8080, protocol="tcp", state="open", service="http"),
+                )),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+        endpoint = data["shared_services"][0]["endpoints"][0]
+
+        self.assertEqual(endpoint["product"], "Apache httpd")
+        self.assertEqual(endpoint["version"], "2.4.68")
+        self.assertEqual(endpoint["extra_info"], "Ubuntu")
+
+
     def test_shared_services_normalize_service_name_whitespace_and_case(self) -> None:
         scan = Scan(
             source="multi.xml",
