@@ -208,7 +208,7 @@ def render_diff(changes: tuple[ExposureChange, ...]) -> str:
                 if value
             )
             lines.append(f"NEW     {location}  {details}".rstrip())
-        elif change.change == "closed":
+        elif change.change == "no_longer_open":
             details = " ".join(
                 value
                 for value in (
@@ -218,7 +218,7 @@ def render_diff(changes: tuple[ExposureChange, ...]) -> str:
                 )
                 if value
             )
-            lines.append(f"CLOSED  {location}  {details}".rstrip())
+            lines.append(f"NO_LONGER_OPEN {location}  {details}".rstrip())
         else:
             before = " ".join(
                 value
