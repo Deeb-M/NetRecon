@@ -7,6 +7,7 @@ import json
 
 from findings import Finding
 from models import Host, Port, Scan
+from network_summary import summarize_network
 
 
 _SEVERITY_PRIORITY = {
@@ -103,6 +104,18 @@ def render_text(scan: Scan) -> str:
         )
     else:
         lines.append(f"Hosts: {reported}")
+
+    summary = summarize_network(scan)
+    lines.append(
+        f"Network Summary: {summary.up_hosts} up, "
+        f"{summary.open_ports} open ports, "
+        f"{len(summary.unique_services)} unique services"
+    )
+    if summary.service_counts:
+        services = ", ".join(
+            f"{service} ({count})" for service, count in summary.service_counts
+        )
+        lines.append(f"Open Services: {services}")
 
     for host in scan.hosts:
         lines.append("")
