@@ -61,6 +61,8 @@ class DiffReporterTests(unittest.TestCase):
 
         self.assertIn("Before Coverage: tcp:80,443", report)
         self.assertIn("After Coverage:  tcp:443", report)
+        self.assertIn("Coverage Changed: YES", report)
+        self.assertTrue(payload["coverage"]["changed"])
         self.assertEqual(payload["coverage"]["before"], [{"protocol": "tcp", "services": "80,443"}])
         self.assertEqual(payload["coverage"]["after"], [{"protocol": "tcp", "services": "443"}])
 
@@ -73,7 +75,19 @@ class DiffReporterTests(unittest.TestCase):
         self.assertIn("Summary: none", report)
         self.assertIn("Before Coverage: tcp:80,443", report)
         self.assertIn("After Coverage:  tcp:443", report)
+        self.assertIn("Coverage Changed: YES", report)
         self.assertIn("Changes: none", report)
+
+    def test_reports_unchanged_scan_coverage(self) -> None:
+        before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
+        after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
+        changes = (ExposureChange("new", "192.0.2.10", 443, "tcp", after_service="https"),)
+
+        report = render_diff(changes, before, after)
+        payload = json.loads(render_diff_json(changes, before, after))
+
+        self.assertIn("Coverage Changed: NO", report)
+        self.assertFalse(payload["coverage"]["changed"])
 
 
 if __name__ == "__main__":
