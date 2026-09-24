@@ -49,6 +49,14 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
             for port in host.ports
         )
 
+    if source == "service:detection":
+        return any(
+            port.port == finding.port
+            and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
+            and bool(port.service)
+            for port in host.ports
+        )
+
     if not source.startswith("nse:"):
         return True
 
