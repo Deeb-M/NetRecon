@@ -306,6 +306,27 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("[tunnel:ssl]", report)
         self.assertNotIn("[tunnel: SSL ]", report)
 
+    def test_text_report_ignores_whitespace_only_tunnel(self) -> None:
+        scan = Scan(
+            source="blank-tunnel.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(
+                        port=443,
+                        protocol="tcp",
+                        state="open",
+                        service="https",
+                        tunnel="   ",
+                    ),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("443/tcp open         https", report)
+        self.assertNotIn("[tunnel:", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
