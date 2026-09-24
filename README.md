@@ -32,12 +32,12 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Summarize `ssh2-enum-algos` results as a port-scoped SSH algorithm inventory for analyst review; validated against a controlled OpenSSH lab service
 - Handle missing, malformed, non-Nmap, and empty scan input
 - Map services observed across multiple hosts, preserving endpoint product/version context
-- Compare scans with evidence-aware Exposure Changes: `NEW`, `NO_LONGER_OPEN`, `CHANGED`, and `HOST_NOT_OBSERVED`
+- Compare scans with evidence-aware Exposure Changes: `NEW`, `NO_LONGER_OPEN`, `CHANGED`, `HOST_NOT_OBSERVED`, and `HOST_NEWLY_OBSERVED`
 - Compare evidence-based findings over time with Analysis Changes: `NEW`, `NEWLY_OBSERVED`, and `NO_LONGER_OBSERVED`
 - Preserve NSE evidence provenance so change analysis can distinguish a real finding change from a script that was simply not collected
 - Protect change analysis from false conclusions when a host or port was not included in the later scan
 - Show `Before Coverage` and `After Coverage` from Nmap `<scaninfo>` in both Exposure Diff and Analysis Diff reports
-- Flag whether scan coverage changed and explain the difference with `Newly Scanned` and `No Longer Scanned` protocol/port entries
+- Flag whether scan coverage changed and explain the difference with `Newly Scanned` and `No Longer Scanned` protocol/port entries; large coverage sets are summarized in text while full detail remains available in JSON
 - Keep coverage changes separate from exposure or finding changes: a port that was not scanned is not treated as closed or resolved
 - Summarize scan-to-scan changes by type before listing individual changes
 - Produce machine-readable JSON for both Exposure Changes and Analysis Changes, including change summaries
@@ -132,9 +132,11 @@ NetRecon keeps observations separate from findings. An open port is not automati
 
 Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows. Multi-host summarization and cross-host shared-service mapping have also been validated end-to-end against a two-host lab scan, including HTTP services implemented by different products on different ports.
 
+Host-level exposure changes distinguish observation from port state. A host that disappears from a later scan is reported once as `HOST_NOT_OBSERVED`; a host that appears for the first time is reported once as `HOST_NEWLY_OBSERVED`, even when it exposes multiple ports. This avoids turning host visibility changes into misleading batches of per-port `NEW` or `NO_LONGER_OPEN` events.
+
 Change intelligence follows the same evidence-first rule. NetRecon does not treat a missing host as closed ports, does not treat an unscanned port as closed, and does not treat an uncollected evidence source as proof that a finding appeared or disappeared. Exposure and analysis comparisons use observed host, Nmap port-scope context, and NSE evidence provenance so that absence of observation is not silently converted into a state change.
 
-Scan Coverage Intelligence makes that scope visible to the analyst instead of keeping it only inside comparison logic. Diff reports show the Nmap-reported coverage before and after, flag whether it changed, and identify numeric protocol/port pairs that were newly scanned or no longer scanned. Coverage differences are descriptive measurement context only; they are not reported as exposure changes or finding changes. This behavior has been validated end-to-end with a controlled lab case where the first scan covered TCP ports 80 and 443 and the later scan covered only TCP 443: NetRecon correctly reported no exposure or analysis change while identifying TCP/80 as no longer scanned.
+Scan Coverage Intelligence makes that scope visible to the analyst instead of keeping it only inside comparison logic. Diff reports show the Nmap-reported coverage before and after, flag whether it changed, and identify numeric protocol/port pairs that were newly scanned or no longer scanned. Small differences remain explicit in text; large scopes and differences are summarized by port count to keep terminal output readable, while JSON retains the complete original scope and expanded difference lists. Coverage differences are descriptive measurement context only; they are not reported as exposure changes or finding changes. This behavior has been validated end-to-end with controlled lab comparisons, including a reduced-scope scan and a 1-port-to-1000-port comparison.
 
 For NSE-derived findings, `NEW` means the same NSE evidence source was collected before and the finding was absent; `NEWLY_OBSERVED` means the evidence source was not collected before, so NetRecon only claims that the finding is newly observed; and `NO_LONGER_OBSERVED` requires the relevant evidence source to be collected again without supporting the previous finding. These semantics have been validated end-to-end with controlled `http-title` lab scans. Text reports include deterministic change-count summaries, and JSON output includes the same summary data for automation. Both analysis-change and exposure-change summaries have been validated end-to-end against real lab scan files.
 
