@@ -76,7 +76,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         status = status_node.get("state", "unknown") if status_node is not None else "unknown"
 
         hostname_records = tuple(
-            (node.get("name", "").strip(), node.get("type", "unknown"))
+            (node.get("name", "").strip(), node.get("type", "").strip() or "unknown")
             for node in host_node.findall("./hostnames/hostname")
             if node.get("name") and node.get("name", "").strip()
         )
