@@ -42,7 +42,7 @@ def summarize_hosts(
         summaries.append(
             HostSummary(
                 host=host.address,
-                status=host.status,
+                status=host.status.strip().lower(),
                 open_ports=len(open_ports),
                 services=services,
                 findings=finding_counts.get(host.address, 0),
