@@ -1002,6 +1002,35 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_protocol_outer_whitespace_matches_service_detection_evidence(self) -> None:
+        finding = Finding(
+            finding_id="service.telnet.exposed",
+            category="transport",
+            host="192.0.2.10",
+            port=23,
+            protocol=" TCP ",
+            severity="medium",
+            title="Telnet service exposed",
+            evidence="23/tcp is open and identified as telnet.",
+            recommendation="review",
+            evidence_source="service:detection",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(23, "tcp", "open", "http"),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(23, "tcp", "open", "telnet"),),
+        ),))
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "new")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
