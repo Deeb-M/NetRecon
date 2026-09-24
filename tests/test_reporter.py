@@ -167,6 +167,29 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("22/tcp open         ssh", report)
         self.assertNotIn("ssh -", report)
 
+    def test_text_report_handles_partial_service_metadata(self) -> None:
+        scan = Scan(
+            source="partial-service-metadata.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(
+                        port=22,
+                        protocol="tcp",
+                        state="open",
+                        service="ssh",
+                        product=" OpenSSH ",
+                        version=None,
+                        extra_info=" Ubuntu ",
+                    ),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("ssh - OpenSSH Ubuntu", report)
+        self.assertNotIn("OpenSSH  Ubuntu", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
