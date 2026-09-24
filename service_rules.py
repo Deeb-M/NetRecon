@@ -72,7 +72,8 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
         if port.state.lower() != "open":
             continue
 
-        service = (port.service or "").strip().lower()
+        display_service = (port.service or "").strip()
+        service = display_service.lower()
         specific_context = False
 
         if service in {"microsoft-ds", "smb"} or (port.port == 445 and not service):
@@ -86,7 +87,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                     protocol=port.protocol,
                     severity="info",
                     title="SMB service exposed",
-                    evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'SMB-compatible service'}.",
+                    evidence=f"{port.port}/{port.protocol} is open and identified as {display_service or 'SMB-compatible service'}.",
                     recommendation="Review SMB exposure and authorization. In an authorized assessment, verify protocol configuration, signing, accessible shares, and whether guest or anonymous access is permitted.",
                     evidence_source="service:detection" if service else None,
                 )
@@ -103,7 +104,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                     protocol=port.protocol,
                     severity="info",
                     title="NetBIOS session service exposed",
-                    evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'NetBIOS session service'}.",
+                    evidence=f"{port.port}/{port.protocol} is open and identified as {display_service or 'NetBIOS session service'}.",
                     recommendation="Confirm whether legacy NetBIOS connectivity is required and review its exposure together with SMB.",
                     evidence_source="service:detection" if service else None,
                 )
@@ -120,7 +121,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                     protocol=port.protocol,
                     severity="info",
                     title="Windows RPC endpoint mapper exposed",
-                    evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'Microsoft RPC'}.",
+                    evidence=f"{port.port}/{port.protocol} is open and identified as {display_service or 'Microsoft RPC'}.",
                     recommendation="Confirm that RPC exposure matches the host's intended role and network boundary; investigate exposed RPC services only within authorized scope.",
                     evidence_source="service:detection" if service else None,
                 )
@@ -136,7 +137,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                     protocol=port.protocol,
                     severity="medium",
                     title="Telnet service exposed",
-                    evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'Telnet-compatible service'}.",
+                    evidence=f"{port.port}/{port.protocol} is open and identified as {display_service or 'Telnet-compatible service'}.",
                     recommendation="Verify whether Telnet is required. Prefer an encrypted administrative protocol such as SSH where possible.",
                     evidence_source="service:detection" if service else None,
                 )
@@ -152,7 +153,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                     protocol=port.protocol,
                     severity="info",
                     title="FTP service exposed",
-                    evidence=f"{port.port}/{port.protocol} is open and identified as {port.service or 'FTP-compatible service'}.",
+                    evidence=f"{port.port}/{port.protocol} is open and identified as {display_service or 'FTP-compatible service'}.",
                     recommendation="Review whether FTP is required and whether credentials or transferred data need encrypted transport.",
                     evidence_source="service:detection" if service else None,
                 )
