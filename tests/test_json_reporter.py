@@ -109,5 +109,34 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["findings"][0]["title"], "Example finding")
 
 
+    def test_analysis_json_normalizes_service_names_in_summaries(self) -> None:
+        scan = Scan(
+            source="services.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=80, protocol="tcp", state="open", service=" HTTP "),
+                        Port(port=8080, protocol="tcp", state="open", service="http"),
+                        Port(port=9000, protocol="tcp", state="open", service="   "),
+                    ),
+                ),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+
+        self.assertEqual(data["summary"]["unique_services"], ["http", "unknown"])
+        self.assertEqual(
+            data["summary"]["service_counts"],
+            [["http", 2], ["unknown", 1]],
+        )
+        self.assertEqual(
+            data["host_summaries"][0]["services"],
+            ["http", "unknown"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
