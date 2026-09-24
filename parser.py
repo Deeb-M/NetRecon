@@ -122,7 +122,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                     service=(service_node.get("name", "").strip() or None) if service_node is not None else None,
                     product=(service_node.get("product", "").strip() or None) if service_node is not None else None,
                     version=(service_node.get("version", "").strip() or None) if service_node is not None else None,
-                    extra_info=service_node.get("extrainfo") if service_node is not None else None,
+                    extra_info=(service_node.get("extrainfo", "").strip() or None) if service_node is not None else None,
                     tunnel=service_node.get("tunnel") if service_node is not None else None,
                     detection_method=service_node.get("method") if service_node is not None else None,
                     confidence=confidence,
