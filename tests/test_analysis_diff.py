@@ -1063,6 +1063,24 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "new")
 
+    def test_scan_scope_protocol_outer_whitespace_still_confirms_removed_finding(self) -> None:
+        finding = _finding("finding.old")
+        before_scan = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up"),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope(" TCP ", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up"),),
+        )
+
+        changes = compare_findings((finding,), (), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "no_longer_observed")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
