@@ -96,7 +96,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                 continue
 
             state_node = port_node.find("state")
-            state = state_node.get("state", "unknown") if state_node is not None else "unknown"
+            state = state_node.get("state", "").strip() or "unknown" if state_node is not None else "unknown"
 
             service_node = port_node.find("service")
             confidence = None
