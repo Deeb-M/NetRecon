@@ -103,6 +103,23 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("http: 2 hosts", report)
         self.assertNotIn(" HTTP : 2 hosts", report)
 
+    def test_text_report_normalizes_service_name_in_host_detail(self) -> None:
+        scan = Scan(
+            source="host-service-normalization.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol="tcp", state="open", service=" HTTP "),
+                    Port(port=9999, protocol="tcp", state="open", service="   "),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("80/tcp open         http", report)
+        self.assertIn("9999/tcp open         unknown", report)
+        self.assertNotIn(" HTTP ", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
