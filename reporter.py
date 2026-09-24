@@ -9,7 +9,7 @@ from analysis_diff import FindingChange
 from analysis_summary import summarize_analysis
 from findings import Finding
 from host_summary import summarize_hosts
-from models import Host, Port, Scan
+from models import Host, Port, Scan, ScanScope
 from network_summary import summarize_network, summarize_shared_services
 from scan_diff import ExposureChange
 
@@ -171,13 +171,31 @@ def _change_summary(changes: tuple[ExposureChange | FindingChange, ...]) -> dict
     return dict(sorted(counts.items()))
 
 
-def render_diff_json(changes: tuple[ExposureChange, ...]) -> str:
+def _coverage_payload(scan: Scan) -> list[dict[str, str]]:
+    """Return Nmap-reported scan coverage without inferring unreported scope."""
+    return [asdict(scope) for scope in scan.scan_scopes]
+
+
+def _coverage_text(scan: Scan) -> str:
+    if not scan.scan_scopes:
+        return "unknown"
+    return "; ".join(
+        f"{scope.protocol}:{scope.services}" for scope in scan.scan_scopes
+    )
+
+
+def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
     """Render exposure changes as stable, machine-readable JSON."""
     payload = {
         "change_type": "exposure",
         "summary": _change_summary(changes),
         "changes": [asdict(change) for change in changes],
     }
+    if before_scan is not None and after_scan is not None:
+        payload["coverage"] = {
+            "before": _coverage_payload(before_scan),
+            "after": _coverage_payload(after_scan),
+        }
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
@@ -214,7 +232,7 @@ def render_findings(findings: tuple[Finding, ...]) -> str:
     return "\n".join(lines)
 
 
-def render_diff(changes: tuple[ExposureChange, ...]) -> str:
+def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
     """Render scan-to-scan exposure changes for analyst review."""
     if not changes:
         return "Exposure Changes: none"
@@ -222,6 +240,9 @@ def render_diff(changes: tuple[ExposureChange, ...]) -> str:
     summary = _change_summary(changes)
     summary_text = ", ".join(f"{key.upper()}={value}" for key, value in summary.items())
     lines = ["Exposure Changes", "----------------", f"Summary: {summary_text}"]
+    if before_scan is not None and after_scan is not None:
+        lines.append(f"Before Coverage: {_coverage_text(before_scan)}")
+        lines.append(f"After Coverage:  {_coverage_text(after_scan)}")
     for change in changes:
         if change.change == "host_not_observed":
             lines.append(f"HOST_NOT_OBSERVED {change.host}")
