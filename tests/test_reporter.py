@@ -93,5 +93,17 @@ class ReporterTests(unittest.TestCase):
         self.assertLess(report.index("[LOW]"), report.index("[INFO]"))
 
 
+    def test_summary_status_and_open_state_are_case_insensitive(self) -> None:
+        scan = Scan(source="case.xml", hosts=(Host(
+            address="192.0.2.10", status="UP", ports=(
+                Port(port=80, protocol="tcp", state="OPEN", service="http"),
+            ),
+        ),))
+
+        report = render_text(scan)
+        self.assertIn("Network Summary: 1 up, 1 open ports, 1 unique services", report)
+        self.assertIn("Open Ports: 1", report)
+
+
 if __name__ == "__main__":
     unittest.main()
