@@ -152,6 +152,22 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].change, "no_longer_open")
         self.assertEqual(changes[0].port, 139)
 
+    def test_protocol_case_does_not_create_false_exposure_change(self) -> None:
+        before = Scan(
+            source="before.xml",
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(80, "TCP", "open", "http", "Apache httpd", "2.4.68"),
+            )),),
+        )
+        after = Scan(
+            source="after.xml",
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http", "Apache httpd", "2.4.68"),
+            )),),
+        )
+
+        self.assertEqual(compare_scans(before, after), ())
+
     def test_ignores_unchanged_open_port_exposure(self) -> None:
         port = Port(22, "tcp", "open", "ssh", "OpenSSH", "9.6")
         before = Scan(source="before.xml", hosts=(Host(address="192.0.2.10", status="up", ports=(port,)),))
