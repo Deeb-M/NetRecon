@@ -67,6 +67,46 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_application_context_is_not_resolved_when_application_evidence_not_recollected(self) -> None:
+        finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPE: cpe:/a:apache:http_server:2.4.68.", recommendation="review",
+            evidence_source="service:application",
+        )
+        before_scan = Scan(source="before.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http", cpes=("cpe:/a:apache:http_server:2.4.68",)),
+            ),
+        ),))
+        after_scan = Scan(source="after.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http"),),
+        ),))
+
+        self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
+
+    def test_application_context_can_resolve_when_application_evidence_is_recollected(self) -> None:
+        finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPE: cpe:/a:apache:http_server:2.4.68.", recommendation="review",
+            evidence_source="service:application",
+        )
+        before_scan = Scan(source="before.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http", cpes=("cpe:/a:apache:http_server:2.4.68",)),
+            ),
+        ),))
+        after_scan = Scan(source="after.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http", cpes=("cpe:/a:nginx:nginx:1.26",)),
+            ),
+        ),))
+
+        changes = compare_findings((finding,), (), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "no_longer_observed")
+
     def test_platform_context_is_not_resolved_when_platform_evidence_not_recollected(self) -> None:
         finding = Finding(
             finding_id="host.platform.context", category="context", host="192.0.2.10",
