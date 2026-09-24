@@ -556,6 +556,27 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(port.product, "OpenSSH")
         self.assertIsNone(port.confidence)
 
+    def test_prefers_first_ip_address_when_ipv6_precedes_ipv4(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="2001:db8::10" addrtype="ipv6"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        host = scan.hosts[0]
+        self.assertEqual(host.address, "2001:db8::10")
+        self.assertEqual(
+            host.addresses,
+            (("2001:db8::10", "ipv6"), ("192.0.2.10", "ipv4")),
+        )
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
