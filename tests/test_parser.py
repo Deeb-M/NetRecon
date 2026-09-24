@@ -1736,6 +1736,25 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(tuple(port.port for port in scan.hosts[0].ports), (1,))
 
+    def test_portid_above_65535_is_skipped(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="65536"><state state="open"/></port>
+      <port protocol="tcp" portid="65535"><state state="open"/></port>
+    </ports>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(tuple(port.port for port in scan.hosts[0].ports), (65535,))
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
