@@ -24,6 +24,44 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(telnet.host, "192.0.2.10")
         self.assertIn("23/tcp", telnet.evidence)
 
+    def test_does_not_infer_well_known_service_when_nmap_identifies_conflicting_service(self) -> None:
+        scan = Scan(source="conflict.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(port=21, protocol="tcp", state="open", service="ssh"),
+                Port(port=23, protocol="tcp", state="open", service="http"),
+                Port(port=135, protocol="tcp", state="open", service="http"),
+                Port(port=139, protocol="tcp", state="open", service="http"),
+                Port(port=445, protocol="tcp", state="open", service="https"),
+            ),
+        ),))
+
+        finding_ids = {finding.finding_id for finding in analyze_scan(scan)}
+        self.assertNotIn("service.ftp.exposed", finding_ids)
+        self.assertNotIn("service.telnet.exposed", finding_ids)
+        self.assertNotIn("service.rpc.exposed", finding_ids)
+        self.assertNotIn("service.netbios.exposed", finding_ids)
+        self.assertNotIn("service.smb.exposed", finding_ids)
+
+    def test_well_known_port_is_fallback_when_service_is_unknown(self) -> None:
+        scan = Scan(source="unknown.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(port=21, protocol="tcp", state="open"),
+                Port(port=23, protocol="tcp", state="open"),
+                Port(port=135, protocol="tcp", state="open"),
+                Port(port=139, protocol="tcp", state="open"),
+                Port(port=445, protocol="tcp", state="open"),
+            ),
+        ),))
+
+        finding_ids = {finding.finding_id for finding in analyze_scan(scan)}
+        self.assertTrue({
+            "service.ftp.exposed",
+            "service.telnet.exposed",
+            "service.rpc.exposed",
+            "service.netbios.exposed",
+            "service.smb.exposed",
+        }.issubset(finding_ids))
+
     def test_does_not_flag_closed_telnet(self) -> None:
         scan = Scan(
             source="scan.xml",
