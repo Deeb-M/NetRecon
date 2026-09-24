@@ -33,7 +33,8 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Handle missing, malformed, non-Nmap, and empty scan input
 - Map services observed across multiple hosts, preserving endpoint product/version context
 - Compare scans with evidence-aware Exposure Changes: `NEW`, `NO_LONGER_OPEN`, `CHANGED`, and `HOST_NOT_OBSERVED`
-- Compare evidence-based findings over time with Analysis Changes: `NEW` and `NO_LONGER_OBSERVED`
+- Compare evidence-based findings over time with Analysis Changes: `NEW`, `NEWLY_OBSERVED`, and `NO_LONGER_OBSERVED`
+- Preserve NSE evidence provenance so change analysis can distinguish a real finding change from a script that was simply not collected
 - Protect change analysis from false conclusions when a host or port was not included in the later scan
 - Run automated tests with GitHub Actions
 
@@ -114,7 +115,9 @@ NetRecon keeps observations separate from findings. An open port is not automati
 
 Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows. Multi-host summarization and cross-host shared-service mapping have also been validated end-to-end against a two-host lab scan, including HTTP services implemented by different products on different ports.
 
-Change intelligence follows the same evidence-first rule. NetRecon does not treat a missing host as closed ports, does not treat an unscanned port as closed, and does not treat an uncollected port-scoped finding as resolved. Exposure and analysis comparisons use observed host and Nmap port-scope context so that absence of observation is not silently converted into a state change. These safeguards have been validated with controlled scan-to-scan lab cases.
+Change intelligence follows the same evidence-first rule. NetRecon does not treat a missing host as closed ports, does not treat an unscanned port as closed, and does not treat an uncollected evidence source as proof that a finding appeared or disappeared. Exposure and analysis comparisons use observed host, Nmap port-scope context, and NSE evidence provenance so that absence of observation is not silently converted into a state change.
+
+For NSE-derived findings, `NEW` means the same NSE evidence source was collected before and the finding was absent; `NEWLY_OBSERVED` means the evidence source was not collected before, so NetRecon only claims that the finding is newly observed; and `NO_LONGER_OBSERVED` requires the relevant evidence source to be collected again without supporting the previous finding. These semantics have been validated end-to-end with controlled `http-title` lab scans.
 
 ## Responsible use
 
