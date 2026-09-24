@@ -176,8 +176,8 @@ def compare_findings(
 ) -> tuple[FindingChange, ...]:
     """Compare findings only for hosts observed in both scans."""
     observed_hosts = (
-        {_host_identity(host.address) for host in before_scan.hosts if host.status.lower() == "up"}
-        & {_host_identity(host.address) for host in after_scan.hosts if host.status.lower() == "up"}
+        {_host_identity(host.address) for host in before_scan.hosts if host.status.strip().lower() == "up"}
+        & {_host_identity(host.address) for host in after_scan.hosts if host.status.strip().lower() == "up"}
     )
     old = {_identity(finding): finding for finding in before if _host_identity(finding.host) in observed_hosts}
     new = {_identity(finding): finding for finding in after if _host_identity(finding.host) in observed_hosts}
