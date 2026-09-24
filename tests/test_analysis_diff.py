@@ -136,6 +136,68 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "no_longer_observed")
 
+    def test_new_nse_finding_is_newly_observed_when_source_was_not_collected_before(self) -> None:
+        finding = Finding(
+            finding_id="http.default_page.detected",
+            category="context",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="info",
+            title="Default HTTP page detected",
+            evidence="Nmap http-title reported a default page.",
+            recommendation="review",
+            evidence_source="nse:http-title",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http"),)),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", scripts=(ScriptResult("http-title", "Apache2 Debian Default Page: It works"),)
+            ),)),),
+        )
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "newly_observed")
+
+    def test_new_nse_finding_is_new_when_source_was_collected_before(self) -> None:
+        finding = Finding(
+            finding_id="http.default_page.detected",
+            category="context",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="info",
+            title="Default HTTP page detected",
+            evidence="Nmap http-title reported a default page.",
+            recommendation="review",
+            evidence_source="nse:http-title",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", scripts=(ScriptResult("http-title", "NetRecon Lab"),)
+            ),)),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", scripts=(ScriptResult("http-title", "Apache2 Debian Default Page: It works"),)
+            ),)),),
+        )
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "new")
+
 
 if __name__ == "__main__":
     unittest.main()
