@@ -1758,6 +1758,41 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "new")
 
+    def test_blank_host_level_nse_script_id_does_not_count_as_observed_evidence(self) -> None:
+        finding = Finding(
+            finding_id="finding.host.nse",
+            category="test",
+            host="192.0.2.10",
+            port=None,
+            protocol=None,
+            severity="low",
+            title="Host NSE finding",
+            evidence="evidence",
+            recommendation="review",
+            evidence_source="nse:   ",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                scripts=(ScriptResult(script_id="   ", output="blank"),),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                scripts=(ScriptResult(script_id="host-script", output="evidence"),),
+            ),),
+        )
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "newly_observed")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
