@@ -62,6 +62,16 @@ class AnalyzerTests(unittest.TestCase):
             "service.smb.exposed",
         }.issubset(finding_ids))
 
+    def test_open_state_is_case_insensitive_in_service_analysis(self) -> None:
+        scan = Scan(source="uppercase.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(port=23, protocol="tcp", state="OPEN", service="telnet"),
+            ),
+        ),))
+
+        finding_ids = {finding.finding_id for finding in analyze_scan(scan)}
+        self.assertIn("service.telnet.exposed", finding_ids)
+
     def test_does_not_flag_closed_telnet(self) -> None:
         scan = Scan(
             source="scan.xml",
