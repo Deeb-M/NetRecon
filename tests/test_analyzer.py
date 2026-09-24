@@ -861,5 +861,23 @@ class AnalyzerTests(unittest.TestCase):
         self.assertFalse(any(f.severity in {"high", "critical"} for f in findings))
 
 
+    def test_application_cpe_outer_whitespace_is_recognized(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                8080, "tcp", "open", "http", cpes=(" cpe:/a:example:web:1.0 ",),
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        application_findings = tuple(
+            finding for finding in findings
+            if finding.finding_id == "service.application.context"
+        )
+        self.assertEqual(len(application_findings), 1)
+        self.assertEqual(application_findings[0].port, 8080)
+        self.assertEqual(application_findings[0].protocol, "tcp")
+
+
 if __name__ == "__main__":
     unittest.main()
