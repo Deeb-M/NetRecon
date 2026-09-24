@@ -240,6 +240,24 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("192.0.2.10 [192.0.2.10] (up)", report)
         self.assertNotIn("( UP )", report)
 
+    def test_text_report_normalizes_protocol_in_shared_service_endpoint(self) -> None:
+        scan = Scan(
+            source="shared-protocol-normalization.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol=" TCP ", state="open", service="http"),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=8080, protocol="tcp", state="open", service="http"),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("192.0.2.10:80/tcp", report)
+        self.assertNotIn("192.0.2.10:80/ TCP ", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
