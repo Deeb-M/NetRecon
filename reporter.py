@@ -207,13 +207,19 @@ def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | No
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
-def render_analysis_diff_json(changes: tuple[FindingChange, ...]) -> str:
+def render_analysis_diff_json(changes: tuple[FindingChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
     """Render finding changes as stable, machine-readable JSON."""
     payload = {
         "change_type": "analysis",
         "summary": _change_summary(changes),
         "changes": [asdict(change) for change in changes],
     }
+    if before_scan is not None and after_scan is not None:
+        payload["coverage"] = {
+            "changed": _coverage_changed(before_scan, after_scan),
+            "before": _coverage_payload(before_scan),
+            "after": _coverage_payload(after_scan),
+        }
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
@@ -315,14 +321,30 @@ def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = 
     return "\n".join(lines)
 
 
-def render_analysis_diff(changes: tuple[FindingChange, ...]) -> str:
+def render_analysis_diff(changes: tuple[FindingChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
     """Render finding changes between two analyzed scans."""
     if not changes:
-        return "Analysis Changes: none"
+        if before_scan is None or after_scan is None:
+            return "Analysis Changes: none"
+        return "\n".join([
+            "Analysis Changes",
+            "----------------",
+            "Summary: none",
+            f"Before Coverage: {_coverage_text(before_scan)}",
+            f"After Coverage:  {_coverage_text(after_scan)}",
+            f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}",
+            "Changes: none",
+        ])
 
     summary = _change_summary(changes)
     summary_text = ", ".join(f"{key.upper()}={value}" for key, value in summary.items())
     lines = ["Analysis Changes", "----------------", f"Summary: {summary_text}"]
+    if before_scan is not None and after_scan is not None:
+        lines.append(f"Before Coverage: {_coverage_text(before_scan)}")
+        lines.append(f"After Coverage:  {_coverage_text(after_scan)}")
+        lines.append(
+            f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}"
+        )
     for change in changes:
         finding = change.finding
         location = finding.host
