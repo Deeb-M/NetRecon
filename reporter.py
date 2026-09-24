@@ -136,9 +136,9 @@ def render_text(scan: Scan) -> str:
             lines.append(f"{shared.service}: {shared.host_count} hosts")
             for endpoint in shared.endpoints:
                 details = " ".join(
-                    value
+                    value.strip()
                     for value in (endpoint.product, endpoint.version, endpoint.extra_info)
-                    if value
+                    if value and value.strip()
                 )
                 suffix = f"  {details}" if details else ""
                 lines.append(
