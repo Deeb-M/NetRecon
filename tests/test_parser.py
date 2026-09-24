@@ -1040,6 +1040,27 @@ class ParserTests(unittest.TestCase):
         port = scan.hosts[0].ports[0]
         self.assertEqual(port.state, "open")
 
+    def test_whitespace_only_port_state_defaults_to_unknown(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="443">
+        <state state="   "/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        port = scan.hosts[0].ports[0]
+        self.assertEqual(port.state, "unknown")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
