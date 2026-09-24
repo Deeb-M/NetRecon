@@ -1771,6 +1771,22 @@ class ParserTests(unittest.TestCase):
         self.assertIsNone(scan.hosts_down)
         self.assertIsNone(scan.hosts_total)
 
+    def test_zero_host_counts_are_preserved(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <runstats>
+    <hosts up="0" down="0" total="0"/>
+  </runstats>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(scan.hosts_up, 0)
+        self.assertEqual(scan.hosts_down, 0)
+        self.assertEqual(scan.hosts_total, 0)
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
