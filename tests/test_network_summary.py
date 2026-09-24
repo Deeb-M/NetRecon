@@ -93,6 +93,36 @@ class NetworkSummaryTests(unittest.TestCase):
         self.assertEqual(shared[0].host_count, 2)
         self.assertEqual(len(shared[0].endpoints), 3)
 
+    def test_shared_service_endpoints_are_normalized_and_sorted(self) -> None:
+        scan = Scan(
+            source="scan.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.20",
+                    status="up",
+                    ports=(Port(port=8080, protocol=" TCP ", state="open", service=" HTTP ", product=" Apache ", version=" 2.4 ", extra_info=" TLS "),),
+                ),
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(Port(port=80, protocol="tcp", state="open", service="http", product="   ", version="   ", extra_info="   "),),
+                ),
+            ),
+        )
+
+        shared = summarize_shared_services(scan)
+
+        self.assertEqual(len(shared), 1)
+        self.assertEqual(shared[0].service, "http")
+        self.assertEqual(tuple(endpoint.host for endpoint in shared[0].endpoints), ("192.0.2.10", "192.0.2.20"))
+        self.assertEqual(shared[0].endpoints[0].protocol, "tcp")
+        self.assertIsNone(shared[0].endpoints[0].product)
+        self.assertIsNone(shared[0].endpoints[0].version)
+        self.assertIsNone(shared[0].endpoints[0].extra_info)
+        self.assertEqual(shared[0].endpoints[1].product, "Apache")
+        self.assertEqual(shared[0].endpoints[1].version, "2.4")
+        self.assertEqual(shared[0].endpoints[1].extra_info, "TLS")
+
 
 if __name__ == "__main__":
     unittest.main()
