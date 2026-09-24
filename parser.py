@@ -46,6 +46,10 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         except ValueError:
             return None
 
+    def _non_negative_float_attr(node: ET.Element | None, name: str) -> float | None:
+        value = _float_attr(node, name)
+        return value if value is not None and value >= 0 else None
+
     finished_node = root.find("./runstats/finished")
     hosts_node = root.find("./runstats/hosts")
 
@@ -171,7 +175,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         arguments=root.get("args", "").strip() or None,
         started_at=_int_attr(root, "start"),
         finished_at=_int_attr(finished_node, "time"),
-        elapsed=_float_attr(finished_node, "elapsed"),
+        elapsed=_non_negative_float_attr(finished_node, "elapsed"),
         hosts_up=_non_negative_int_attr(hosts_node, "up"),
         hosts_down=_non_negative_int_attr(hosts_node, "down"),
         hosts_total=_non_negative_int_attr(hosts_node, "total"),
