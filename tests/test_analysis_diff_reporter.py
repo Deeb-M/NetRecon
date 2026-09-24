@@ -65,7 +65,10 @@ class AnalysisDiffReporterTests(unittest.TestCase):
         self.assertIn("Before Coverage: tcp:80,443", output)
         self.assertIn("After Coverage:  tcp:443", output)
         self.assertIn("Coverage Changed: YES", output)
+        self.assertIn("No Longer Scanned: tcp/80", output)
         self.assertTrue(payload["coverage"]["changed"])
+        self.assertEqual(payload["coverage"]["newly_scanned"], [])
+        self.assertEqual(payload["coverage"]["no_longer_scanned"], ["tcp/80"])
 
     def test_renders_analysis_coverage_when_there_are_no_changes(self) -> None:
         before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
@@ -77,6 +80,8 @@ class AnalysisDiffReporterTests(unittest.TestCase):
         self.assertIn("Before Coverage: tcp:80,443", output)
         self.assertIn("After Coverage:  tcp:443", output)
         self.assertIn("Coverage Changed: YES", output)
+        self.assertIn("Newly Scanned: none", output)
+        self.assertIn("No Longer Scanned: tcp/80", output)
         self.assertIn("Changes: none", output)
 
 
