@@ -78,7 +78,7 @@ def _platform_state(scan: Scan, finding: Finding) -> tuple[tuple[str, ...], tupl
             continue
         os_types = tuple(sorted({port.os_type.lower() for port in host.ports if port.os_type}))
         os_cpes = tuple(sorted({
-            cpe
+            cpe.lower()
             for port in host.ports
             for cpe in port.cpes
             if cpe.lower().startswith("cpe:/o:")
@@ -98,7 +98,7 @@ def _application_cpes(scan: Scan, finding: Finding) -> tuple[str, ...]:
                 continue
             if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
                 continue
-            return tuple(sorted({cpe for cpe in port.cpes if cpe.lower().startswith("cpe:/a:")}))
+            return tuple(sorted({cpe.lower() for cpe in port.cpes if cpe.lower().startswith("cpe:/a:")}))
     return ()
 
 
