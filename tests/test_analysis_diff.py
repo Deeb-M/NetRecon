@@ -2694,6 +2694,41 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_detected_service_case_does_not_create_unknown_product_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="service.product.unknown",
+            category="test",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="low",
+            title="Unknown service product",
+            evidence="same evidence",
+            recommendation="review",
+            evidence_source="service:detection",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", "open", "HTTP"),),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http"),),
+            ),),
+        )
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
