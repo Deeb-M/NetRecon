@@ -101,7 +101,7 @@ def _application_cpes(scan: Scan, finding: Finding) -> tuple[str, ...]:
                 continue
             if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
                 continue
-            return tuple(sorted({cpe.lower() for cpe in port.cpes if cpe.lower().startswith("cpe:/a:")}))
+            return tuple(sorted({cpe.strip().lower() for cpe in port.cpes if cpe.strip().lower().startswith("cpe:/a:")}))
     return ()
 
 
