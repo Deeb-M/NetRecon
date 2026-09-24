@@ -1,7 +1,7 @@
 import unittest
 
 from models import Host, Port, Scan
-from network_summary import summarize_network
+from network_summary import summarize_network, summarize_shared_services
 
 
 class NetworkSummaryTests(unittest.TestCase):
@@ -60,6 +60,38 @@ class NetworkSummaryTests(unittest.TestCase):
         self.assertEqual(summary.open_ports, 4)
         self.assertEqual(summary.unique_services, ("http", "ssh", "unknown"))
         self.assertEqual(summary.service_counts, (("http", 2), ("ssh", 1), ("unknown", 1)))
+
+    def test_shared_services_require_multiple_unique_hosts(self) -> None:
+        scan = Scan(
+            source="scan.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=80, protocol="tcp", state="open", service="http"),
+                        Port(port=8080, protocol="tcp", state="open", service="http"),
+                    ),
+                ),
+                Host(
+                    address="192.0.2.20",
+                    status="up",
+                    ports=(Port(port=80, protocol="tcp", state="open", service="http"),),
+                ),
+                Host(
+                    address="192.0.2.30",
+                    status="up",
+                    ports=(Port(port=22, protocol="tcp", state="open", service="ssh"),),
+                ),
+            ),
+        )
+
+        shared = summarize_shared_services(scan)
+
+        self.assertEqual(len(shared), 1)
+        self.assertEqual(shared[0].service, "http")
+        self.assertEqual(shared[0].host_count, 2)
+        self.assertEqual(len(shared[0].endpoints), 3)
 
 
 if __name__ == "__main__":
