@@ -635,6 +635,26 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(len(scan.hosts[0].ports), 1)
         self.assertEqual(scan.hosts[0].ports[0].port, 443)
 
+    def test_numeric_scan_metadata_with_outer_whitespace_is_parsed(self) -> None:
+        xml = """<nmaprun scanner="nmap" start=" 1790180000 ">
+  <runstats>
+    <finished time=" 1790180012 " elapsed=" 12.34 "/>
+    <hosts up=" 1 " down=" 2 " total=" 3 "/>
+  </runstats>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(scan.started_at, 1790180000)
+        self.assertEqual(scan.finished_at, 1790180012)
+        self.assertEqual(scan.elapsed, 12.34)
+        self.assertEqual(scan.hosts_up, 1)
+        self.assertEqual(scan.hosts_down, 2)
+        self.assertEqual(scan.hosts_total, 3)
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
