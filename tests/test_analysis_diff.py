@@ -83,6 +83,22 @@ class AnalysisDiffTests(unittest.TestCase):
 
         self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
 
+    def test_unknown_evidence_source_fails_closed(self) -> None:
+        finding = Finding(
+            finding_id="future.context", category="context", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="Future evidence",
+            evidence="Collected by a future evidence source.", recommendation="review",
+            evidence_source="future:collector",
+        )
+        before_scan = Scan(source="before.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http"),),
+        ),))
+        after_scan = Scan(source="after.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http"),),
+        ),))
+
+        self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
+
     def test_unknown_product_is_not_resolved_without_service_detection_evidence(self) -> None:
         finding = Finding(
             finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
