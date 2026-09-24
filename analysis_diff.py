@@ -149,7 +149,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
         return any(
             port.port == finding.port
             and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
-            and bool(port.service)
+            and bool(port.service and port.service.strip())
             for port in host.ports
         )
 
