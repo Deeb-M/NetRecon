@@ -548,6 +548,29 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_platform_cpe_whitespace_counts_as_observed_provenance(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context", category="context", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="Platform context observed",
+            evidence="Platform evidence reported by Nmap.", recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", cpes=(" cpe:/o:example:os:1.0 ",),
+            ),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", cpes=("cpe:/o:example:os:1.0",),
+            ),),
+        ),))
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "new")
+
     def test_platform_cpe_outer_whitespace_does_not_create_semantic_change(self) -> None:
         finding = Finding(
             finding_id="host.platform.context", category="context", host="192.0.2.10",
