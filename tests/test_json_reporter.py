@@ -138,5 +138,25 @@ class JsonReporterTests(unittest.TestCase):
         )
 
 
+    def test_shared_services_normalize_service_name_whitespace_and_case(self) -> None:
+        scan = Scan(
+            source="multi.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol="tcp", state="open", service=" HTTP "),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=8080, protocol="tcp", state="open", service="http"),
+                )),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+
+        self.assertEqual(len(data["shared_services"]), 1)
+        self.assertEqual(data["shared_services"][0]["service"], "http")
+        self.assertEqual(data["shared_services"][0]["host_count"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()
