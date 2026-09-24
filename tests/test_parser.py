@@ -699,6 +699,20 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(scan.scan_scopes[0].protocol, "tcp")
         self.assertEqual(scan.scan_scopes[0].services, "22,80")
 
+    def test_scaninfo_protocol_is_trimmed(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <scaninfo type="syn" protocol=" TCP " services="22,80"/>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(len(scan.scan_scopes), 1)
+        self.assertEqual(scan.scan_scopes[0].protocol, "TCP")
+        self.assertEqual(scan.scan_scopes[0].services, "22,80")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
