@@ -189,6 +189,26 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(application.protocol, "tcp")
         self.assertIn("cpe:/a:python:simplehttpserver:0.6", application.evidence)
 
+    def test_application_context_protocol_case_is_aggregated_as_one_endpoint(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(443, "TCP", "open", "https", cpes=("cpe:/a:example:web:1.0",)),
+                Port(443, "tcp", "open", "https", cpes=("cpe:/a:example:web:2.0",)),
+            ),
+        ),))
+
+        findings = tuple(
+            finding
+            for finding in analyze_scan(scan)
+            if finding.finding_id == "service.application.context"
+        )
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].port, 443)
+        self.assertEqual(findings[0].protocol, "tcp")
+        self.assertIn("cpe:/a:example:web:1.0", findings[0].evidence)
+        self.assertIn("cpe:/a:example:web:2.0", findings[0].evidence)
+
     def test_multiple_application_cpes_on_same_endpoint_are_aggregated(self) -> None:
         scan = Scan(
             source="multi-app.xml",
