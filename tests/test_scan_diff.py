@@ -59,7 +59,31 @@ class ScanDiffTests(unittest.TestCase):
             hosts=(Host(address="192.0.2.10", status="down"),),
         )
 
-        self.assertEqual(compare_scans(before, after), ())
+        changes = compare_scans(before, after)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "host_down")
+        self.assertEqual(changes[0].host, "192.0.2.10")
+        self.assertIsNone(changes[0].port)
+
+    def test_host_up_afterward_is_reported_without_port_inference(self) -> None:
+        before = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="down"),),
+        )
+        after = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http"),
+            )),),
+        )
+
+        changes = compare_scans(before, after)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "host_up")
+        self.assertEqual(changes[0].host, "192.0.2.10")
+        self.assertIsNone(changes[0].port)
 
     def test_open_port_not_scanned_afterward_is_not_reported_closed(self) -> None:
         before = Scan(
