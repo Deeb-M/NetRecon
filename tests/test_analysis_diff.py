@@ -1370,6 +1370,41 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "new")
 
+    def test_application_cpe_case_and_whitespace_do_not_create_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="finding.application",
+            category="test",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="low",
+            title="Application finding",
+            evidence="same evidence",
+            recommendation="review",
+            evidence_source="service:application",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http", cpes=(" CPE:/A:Apache:http_server:2.4.68 ",)),),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http", cpes=("cpe:/a:apache:http_server:2.4.68",)),),
+            ),),
+        )
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
