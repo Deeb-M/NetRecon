@@ -67,6 +67,22 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_explicit_service_finding_is_not_resolved_without_service_detection_evidence(self) -> None:
+        finding = Finding(
+            finding_id="service.telnet.exposed", category="transport", host="192.0.2.10",
+            port=23, protocol="tcp", severity="medium", title="Telnet service exposed",
+            evidence="23/tcp is open and identified as telnet.", recommendation="review",
+            evidence_source="service:detection",
+        )
+        before_scan = Scan(source="before.xml", scan_scopes=(ScanScope("tcp", "23"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(23, "tcp", "open", "telnet"),),
+        ),))
+        after_scan = Scan(source="after.xml", scan_scopes=(ScanScope("tcp", "23"),), hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(23, "tcp", "open"),),
+        ),))
+
+        self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
+
     def test_unknown_product_is_not_resolved_without_service_detection_evidence(self) -> None:
         finding = Finding(
             finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
