@@ -32,7 +32,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Summarize `ssh2-enum-algos` results as a port-scoped SSH algorithm inventory for analyst review; validated against a controlled OpenSSH lab service
 - Handle missing, malformed, non-Nmap, and empty scan input
 - Map services observed across multiple hosts, preserving endpoint product/version context
-- Compare scans with evidence-aware Exposure Changes: `NEW`, `NO_LONGER_OPEN`, `CHANGED`, `HOST_NOT_OBSERVED`, and `HOST_NEWLY_OBSERVED`
+- Compare scans with evidence-aware Exposure Changes: `NEW`, `NO_LONGER_OPEN`, `CHANGED`, `HOST_NOT_OBSERVED`, `HOST_NEWLY_OBSERVED`, `HOST_UP`, and `HOST_DOWN`
 - Compare evidence-based findings over time with Analysis Changes: `NEW`, `NEWLY_OBSERVED`, and `NO_LONGER_OBSERVED`
 - Preserve NSE evidence provenance so change analysis can distinguish a real finding change from a script that was simply not collected
 - Protect change analysis from false conclusions when a host or port was not included in the later scan
@@ -132,7 +132,7 @@ NetRecon keeps observations separate from findings. An open port is not automati
 
 Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows. Multi-host summarization and cross-host shared-service mapping have also been validated end-to-end against a two-host lab scan, including HTTP services implemented by different products on different ports.
 
-Host-level exposure changes distinguish observation from port state. A host that disappears from a later scan is reported once as `HOST_NOT_OBSERVED`; a host that appears for the first time is reported once as `HOST_NEWLY_OBSERVED`, even when it exposes multiple ports. This avoids turning host visibility changes into misleading batches of per-port `NEW` or `NO_LONGER_OPEN` events.
+Host-level exposure changes distinguish observation from port state. A host that disappears from a later scan is reported once as `HOST_NOT_OBSERVED`; a host that appears for the first time is reported once as `HOST_NEWLY_OBSERVED`, even when it exposes multiple ports. When a host is present in both scans but changes Nmap status, NetRecon reports `HOST_UP` or `HOST_DOWN`. These host-level observations do not imply that individual ports opened, closed, or that findings were resolved; port and finding changes require their own supporting evidence. This avoids turning host visibility or reachability changes into misleading batches of per-port changes.
 
 Change intelligence follows the same evidence-first rule. NetRecon does not treat a missing host as closed ports, does not treat an unscanned port as closed, and does not treat an uncollected evidence source as proof that a finding appeared or disappeared. Exposure and analysis comparisons use observed host, Nmap port-scope context, and NSE evidence provenance so that absence of observation is not silently converted into a state change.
 
