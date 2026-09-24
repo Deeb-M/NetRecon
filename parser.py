@@ -174,7 +174,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         scanner_version=root.get("version", "").strip() or None,
         arguments=root.get("args", "").strip() or None,
         started_at=_non_negative_int_attr(root, "start"),
-        finished_at=_int_attr(finished_node, "time"),
+        finished_at=_non_negative_int_attr(finished_node, "time"),
         elapsed=_non_negative_float_attr(finished_node, "elapsed"),
         hosts_up=_non_negative_int_attr(hosts_node, "up"),
         hosts_down=_non_negative_int_attr(hosts_node, "down"),
