@@ -156,6 +156,20 @@ class DiffReporterTests(unittest.TestCase):
         self.assertEqual(payload["coverage"]["newly_scanned"], ["tcp/443"])
         self.assertEqual(payload["coverage"]["no_longer_scanned"], [])
 
+    def test_renders_host_status_transitions(self) -> None:
+        changes = (
+            ExposureChange("host_down", "192.0.2.10", None, None),
+            ExposureChange("host_up", "192.0.2.20", None, None),
+        )
+
+        report = render_diff(changes)
+        payload = json.loads(render_diff_json(changes))
+
+        self.assertIn("Summary: HOST_DOWN=1, HOST_UP=1", report)
+        self.assertIn("HOST_DOWN 192.0.2.10", report)
+        self.assertIn("HOST_UP 192.0.2.20", report)
+        self.assertEqual(payload["summary"], {"host_down": 1, "host_up": 1})
+
     def test_renders_newly_observed_host(self) -> None:
         changes = (ExposureChange("host_newly_observed", "192.0.2.30", None, None),)
 
