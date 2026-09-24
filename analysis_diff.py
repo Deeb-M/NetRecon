@@ -110,6 +110,7 @@ def compare_findings(
                     "service.application.context",
                     "host.platform.context",
                     "ssh.algorithms.inventory",
+                    "service.product.unknown",
                 }
                 and old_finding.evidence != new_finding.evidence
             ):
