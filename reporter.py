@@ -359,6 +359,12 @@ def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = 
         if change.change == "host_newly_observed":
             lines.append(f"HOST_NEWLY_OBSERVED {change.host}")
             continue
+        if change.change == "host_down":
+            lines.append(f"HOST_DOWN {change.host}")
+            continue
+        if change.change == "host_up":
+            lines.append(f"HOST_UP {change.host}")
+            continue
 
         location = f"{change.host}:{change.port}/{change.protocol}"
         if change.change == "new":
