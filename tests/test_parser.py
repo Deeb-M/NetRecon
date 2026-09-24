@@ -1632,6 +1632,17 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(scan.hosts[0].ports[0].cpes, ())
 
+    def test_scan_scanner_with_outer_whitespace_is_trimmed(self) -> None:
+        xml = """<nmaprun scanner=" nmap " version="7.95">
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(scan.scanner, "nmap")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
