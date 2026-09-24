@@ -876,6 +876,23 @@ class ParserTests(unittest.TestCase):
             (("00:11:22:33:44:55", "mac"), ("192.0.2.10", "ipv4")),
         )
 
+    def test_whitespace_only_address_type_defaults_to_unknown(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="node-identifier" addrtype="   "/>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        host = scan.hosts[0]
+        self.assertEqual(host.address, "node-identifier")
+        self.assertEqual(host.addresses, (("node-identifier", "unknown"),))
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
