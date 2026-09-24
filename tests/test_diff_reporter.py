@@ -107,6 +107,19 @@ class DiffReporterTests(unittest.TestCase):
         self.assertIn("Newly Scanned: tcp/100-105, tcp/443", report)
         self.assertNotIn("tcp/100, tcp/101", report)
 
+    def test_summarizes_large_coverage_difference_in_text_but_keeps_json_detail(self) -> None:
+        before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80"),))
+        after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "80,100-160"),))
+
+        report = render_diff((), before, after)
+        payload = json.loads(render_diff_json((), before, after))
+
+        self.assertIn("Newly Scanned: 61 ports (details: --format json)", report)
+        self.assertNotIn("tcp/100-160", report)
+        self.assertEqual(len(payload["coverage"]["newly_scanned"]), 61)
+        self.assertEqual(payload["coverage"]["newly_scanned"][0], "tcp/100")
+        self.assertEqual(payload["coverage"]["newly_scanned"][-1], "tcp/160")
+
     def test_reports_newly_scanned_ports(self) -> None:
         before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80"),))
         after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
