@@ -1032,5 +1032,22 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(smb_findings[0].evidence_source, "service:detection")
 
 
+    def test_explicit_service_evidence_strips_outer_whitespace(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                1445, "tcp", "open", " SMB ",
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        smb_finding = next(
+            finding for finding in findings
+            if finding.finding_id == "service.smb.exposed"
+        )
+        self.assertIn("identified as SMB.", smb_finding.evidence)
+        self.assertNotIn("identified as  SMB ", smb_finding.evidence)
+
+
 if __name__ == "__main__":
     unittest.main()
