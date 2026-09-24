@@ -42,7 +42,7 @@ def _ssh_algorithm_state(scan: Scan, finding: Finding) -> tuple[tuple[str, tuple
         for port in host.ports:
             if port.port != finding.port:
                 continue
-            if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
+            if finding.protocol is not None and port.protocol.strip().lower() != finding.protocol.strip().lower():
                 continue
             script = next(
                 (script for script in port.scripts if script.script_id.lower() == "ssh2-enum-algos"),
@@ -99,7 +99,7 @@ def _application_cpes(scan: Scan, finding: Finding) -> tuple[str, ...]:
         for port in host.ports:
             if port.port != finding.port:
                 continue
-            if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
+            if finding.protocol is not None and port.protocol.strip().lower() != finding.protocol.strip().lower():
                 continue
             return tuple(sorted({cpe.strip().lower() for cpe in port.cpes if cpe.strip().lower().startswith("cpe:/a:")}))
     return ()
@@ -114,7 +114,7 @@ def _detected_service(scan: Scan, finding: Finding) -> str | None:
         for port in host.ports:
             if port.port != finding.port:
                 continue
-            if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
+            if finding.protocol is not None and port.protocol.strip().lower() != finding.protocol.strip().lower():
                 continue
             return port.service.strip().lower() if port.service and port.service.strip() else None
     return None
@@ -140,7 +140,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
     if source == "service:application":
         return any(
             port.port == finding.port
-            and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
+            and (finding.protocol is None or port.protocol.strip().lower() == finding.protocol.strip().lower())
             and any(cpe.strip().lower().startswith("cpe:/a:") for cpe in port.cpes)
             for port in host.ports
         )
@@ -148,7 +148,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
     if source == "service:detection":
         return any(
             port.port == finding.port
-            and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
+            and (finding.protocol is None or port.protocol.strip().lower() == finding.protocol.strip().lower())
             and bool(port.service and port.service.strip())
             for port in host.ports
         )
@@ -162,7 +162,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
 
     return any(
         port.port == finding.port
-        and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
+        and (finding.protocol is None or port.protocol.strip().lower() == finding.protocol.strip().lower())
         and any(script.script_id.lower() == script_id for script in port.scripts)
         for port in host.ports
     )
