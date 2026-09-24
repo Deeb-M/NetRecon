@@ -879,5 +879,22 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(application_findings[0].protocol, "tcp")
 
 
+    def test_platform_cpe_outer_whitespace_is_recognized(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", cpes=(" cpe:/o:example:os:1.0 ",),
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        platform_findings = tuple(
+            finding for finding in findings
+            if finding.finding_id == "host.platform.context"
+        )
+        self.assertEqual(len(platform_findings), 1)
+        self.assertIn("cpe:/o:example:os:1.0", platform_findings[0].evidence)
+
+
 if __name__ == "__main__":
     unittest.main()
