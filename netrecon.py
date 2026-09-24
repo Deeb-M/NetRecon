@@ -9,7 +9,7 @@ from pathlib import Path
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_json, render_diff, render_findings, render_json, render_text
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_diff, render_diff_json, render_findings, render_json, render_text
 from scan_diff import compare_scans
 
 
@@ -58,7 +58,8 @@ def main() -> int:
         if compare_scan is None:
             print("Error: --diff requires a second scan file")
             return 2
-        print(render_diff(compare_scans(scan, compare_scan)))
+        changes = compare_scans(scan, compare_scan)
+        print(render_diff_json(changes) if args.format == "json" else render_diff(changes))
         return 0
 
     if args.analysis_diff:
@@ -67,7 +68,8 @@ def main() -> int:
             return 2
         before_findings = analyze_scan(scan)
         after_findings = analyze_scan(compare_scan)
-        print(render_analysis_diff(compare_findings(before_findings, after_findings, scan, compare_scan)))
+        changes = compare_findings(before_findings, after_findings, scan, compare_scan)
+        print(render_analysis_diff_json(changes) if args.format == "json" else render_analysis_diff(changes))
         return 0
 
     findings = analyze_scan(scan) if args.analyze else ()
