@@ -45,7 +45,7 @@ def _ssh_algorithm_state(scan: Scan, finding: Finding) -> tuple[tuple[str, tuple
             if finding.protocol is not None and port.protocol.strip().lower() != finding.protocol.strip().lower():
                 continue
             script = next(
-                (script for script in port.scripts if script.script_id.lower() == "ssh2-enum-algos"),
+                (script for script in port.scripts if script.script_id.strip().lower() == "ssh2-enum-algos"),
                 None,
             )
             if script is None:
@@ -158,12 +158,12 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
 
     script_id = source.removeprefix("nse:").lower()
     if finding.port is None:
-        return any(script.script_id.lower() == script_id for script in host.scripts)
+        return any(script.script_id.strip().lower() == script_id for script in host.scripts)
 
     return any(
         port.port == finding.port
         and (finding.protocol is None or port.protocol.strip().lower() == finding.protocol.strip().lower())
-        and any(script.script_id.lower() == script_id for script in port.scripts)
+        and any(script.script_id.strip().lower() == script_id for script in port.scripts)
         for port in host.ports
     )
 
