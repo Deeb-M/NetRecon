@@ -26,15 +26,25 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
 
 def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
     source = finding.evidence_source
-    if not source or not source.startswith("nse:"):
+    if not source:
         return True
 
-    script_id = source.removeprefix("nse:").lower()
     finding_host = _host_identity(finding.host)
     host = next((host for host in scan.hosts if _host_identity(host.address) == finding_host), None)
     if host is None:
         return False
 
+    if source == "service:platform":
+        return any(
+            port.os_type
+            or any(cpe.startswith("cpe:/o:") for cpe in port.cpes)
+            for port in host.ports
+        )
+
+    if not source.startswith("nse:"):
+        return True
+
+    script_id = source.removeprefix("nse:").lower()
     if finding.port is None:
         return any(script.script_id.lower() == script_id for script in host.scripts)
 
