@@ -163,10 +163,19 @@ def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
 
 
 
+def _change_summary(changes: tuple[ExposureChange | FindingChange, ...]) -> dict[str, int]:
+    """Count changes by semantic change label in deterministic order."""
+    counts: dict[str, int] = {}
+    for change in changes:
+        counts[change.change] = counts.get(change.change, 0) + 1
+    return dict(sorted(counts.items()))
+
+
 def render_diff_json(changes: tuple[ExposureChange, ...]) -> str:
     """Render exposure changes as stable, machine-readable JSON."""
     payload = {
         "change_type": "exposure",
+        "summary": _change_summary(changes),
         "changes": [asdict(change) for change in changes],
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
@@ -176,6 +185,7 @@ def render_analysis_diff_json(changes: tuple[FindingChange, ...]) -> str:
     """Render finding changes as stable, machine-readable JSON."""
     payload = {
         "change_type": "analysis",
+        "summary": _change_summary(changes),
         "changes": [asdict(change) for change in changes],
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
@@ -209,7 +219,9 @@ def render_diff(changes: tuple[ExposureChange, ...]) -> str:
     if not changes:
         return "Exposure Changes: none"
 
-    lines = ["Exposure Changes", "----------------"]
+    summary = _change_summary(changes)
+    summary_text = ", ".join(f"{key.upper()}={value}" for key, value in summary.items())
+    lines = ["Exposure Changes", "----------------", f"Summary: {summary_text}"]
     for change in changes:
         if change.change == "host_not_observed":
             lines.append(f"HOST_NOT_OBSERVED {change.host}")
@@ -266,7 +278,9 @@ def render_analysis_diff(changes: tuple[FindingChange, ...]) -> str:
     if not changes:
         return "Analysis Changes: none"
 
-    lines = ["Analysis Changes", "----------------"]
+    summary = _change_summary(changes)
+    summary_text = ", ".join(f"{key.upper()}={value}" for key, value in summary.items())
+    lines = ["Analysis Changes", "----------------", f"Summary: {summary_text}"]
     for change in changes:
         finding = change.finding
         location = finding.host
