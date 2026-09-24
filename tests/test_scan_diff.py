@@ -29,6 +29,22 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(changes[1].port, 139)
         self.assertEqual(changes[2].port, 445)
 
+    def test_missing_host_is_not_reported_as_closed_ports(self) -> None:
+        before = Scan(source="before.xml", hosts=(
+            Host(address="192.0.2.20", status="up", ports=(
+                Port(445, "tcp", "open", "microsoft-ds"),
+                Port(5357, "tcp", "open", "http"),
+            )),
+        ))
+        after = Scan(source="after.xml", hosts=())
+
+        changes = compare_scans(before, after)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "host_not_observed")
+        self.assertEqual(changes[0].host, "192.0.2.20")
+        self.assertIsNone(changes[0].port)
+
     def test_ignores_unchanged_open_port_exposure(self) -> None:
         port = Port(22, "tcp", "open", "ssh", "OpenSSH", "9.6")
         before = Scan(source="before.xml", hosts=(Host(address="192.0.2.10", status="up", ports=(port,)),))
