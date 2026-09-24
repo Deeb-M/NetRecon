@@ -31,6 +31,27 @@ class AnalysisDiffReporterTests(unittest.TestCase):
         self.assertIn("192.0.2.10:23/tcp", output)
         self.assertIn("192.0.2.20:80/tcp", output)
 
+    def test_renders_changed_analysis_evidence_in_text_and_json(self) -> None:
+        finding = Finding(
+            "service.application.context", "context", "192.0.2.10", 80, "tcp",
+            "info", "Application context identified",
+            "Application CPE(s): cpe:/a:nginx:nginx:1.26.", "Review application",
+            evidence_source="service:application",
+        )
+        change = FindingChange(
+            "changed", finding,
+            "Application CPE(s): cpe:/a:apache:http_server:2.4.68.",
+        )
+
+        output = render_analysis_diff((change,))
+        payload = json.loads(render_analysis_diff_json((change,)))
+
+        self.assertIn("Summary: CHANGED=1", output)
+        self.assertIn("Before Evidence: Application CPE(s): cpe:/a:apache:http_server:2.4.68.", output)
+        self.assertIn("After Evidence:  Application CPE(s): cpe:/a:nginx:nginx:1.26.", output)
+        self.assertEqual(payload["changes"][0]["before_evidence"], change.before_evidence)
+        self.assertEqual(payload["changes"][0]["finding"]["evidence"], finding.evidence)
+
     def test_renders_no_analysis_changes(self) -> None:
         self.assertEqual(render_analysis_diff(()), "Analysis Changes: none")
 
