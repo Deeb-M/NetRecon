@@ -289,5 +289,26 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(compare_scans(before, after), ())
 
 
+    def test_state_outer_whitespace_does_not_change_open_port_exposure(self) -> None:
+        before = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http"),),
+            ),),
+        )
+        after = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", " OPEN ", "http"),),
+            ),),
+        )
+
+        self.assertEqual(compare_scans(before, after), ())
+
+
 if __name__ == "__main__":
     unittest.main()
