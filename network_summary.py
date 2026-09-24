@@ -42,7 +42,7 @@ def summarize_network(scan: Scan) -> NetworkSummary:
 
     for host in scan.hosts:
         for port in host.ports:
-            if port.state.lower() != "open":
+            if port.state.strip().lower() != "open":
                 continue
             open_ports += 1
             service = port.service.strip().lower() if port.service and port.service.strip() else "unknown"
@@ -64,7 +64,7 @@ def summarize_shared_services(scan: Scan) -> tuple[SharedService, ...]:
 
     for host in scan.hosts:
         for port in host.ports:
-            if port.state.lower() != "open":
+            if port.state.strip().lower() != "open":
                 continue
             service = port.service.strip().lower() if port.service and port.service.strip() else "unknown"
             by_service.setdefault(service, []).append(
