@@ -1846,6 +1846,59 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_ssh_algorithm_section_case_does_not_create_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="ssh.algorithms.inventory",
+            category="test",
+            host="192.0.2.10",
+            port=22,
+            protocol="tcp",
+            severity="low",
+            title="SSH algorithms finding",
+            evidence="same evidence",
+            recommendation="review",
+            evidence_source="nse:ssh2-enum-algos",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(
+                    22,
+                    "tcp",
+                    "open",
+                    "ssh",
+                    scripts=(ScriptResult(
+                        script_id="ssh2-enum-algos",
+                        output="KEX_ALGORITHMS:\n    curve25519-sha256",
+                    ),),
+                ),),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(
+                    22,
+                    "tcp",
+                    "open",
+                    "ssh",
+                    scripts=(ScriptResult(
+                        script_id="ssh2-enum-algos",
+                        output="kex_algorithms:\n    curve25519-sha256",
+                    ),),
+                ),),
+            ),),
+        )
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
