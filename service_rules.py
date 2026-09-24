@@ -65,7 +65,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
 
 
     for port in host.ports:
-        if port.state != "open":
+        if port.state.lower() != "open":
             continue
 
         service = (port.service or "").lower()
