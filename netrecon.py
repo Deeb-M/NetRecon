@@ -78,7 +78,11 @@ def main() -> int:
         before_findings = analyze_scan(scan)
         after_findings = analyze_scan(compare_scan)
         changes = compare_findings(before_findings, after_findings, scan, compare_scan)
-        print(render_analysis_diff_json(changes) if args.format == "json" else render_analysis_diff(changes))
+        print(
+            render_analysis_diff_json(changes, scan, compare_scan)
+            if args.format == "json"
+            else render_analysis_diff(changes, scan, compare_scan)
+        )
         return 0
 
     findings = analyze_scan(scan) if args.analyze else ()
