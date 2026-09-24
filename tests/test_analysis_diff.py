@@ -1151,7 +1151,7 @@ class AnalysisDiffTests(unittest.TestCase):
             hosts=(Host(
                 address="192.0.2.10",
                 status="up",
-                ports=(Port(80, "tcp", "open", "http", scripts=(Script(" http-title ", "old"),)),),
+                ports=(Port(80, "tcp", "open", "http", scripts=(ScriptResult(" http-title ", "old"),)),),
             ),),
         )
         after_scan = Scan(
@@ -1159,7 +1159,7 @@ class AnalysisDiffTests(unittest.TestCase):
             hosts=(Host(
                 address="192.0.2.10",
                 status="up",
-                ports=(Port(80, "tcp", "open", "http", scripts=(Script("http-title", "new"),)),),
+                ports=(Port(80, "tcp", "open", "http", scripts=(ScriptResult("http-title", "new"),)),),
             ),),
         )
 
