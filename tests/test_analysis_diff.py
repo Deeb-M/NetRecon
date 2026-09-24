@@ -981,6 +981,27 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_protocol_outer_whitespace_does_not_change_finding_identity(self) -> None:
+        before_finding = _finding("finding.same")
+        after_finding = Finding(
+            finding_id=before_finding.finding_id,
+            category=before_finding.category,
+            host=before_finding.host,
+            port=before_finding.port,
+            protocol=" TCP ",
+            severity=before_finding.severity,
+            title=before_finding.title,
+            evidence=before_finding.evidence,
+            recommendation=before_finding.recommendation,
+        )
+        before_scan = _scan("before.xml", "192.0.2.10")
+        after_scan = _scan("after.xml", "192.0.2.10")
+
+        self.assertEqual(
+            compare_findings((before_finding,), (after_finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
