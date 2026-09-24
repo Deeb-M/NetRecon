@@ -9,6 +9,7 @@ from parser import NmapParseError, parse_nmap_xml
 
 SAMPLE_XML = """<?xml version="1.0"?>
 <nmaprun scanner="nmap" version="7.95" args="nmap -sV -oX scan.xml 192.0.2.10" start="1790180000">
+  <scaninfo type="syn" protocol="tcp" numservices="3" services="22,80,443"/>
   <host>
     <status state="up"/>
     <address addr="192.0.2.10" addrtype="ipv4"/>
@@ -61,6 +62,9 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(scan.hosts_up, 1)
         self.assertEqual(scan.hosts_down, 0)
         self.assertEqual(scan.hosts_total, 1)
+        self.assertEqual(len(scan.scan_scopes), 1)
+        self.assertEqual(scan.scan_scopes[0].protocol, "tcp")
+        self.assertEqual(scan.scan_scopes[0].services, "22,80,443")
         self.assertEqual(len(scan.hosts), 1)
         host = scan.hosts[0]
         self.assertEqual(host.address, "192.0.2.10")
