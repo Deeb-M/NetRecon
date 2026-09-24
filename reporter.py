@@ -133,6 +133,7 @@ def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
     """Render parsed scan data and findings in one machine-readable envelope."""
     payload = {
         "scan": asdict(scan),
+        "summary": asdict(summarize_network(scan)),
         "findings": [asdict(finding) for finding in prioritize_findings(findings)],
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
