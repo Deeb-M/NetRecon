@@ -956,5 +956,29 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("CPE:/A:Example:Web:1.0", application_findings[0].evidence)
 
 
+    def test_platform_cpe_case_and_whitespace_are_deduplicated(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", cpes=(
+                    "CPE:/O:Example:OS:1.0",
+                    " cpe:/o:example:os:1.0 ",
+                ),
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        platform_findings = tuple(
+            finding for finding in findings
+            if finding.finding_id == "host.platform.context"
+        )
+        self.assertEqual(len(platform_findings), 1)
+        self.assertEqual(
+            platform_findings[0].evidence.lower().count("cpe:/o:example:os:1.0"),
+            1,
+        )
+        self.assertIn("CPE:/O:Example:OS:1.0", platform_findings[0].evidence)
+
+
 if __name__ == "__main__":
     unittest.main()
