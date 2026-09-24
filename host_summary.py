@@ -28,7 +28,9 @@ def summarize_hosts(
 
     summaries: list[HostSummary] = []
     for host in scan.hosts:
-        open_ports = tuple(port for port in host.ports if port.state.lower() == "open")
+        open_ports = tuple(
+            port for port in host.ports if port.state.strip().lower() == "open"
+        )
         services = tuple(
             sorted({
                 port.service.strip().lower()
