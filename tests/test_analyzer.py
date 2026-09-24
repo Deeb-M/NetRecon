@@ -1049,5 +1049,20 @@ class AnalyzerTests(unittest.TestCase):
         self.assertNotIn("identified as  SMB ", smb_finding.evidence)
 
 
+    def test_whitespace_only_service_does_not_create_unknown_product_finding(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                8080, "tcp", "open", "   ",
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        self.assertFalse(any(
+            finding.finding_id == "service.product.unknown"
+            for finding in findings
+        ))
+
+
 if __name__ == "__main__":
     unittest.main()
