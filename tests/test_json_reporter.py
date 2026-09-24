@@ -176,6 +176,24 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["host_summaries"][0]["status"], "up")
 
 
+    def test_analysis_json_normalizes_protocol_in_shared_service_endpoint(self) -> None:
+        scan = Scan(
+            source="shared-protocol-json.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol=" TCP ", state="open", service="http"),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=8080, protocol="tcp", state="open", service="http"),
+                )),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+
+        self.assertEqual(data["shared_services"][0]["endpoints"][0]["protocol"], "tcp")
+
+
     def test_shared_services_normalize_service_name_whitespace_and_case(self) -> None:
         scan = Scan(
             source="multi.xml",
