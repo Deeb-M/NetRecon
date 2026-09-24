@@ -220,7 +220,31 @@ def _coverage_difference(before_scan: Scan, after_scan: Scan) -> tuple[tuple[tup
 
 
 def _coverage_ports_text(items: tuple[tuple[str, int], ...]) -> str:
-    return ", ".join(f"{protocol}/{port}" for protocol, port in items) or "none"
+    """Render protocol/port coverage compactly by collapsing consecutive ports."""
+    if not items:
+        return "none"
+
+    grouped: dict[str, list[int]] = {}
+    for protocol, port in items:
+        grouped.setdefault(protocol, []).append(port)
+
+    parts: list[str] = []
+    for protocol in sorted(grouped):
+        ports = sorted(set(grouped[protocol]))
+        start = previous = ports[0]
+        for port in ports[1:]:
+            if port == previous + 1:
+                previous = port
+                continue
+            parts.append(
+                f"{protocol}/{start}" if start == previous else f"{protocol}/{start}-{previous}"
+            )
+            start = previous = port
+        parts.append(
+            f"{protocol}/{start}" if start == previous else f"{protocol}/{start}-{previous}"
+        )
+
+    return ", ".join(parts)
 
 
 def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
