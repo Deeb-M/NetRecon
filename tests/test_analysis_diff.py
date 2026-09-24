@@ -224,6 +224,32 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "no_longer_observed")
 
+    def test_application_context_evidence_wording_change_does_not_create_semantic_change(self) -> None:
+        before_finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=443, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPE(s): cpe:/a:example:web:1.0.", recommendation="review",
+            evidence_source="service:application",
+        )
+        after_finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=443, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Detected application context: cpe:/a:example:web:1.0.", recommendation="review",
+            evidence_source="service:application",
+        )
+        cpes = ("cpe:/a:example:web:1.0",)
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(443, "tcp", "open", "https", cpes=cpes),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(443, "tcp", "open", "https", cpes=cpes),),
+        ),))
+
+        self.assertEqual(
+            compare_findings((before_finding,), (after_finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_application_context_change_is_reported_with_previous_evidence(self) -> None:
         before_finding = Finding(
             finding_id="service.application.context", category="context", host="192.0.2.10",
