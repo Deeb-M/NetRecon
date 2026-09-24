@@ -380,8 +380,8 @@ class AnalysisDiffTests(unittest.TestCase):
             evidence="Nmap ssh2-enum-algos reported: kex_algorithms.", recommendation="review",
             evidence_source="nse:ssh2-enum-algos",
         )
-        before_output = "kex_algorithms: (1)\\n  curve25519-sha256"
-        after_output = "kex_algorithms: (1)\\n  diffie-hellman-group14-sha256"
+        before_output = "kex_algorithms: (1)\n  curve25519-sha256"
+        after_output = "kex_algorithms: (1)\n  diffie-hellman-group14-sha256"
         before_scan = Scan(source="before.xml", hosts=(Host(
             address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
                 ScriptResult("ssh2-enum-algos", before_output),
