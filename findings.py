@@ -16,3 +16,4 @@ class Finding:
     title: str
     evidence: str
     recommendation: str
+    evidence_source: str | None = None
