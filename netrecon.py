@@ -64,7 +64,11 @@ def main() -> int:
             print("Error: --diff requires a second scan file")
             return 2
         changes = compare_scans(scan, compare_scan)
-        print(render_diff_json(changes) if args.format == "json" else render_diff(changes))
+        print(
+            render_diff_json(changes, scan, compare_scan)
+            if args.format == "json"
+            else render_diff(changes, scan, compare_scan)
+        )
         return 0
 
     if args.analysis_diff:
