@@ -267,14 +267,7 @@ def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | No
     payload = {
         "change_type": "exposure",
         "summary": _change_summary(changes),
-        "changes": [
-            {
-                "change": change.change,
-                "finding": asdict(change.finding),
-                **({"before_evidence": change.before_evidence} if change.before_evidence is not None else {}),
-            }
-            for change in changes
-        ],
+        "changes": [asdict(change) for change in changes],
     }
     if before_scan is not None and after_scan is not None:
         newly_scanned, no_longer_scanned = _coverage_difference(before_scan, after_scan)
@@ -293,7 +286,14 @@ def render_analysis_diff_json(changes: tuple[FindingChange, ...], before_scan: S
     payload = {
         "change_type": "analysis",
         "summary": _change_summary(changes),
-        "changes": [asdict(change) for change in changes],
+        "changes": [
+            {
+                "change": change.change,
+                "finding": asdict(change.finding),
+                **({"before_evidence": change.before_evidence} if change.before_evidence is not None else {}),
+            }
+            for change in changes
+        ],
     }
     if before_scan is not None and after_scan is not None:
         newly_scanned, no_longer_scanned = _coverage_difference(before_scan, after_scan)
