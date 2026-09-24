@@ -253,5 +253,20 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(compare_scans(before, after), ())
 
 
+    def test_whitespace_only_service_matches_missing_service_in_exposure_identity(self) -> None:
+        before = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "   ",
+            ),),
+        ),))
+        after = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", None,
+            ),),
+        ),))
+
+        self.assertEqual(compare_scans(before, after), ())
+
+
 if __name__ == "__main__":
     unittest.main()
