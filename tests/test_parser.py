@@ -399,6 +399,34 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.address, "192.0.2.10")
         self.assertEqual(host.addresses, (("192.0.2.10", "ipv4"),))
 
+    def test_service_cpes_are_trimmed_and_blank_entries_are_skipped(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="80">
+        <state state="open"/>
+        <service name="http">
+          <cpe>   </cpe>
+          <cpe>  cpe:/a:apache:http_server:2.4.68  </cpe>
+          <cpe></cpe>
+        </service>
+      </port>
+    </ports>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(
+            scan.hosts[0].ports[0].cpes,
+            ("cpe:/a:apache:http_server:2.4.68",),
+        )
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
