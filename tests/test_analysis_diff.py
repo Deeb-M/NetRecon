@@ -1405,6 +1405,55 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_platform_case_and_whitespace_do_not_create_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="finding.platform",
+            category="test",
+            host="192.0.2.10",
+            port=None,
+            protocol=None,
+            severity="low",
+            title="Platform finding",
+            evidence="same evidence",
+            recommendation="review",
+            evidence_source="host:platform",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(
+                    22,
+                    "tcp",
+                    "open",
+                    "ssh",
+                    os_type=" Linux ",
+                    cpes=(" CPE:/O:Canonical:Ubuntu_Linux:24.04 ",),
+                ),),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(
+                    22,
+                    "tcp",
+                    "open",
+                    "ssh",
+                    os_type="linux",
+                    cpes=("cpe:/o:canonical:ubuntu_linux:24.04",),
+                ),),
+            ),),
+        )
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
