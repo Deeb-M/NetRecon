@@ -51,7 +51,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
             services=node.get("services", ""),
         )
         for node in root.findall("scaninfo")
-        if node.get("services")
+        if node.get("services") and node.get("services", "").strip()
     )
 
     hosts: list[Host] = []
