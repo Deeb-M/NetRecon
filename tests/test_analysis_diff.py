@@ -4,7 +4,7 @@ import unittest
 
 from analysis_diff import compare_findings
 from findings import Finding
-from models import Host, Scan
+from models import Host, Scan, ScanScope
 
 
 def _finding(finding_id: str, *, evidence: str = "evidence") -> Finding:
@@ -21,9 +21,10 @@ def _finding(finding_id: str, *, evidence: str = "evidence") -> Finding:
     )
 
 
-def _scan(source: str, *addresses: str) -> Scan:
+def _scan(source: str, *addresses: str, services: str = "1-65535") -> Scan:
     return Scan(
         source=source,
+        scan_scopes=(ScanScope("tcp", services),),
         hosts=tuple(Host(address=address, status="up") for address in addresses),
     )
 
@@ -57,6 +58,16 @@ class AnalysisDiffTests(unittest.TestCase):
         before = (_finding("finding.old"),)
         before_scan = _scan("before.xml", "192.0.2.10")
         after_scan = _scan("after.xml")
+
+        self.assertEqual(
+            compare_findings(before, (), before_scan, after_scan),
+            (),
+        )
+
+    def test_unscanned_port_does_not_create_no_longer_observed_finding(self) -> None:
+        before = (_finding("finding.old"),)
+        before_scan = _scan("before.xml", "192.0.2.10", services="80")
+        after_scan = _scan("after.xml", "192.0.2.10", services="443")
 
         self.assertEqual(
             compare_findings(before, (), before_scan, after_scan),
