@@ -9,7 +9,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 ## Core v0
 
 - Parse Nmap XML generated with `-oX`
-- Preserve scan metadata and run statistics
+- Preserve scan metadata, run statistics, and Nmap scan scope (`<scaninfo>`) for evidence-aware comparisons
 - Extract IPv4, IPv6, MAC addresses, and hostnames
 - Extract TCP/UDP ports and states
 - Preserve service name, product, version, extra info, tunnel, detection method, confidence, OS type, device type, and CPE data
@@ -31,6 +31,10 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Compare a user-supplied target hostname with certificate DNS SAN evidence and report a TLS identity mismatch only when both sides are explicit; validated with controlled matching and mismatching HTTPS lab cases
 - Summarize `ssh2-enum-algos` results as a port-scoped SSH algorithm inventory for analyst review; validated against a controlled OpenSSH lab service
 - Handle missing, malformed, non-Nmap, and empty scan input
+- Map services observed across multiple hosts, preserving endpoint product/version context
+- Compare scans with evidence-aware Exposure Changes: `NEW`, `NO_LONGER_OPEN`, `CHANGED`, and `HOST_NOT_OBSERVED`
+- Compare evidence-based findings over time with Analysis Changes: `NEW` and `NO_LONGER_OBSERVED`
+- Protect change analysis from false conclusions when a host or port was not included in the later scan
 - Run automated tests with GitHub Actions
 
 ## Quick start
@@ -65,6 +69,18 @@ Return scan data and findings in one JSON document:
 python netrecon.py scan.xml --analyze --format json
 ```
 
+Compare exposure between two scans:
+
+```bash
+python netrecon.py before.xml after.xml --diff
+```
+
+Compare evidence-based findings between two scans:
+
+```bash
+python netrecon.py before.xml after.xml --analysis-diff
+```
+
 Try the included safe sample:
 
 ```bash
@@ -86,6 +102,8 @@ python -m unittest discover -s tests -v
 - `network_summary.py` — network-level host, port, and service summaries
 - `host_summary.py` — descriptive per-host summaries
 - `analysis_summary.py` — finding counts and severity distribution
+- `scan_diff.py` — evidence-aware open-port exposure comparison
+- `analysis_diff.py` — evidence-aware finding comparison across scans
 - `reporter.py` — text and JSON rendering
 - `tests/` — automated tests
 - `examples/` — safe example input
@@ -95,6 +113,8 @@ python -m unittest discover -s tests -v
 NetRecon keeps observations separate from findings. An open port is not automatically treated as a vulnerability, and service or OS detection is not treated as definitive proof. Findings are created from explicit scan evidence and include stable IDs, categories, evidence, and recommended follow-up.
 
 Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows. Multi-host summarization and cross-host shared-service mapping have also been validated end-to-end against a two-host lab scan, including HTTP services implemented by different products on different ports.
+
+Change intelligence follows the same evidence-first rule. NetRecon does not treat a missing host as closed ports, does not treat an unscanned port as closed, and does not treat an uncollected port-scoped finding as resolved. Exposure and analysis comparisons use observed host and Nmap port-scope context so that absence of observation is not silently converted into a state change. These safeguards have been validated with controlled scan-to-scan lab cases.
 
 ## Responsible use
 
