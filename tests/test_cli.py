@@ -1,6 +1,7 @@
 """Tests for NetRecon command-line argument validation."""
 
 import unittest
+from unittest.mock import patch
 
 from netrecon import build_parser
 
@@ -30,6 +31,15 @@ class CliTests(unittest.TestCase):
         self.assertTrue(
             parser.parse_args(["scan.xml", "compare.xml", "--analysis-diff"]).analysis_diff
         )
+
+    def test_rejects_second_scan_without_comparison_mode(self) -> None:
+        from netrecon import main
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "compare.xml"]):
+            with self.assertRaises(SystemExit) as context:
+                main()
+
+        self.assertEqual(context.exception.code, 2)
 
 
 if __name__ == "__main__":
