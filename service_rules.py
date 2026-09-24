@@ -159,7 +159,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 )
             )
 
-        if port.service and not port.product and not specific_context:
+        if display_service and not port.product and not specific_context:
             findings.append(
                 Finding(
                     finding_id="service.product.unknown",
@@ -169,7 +169,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                     protocol=port.protocol,
                     severity="info",
                     title="Service lacks product identification",
-                    evidence=f"Nmap identified service '{port.service}' on {port.port}/{port.protocol} but did not identify a product.",
+                    evidence=f"Nmap identified service '{display_service}' on {port.port}/{port.protocol} but did not identify a product.",
                     recommendation="Validate the service manually or with authorized service detection before making version-specific security conclusions.",
                     evidence_source="service:detection",
                 )
