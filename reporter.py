@@ -55,7 +55,7 @@ def _service_label(port: Port) -> str:
 
 def _host_lines(host: Host) -> list[str]:
     label = host.hostname or host.address
-    lines = [f"{label} [{host.address}] ({host.status})"]
+    lines = [f"{label} [{host.address}] ({host.status.strip().lower()})"]
 
     if len(host.addresses) > 1:
         secondary = [
