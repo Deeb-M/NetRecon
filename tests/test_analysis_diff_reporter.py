@@ -19,11 +19,11 @@ class AnalysisDiffReporterTests(unittest.TestCase):
         )
 
         output = render_analysis_diff((
-            FindingChange("new", new),
+            FindingChange("newly_observed", new),
             FindingChange("no_longer_observed", resolved),
         ))
 
-        self.assertIn("NEW", output)
+        self.assertIn("NEWLY_OBSERVED", output)
         self.assertIn("NO_LONGER_OBSERVED", output)
         self.assertIn("192.0.2.10:23/tcp", output)
         self.assertIn("192.0.2.20:80/tcp", output)
