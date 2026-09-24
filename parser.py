@@ -160,7 +160,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
 
     return Scan(
         source=str(source),
-        scanner=root.get("scanner"),
+        scanner=root.get("scanner", "").strip() or None,
         scanner_version=root.get("version"),
         arguments=root.get("args"),
         started_at=_int_attr(root, "start"),
