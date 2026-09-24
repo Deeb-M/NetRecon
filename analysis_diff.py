@@ -35,6 +35,23 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
     )
 
 
+def _platform_state(scan: Scan, finding: Finding) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return normalized host platform state from OS type and OS CPE evidence."""
+    finding_host = _host_identity(finding.host)
+    for host in scan.hosts:
+        if _host_identity(host.address) != finding_host:
+            continue
+        os_types = tuple(sorted({port.os_type.lower() for port in host.ports if port.os_type}))
+        os_cpes = tuple(sorted({
+            cpe
+            for port in host.ports
+            for cpe in port.cpes
+            if cpe.startswith("cpe:/o:")
+        }))
+        return os_types, os_cpes
+    return (), ()
+
+
 def _application_cpes(scan: Scan, finding: Finding) -> tuple[str, ...]:
     """Return normalized application CPE state for a finding's endpoint."""
     finding_host = _host_identity(finding.host)
@@ -145,7 +162,12 @@ def compare_findings(
             )
             changes.append(FindingChange(change, new_finding))
         elif old_finding is not None and new_finding is not None:
-            if old_finding.finding_id == "service.product.unknown":
+            if old_finding.finding_id == "host.platform.context":
+                semantic_changed = (
+                    _platform_state(before_scan, old_finding)
+                    != _platform_state(after_scan, new_finding)
+                )
+            elif old_finding.finding_id == "service.product.unknown":
                 semantic_changed = (
                     _detected_service(before_scan, old_finding)
                     != _detected_service(after_scan, new_finding)
