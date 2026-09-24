@@ -385,6 +385,60 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "no_longer_observed")
 
+    def test_new_service_detection_finding_is_newly_observed_when_detection_was_not_collected_before(self) -> None:
+        finding = Finding(
+            finding_id="service.telnet.exposed", category="transport", host="192.0.2.10",
+            port=23, protocol="tcp", severity="medium", title="Telnet service exposed",
+            evidence="23/tcp is open and identified as telnet.", recommendation="review",
+            evidence_source="service:detection",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(23, "tcp", "open"),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(23, "tcp", "open", "telnet"),),
+        ),))
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "newly_observed")
+
+    def test_new_application_context_is_newly_observed_when_application_evidence_was_not_collected_before(self) -> None:
+        finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPE(s): cpe:/a:apache:http_server:2.4.68.", recommendation="review",
+            evidence_source="service:application",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http"),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", cpes=("cpe:/a:apache:http_server:2.4.68",)),),
+        ),))
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "newly_observed")
+
+    def test_new_platform_context_is_newly_observed_when_platform_evidence_was_not_collected_before(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context", category="context", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="Host platform context identified",
+            evidence="service detection reported OS type(s): Linux.", recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http"),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", os_type="Linux"),),
+        ),))
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "newly_observed")
+
     def test_new_nse_finding_is_newly_observed_when_source_was_not_collected_before(self) -> None:
         finding = Finding(
             finding_id="http.default_page.detected",
