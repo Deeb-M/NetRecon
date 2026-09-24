@@ -152,6 +152,20 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].change, "no_longer_open")
         self.assertEqual(changes[0].port, 139)
 
+    def test_equivalent_ipv6_text_does_not_create_false_host_change(self) -> None:
+        before = Scan(source="before.xml", hosts=(Host(
+            address="2001:0db8:0000:0000:0000:0000:0000:0001",
+            status="up",
+            ports=(Port(443, "tcp", "open", "https"),),
+        ),))
+        after = Scan(source="after.xml", hosts=(Host(
+            address="2001:db8::1",
+            status="up",
+            ports=(Port(443, "tcp", "open", "https"),),
+        ),))
+
+        self.assertEqual(compare_scans(before, after), ())
+
     def test_protocol_case_does_not_create_false_exposure_change(self) -> None:
         before = Scan(
             source="before.xml",
