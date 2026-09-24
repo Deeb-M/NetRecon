@@ -191,6 +191,38 @@ def _coverage_changed(before_scan: Scan, after_scan: Scan) -> bool:
     return before != after
 
 
+def _expanded_coverage(scan: Scan) -> set[tuple[str, int]]:
+    """Expand numeric Nmap scan scopes into protocol/port pairs."""
+    covered: set[tuple[str, int]] = set()
+    for scope in scan.scan_scopes:
+        protocol = scope.protocol.lower()
+        for part in scope.services.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                if "-" in part:
+                    start_text, end_text = part.split("-", 1)
+                    start, end = int(start_text), int(end_text)
+                    covered.update((protocol, port) for port in range(start, end + 1))
+                else:
+                    covered.add((protocol, int(part)))
+            except ValueError:
+                continue
+    return covered
+
+
+def _coverage_difference(before_scan: Scan, after_scan: Scan) -> tuple[tuple[tuple[str, int], ...], tuple[tuple[str, int], ...]]:
+    """Return newly scanned and no-longer-scanned protocol/port pairs."""
+    before = _expanded_coverage(before_scan)
+    after = _expanded_coverage(after_scan)
+    return tuple(sorted(after - before)), tuple(sorted(before - after))
+
+
+def _coverage_ports_text(items: tuple[tuple[str, int], ...]) -> str:
+    return ", ".join(f"{protocol}/{port}" for protocol, port in items) or "none"
+
+
 def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
     """Render exposure changes as stable, machine-readable JSON."""
     payload = {
@@ -199,10 +231,13 @@ def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | No
         "changes": [asdict(change) for change in changes],
     }
     if before_scan is not None and after_scan is not None:
+        newly_scanned, no_longer_scanned = _coverage_difference(before_scan, after_scan)
         payload["coverage"] = {
             "changed": _coverage_changed(before_scan, after_scan),
             "before": _coverage_payload(before_scan),
             "after": _coverage_payload(after_scan),
+            "newly_scanned": [f"{protocol}/{port}" for protocol, port in newly_scanned],
+            "no_longer_scanned": [f"{protocol}/{port}" for protocol, port in no_longer_scanned],
         }
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
@@ -215,10 +250,13 @@ def render_analysis_diff_json(changes: tuple[FindingChange, ...], before_scan: S
         "changes": [asdict(change) for change in changes],
     }
     if before_scan is not None and after_scan is not None:
+        newly_scanned, no_longer_scanned = _coverage_difference(before_scan, after_scan)
         payload["coverage"] = {
             "changed": _coverage_changed(before_scan, after_scan),
             "before": _coverage_payload(before_scan),
             "after": _coverage_payload(after_scan),
+            "newly_scanned": [f"{protocol}/{port}" for protocol, port in newly_scanned],
+            "no_longer_scanned": [f"{protocol}/{port}" for protocol, port in no_longer_scanned],
         }
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
@@ -258,6 +296,8 @@ def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = 
             f"Before Coverage: {_coverage_text(before_scan)}",
             f"After Coverage:  {_coverage_text(after_scan)}",
             f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}",
+            f"Newly Scanned: {_coverage_ports_text(_coverage_difference(before_scan, after_scan)[0])}",
+            f"No Longer Scanned: {_coverage_ports_text(_coverage_difference(before_scan, after_scan)[1])}",
             "Changes: none",
         ])
 
@@ -270,6 +310,9 @@ def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = 
         lines.append(
             f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}"
         )
+        newly_scanned, no_longer_scanned = _coverage_difference(before_scan, after_scan)
+        lines.append(f"Newly Scanned: {_coverage_ports_text(newly_scanned)}")
+        lines.append(f"No Longer Scanned: {_coverage_ports_text(no_longer_scanned)}")
     for change in changes:
         if change.change == "host_not_observed":
             lines.append(f"HOST_NOT_OBSERVED {change.host}")
@@ -333,6 +376,8 @@ def render_analysis_diff(changes: tuple[FindingChange, ...], before_scan: Scan |
             f"Before Coverage: {_coverage_text(before_scan)}",
             f"After Coverage:  {_coverage_text(after_scan)}",
             f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}",
+            f"Newly Scanned: {_coverage_ports_text(_coverage_difference(before_scan, after_scan)[0])}",
+            f"No Longer Scanned: {_coverage_ports_text(_coverage_difference(before_scan, after_scan)[1])}",
             "Changes: none",
         ])
 
@@ -345,6 +390,9 @@ def render_analysis_diff(changes: tuple[FindingChange, ...], before_scan: Scan |
         lines.append(
             f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}"
         )
+        newly_scanned, no_longer_scanned = _coverage_difference(before_scan, after_scan)
+        lines.append(f"Newly Scanned: {_coverage_ports_text(newly_scanned)}")
+        lines.append(f"No Longer Scanned: {_coverage_ports_text(no_longer_scanned)}")
     for change in changes:
         finding = change.finding
         location = finding.host
