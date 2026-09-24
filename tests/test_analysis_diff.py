@@ -1795,7 +1795,7 @@ class AnalysisDiffTests(unittest.TestCase):
 
     def test_ssh_algorithm_case_does_not_create_semantic_change(self) -> None:
         finding = Finding(
-            finding_id="finding.ssh.algorithms",
+            finding_id="ssh.algorithms.inventory",
             category="test",
             host="192.0.2.10",
             port=22,
