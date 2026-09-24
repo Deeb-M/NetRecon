@@ -77,8 +77,8 @@ def _host_lines(host: Host) -> list[str]:
                 f"  {port.port}/{port.protocol.strip().lower():<3} "
                 f"{port.state.strip().lower():<12} {_service_label(port)}"
             )
-            if port.tunnel:
-                line += f" [tunnel:{port.tunnel}]"
+            if port.tunnel and port.tunnel.strip():
+                line += f" [tunnel:{port.tunnel.strip().lower()}]"
             if port.confidence is not None:
                 line += f" [confidence:{port.confidence}]"
             lines.append(line)
