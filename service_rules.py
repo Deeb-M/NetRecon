@@ -161,6 +161,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                     title="Service lacks product identification",
                     evidence=f"Nmap identified service '{port.service}' on {port.port}/{port.protocol} but did not identify a product.",
                     recommendation="Validate the service manually or with authorized service detection before making version-specific security conclusions.",
+                    evidence_source="service:detection",
                 )
             )
 
