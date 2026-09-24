@@ -238,6 +238,42 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(directory.protocol, "tcp")
         self.assertIn("Directory listing for /", directory.evidence)
 
+    def test_apache_debian_default_page_is_informational_context(self) -> None:
+        scan = Scan(
+            source="http-default.xml",
+            hosts=(Host(
+                address="192.0.2.30",
+                status="up",
+                ports=(
+                    Port(
+                        port=80,
+                        protocol="tcp",
+                        state="open",
+                        service="http",
+                        product="Apache httpd",
+                        scripts=(
+                            ScriptResult(
+                                script_id="http-title",
+                                output="Apache2 Debian Default Page: It works",
+                            ),
+                        ),
+                    ),
+                ),
+            ),),
+        )
+
+        findings = analyze_scan(scan)
+        default_page = next(
+            finding for finding in findings
+            if finding.finding_id == "http.default_page.detected"
+        )
+
+        self.assertEqual(default_page.category, "context")
+        self.assertEqual(default_page.severity, "info")
+        self.assertEqual(default_page.port, 80)
+        self.assertEqual(default_page.protocol, "tcp")
+        self.assertIn("Apache2 Debian Default Page: It works", default_page.evidence)
+
     def test_standard_http_methods_are_informational_with_port_context(self) -> None:
         scan = Scan(
             source="http-methods.xml",
