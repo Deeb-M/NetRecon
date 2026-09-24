@@ -59,7 +59,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
         )
 
     if not source.startswith("nse:"):
-        return True
+        return False
 
     script_id = source.removeprefix("nse:").lower()
     if finding.port is None:
