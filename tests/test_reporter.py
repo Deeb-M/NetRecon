@@ -93,6 +93,19 @@ class ReporterTests(unittest.TestCase):
         self.assertLess(report.index("[LOW]"), report.index("[INFO]"))
 
 
+    def test_equivalent_ipv6_addresses_do_not_create_false_shared_service(self) -> None:
+        scan = Scan(source="ipv6.xml", hosts=(
+            Host(address="2001:0db8:0000:0000:0000:0000:0000:0001", status="up", ports=(
+                Port(port=80, protocol="tcp", state="open", service="http"),
+            )),
+            Host(address="2001:db8::1", status="up", ports=(
+                Port(port=443, protocol="tcp", state="open", service="http"),
+            )),
+        ))
+
+        report = render_text(scan)
+        self.assertNotIn("Shared Services Across Hosts", report)
+
     def test_summary_status_and_open_state_are_case_insensitive(self) -> None:
         scan = Scan(source="case.xml", hosts=(Host(
             address="192.0.2.10", status="UP", ports=(
