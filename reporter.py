@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 import json
 
+from analysis_diff import FindingChange
 from analysis_summary import summarize_analysis
 from findings import Finding
 from host_summary import summarize_hosts
@@ -238,4 +239,24 @@ def render_diff(changes: tuple[ExposureChange, ...]) -> str:
                 if value
             ) or "unknown"
             lines.append(f"CHANGED {location}  {before} -> {after}")
+    return "\n".join(lines)
+
+
+def render_analysis_diff(changes: tuple[FindingChange, ...]) -> str:
+    """Render finding changes between two analyzed scans."""
+    if not changes:
+        return "Analysis Changes: none"
+
+    lines = ["Analysis Changes", "----------------"]
+    for change in changes:
+        finding = change.finding
+        location = finding.host
+        if finding.port is not None:
+            location += f":{finding.port}/{finding.protocol or 'unknown'}"
+        lines.append(
+            f"{change.change.upper():8} [{finding.severity.upper()}] "
+            f"{location}  {finding.title}"
+        )
+        lines.append(f"  Evidence: {finding.evidence}")
+
     return "\n".join(lines)
