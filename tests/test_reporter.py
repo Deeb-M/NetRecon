@@ -285,6 +285,27 @@ class ReporterTests(unittest.TestCase):
         self.assertNotIn("  Apache httpd  ", report)
         self.assertNotIn(" 2.4.68  ", report)
 
+    def test_text_report_normalizes_tunnel_in_host_detail(self) -> None:
+        scan = Scan(
+            source="host-tunnel-normalization.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(
+                        port=443,
+                        protocol="tcp",
+                        state="open",
+                        service="https",
+                        tunnel=" SSL ",
+                    ),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("[tunnel:ssl]", report)
+        self.assertNotIn("[tunnel: SSL ]", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
