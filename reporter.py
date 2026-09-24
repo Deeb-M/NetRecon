@@ -10,6 +10,7 @@ from findings import Finding
 from host_summary import summarize_hosts
 from models import Host, Port, Scan
 from network_summary import summarize_network, summarize_shared_services
+from scan_diff import ExposureChange
 
 
 _SEVERITY_PRIORITY = {
@@ -180,4 +181,57 @@ def render_findings(findings: tuple[Finding, ...]) -> str:
                 f"  Recommendation: {finding.recommendation}",
             ]
         )
+    return "\n".join(lines)
+
+
+def render_diff(changes: tuple[ExposureChange, ...]) -> str:
+    """Render scan-to-scan exposure changes for analyst review."""
+    if not changes:
+        return "Exposure Changes: none"
+
+    lines = ["Exposure Changes", "----------------"]
+    for change in changes:
+        location = f"{change.host}:{change.port}/{change.protocol}"
+        if change.change == "new":
+            details = " ".join(
+                value
+                for value in (
+                    change.after_service,
+                    change.after_product,
+                    change.after_version,
+                )
+                if value
+            )
+            lines.append(f"NEW     {location}  {details}".rstrip())
+        elif change.change == "closed":
+            details = " ".join(
+                value
+                for value in (
+                    change.before_service,
+                    change.before_product,
+                    change.before_version,
+                )
+                if value
+            )
+            lines.append(f"CLOSED  {location}  {details}".rstrip())
+        else:
+            before = " ".join(
+                value
+                for value in (
+                    change.before_service,
+                    change.before_product,
+                    change.before_version,
+                )
+                if value
+            ) or "unknown"
+            after = " ".join(
+                value
+                for value in (
+                    change.after_service,
+                    change.after_product,
+                    change.after_version,
+                )
+                if value
+            ) or "unknown"
+            lines.append(f"CHANGED {location}  {before} -> {after}")
     return "\n".join(lines)
