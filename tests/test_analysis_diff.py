@@ -2869,6 +2869,55 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "changed")
 
+    def test_real_platform_os_cpe_change_is_detected_semantically(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context",
+            category="test",
+            host="192.0.2.10",
+            port=None,
+            protocol=None,
+            severity="low",
+            title="Host platform context",
+            evidence="same evidence",
+            recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(
+                    22,
+                    "tcp",
+                    "open",
+                    "ssh",
+                    os_type="Linux",
+                    cpes=("cpe:/o:canonical:ubuntu_linux:24.04",),
+                ),),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(
+                    22,
+                    "tcp",
+                    "open",
+                    "ssh",
+                    os_type="Linux",
+                    cpes=("cpe:/o:debian:debian_linux:12",),
+                ),),
+            ),),
+        )
+
+        changes = compare_findings((finding,), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "changed")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
