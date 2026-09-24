@@ -53,6 +53,19 @@ class ServiceRulesTests(unittest.TestCase):
         self.assertEqual(finding.evidence_source, None)
         self.assertIn("Telnet-compatible service", finding.evidence)
 
+    def test_smb_specific_context_does_not_add_unknown_product_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=445, protocol="tcp", state="open", service="smb"),),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(tuple(finding.finding_id for finding in findings), ("service.smb.exposed",))
+        self.assertEqual(findings[0].category, "exposure")
+        self.assertEqual(findings[0].evidence_source, "service:detection")
+
 
 if __name__ == "__main__":
     unittest.main()
