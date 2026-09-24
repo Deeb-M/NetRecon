@@ -116,7 +116,7 @@ def _detected_service(scan: Scan, finding: Finding) -> str | None:
                 continue
             if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
                 continue
-            return port.service.lower() if port.service else None
+            return port.service.strip().lower() if port.service and port.service.strip() else None
     return None
 
 
