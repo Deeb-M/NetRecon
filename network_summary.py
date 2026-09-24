@@ -35,13 +35,13 @@ class NetworkSummary:
 
 def summarize_network(scan: Scan) -> NetworkSummary:
     """Summarize host and open-service observations across the scan."""
-    up_hosts = sum(1 for host in scan.hosts if host.status == "up")
+    up_hosts = sum(1 for host in scan.hosts if host.status.lower() == "up")
     open_ports = 0
     counts: dict[str, int] = {}
 
     for host in scan.hosts:
         for port in host.ports:
-            if port.state != "open":
+            if port.state.lower() != "open":
                 continue
             open_ports += 1
             service = (port.service or "unknown").lower()
@@ -63,7 +63,7 @@ def summarize_shared_services(scan: Scan) -> tuple[SharedService, ...]:
 
     for host in scan.hosts:
         for port in host.ports:
-            if port.state != "open":
+            if port.state.lower() != "open":
                 continue
             service = (port.service or "unknown").lower()
             by_service.setdefault(service, []).append(
