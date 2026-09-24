@@ -121,7 +121,7 @@ def _detected_service(scan: Scan, finding: Finding) -> str | None:
 
 
 def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
-    source = finding.evidence_source
+    source = finding.evidence_source.strip().lower() if finding.evidence_source is not None else None
     if not source:
         return True
 
