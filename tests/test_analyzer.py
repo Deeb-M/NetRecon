@@ -998,5 +998,22 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(application_findings[0].protocol, "tcp")
 
 
+    def test_whitespace_only_service_uses_well_known_port_fallback(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                445, "tcp", "open", "   ",
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        smb_findings = tuple(
+            finding for finding in findings
+            if finding.finding_id == "service.smb.exposed"
+        )
+        self.assertEqual(len(smb_findings), 1)
+        self.assertIsNone(smb_findings[0].evidence_source)
+
+
 if __name__ == "__main__":
     unittest.main()
