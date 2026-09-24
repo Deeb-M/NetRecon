@@ -98,6 +98,15 @@ class DiffReporterTests(unittest.TestCase):
         self.assertEqual(payload["coverage"]["newly_scanned"], [])
         self.assertEqual(payload["coverage"]["no_longer_scanned"], [])
 
+    def test_compacts_consecutive_coverage_ports_in_text_report(self) -> None:
+        before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80"),))
+        after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "80,100-105,443"),))
+
+        report = render_diff((), before, after)
+
+        self.assertIn("Newly Scanned: tcp/100-105, tcp/443", report)
+        self.assertNotIn("tcp/100, tcp/101", report)
+
     def test_reports_newly_scanned_ports(self) -> None:
         before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80"),))
         after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
