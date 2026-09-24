@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 def _parse_ssl_cert_time(output: str, label: str) -> datetime | None:
     """Parse an Nmap ssl-cert ISO timestamp as UTC."""
