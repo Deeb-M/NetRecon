@@ -16,6 +16,9 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Preserve port-level and host-level Nmap NSE script results
 - Produce an analyst-friendly text summary
 - Produce structured JSON output for automation
+- Summarize multi-host scans with host counts, open-port totals, unique services, and repeated-service counts
+- Produce per-host summaries with open-port counts, observed services, and finding counts
+- Produce an analysis summary with total findings, affected hosts, and severity counts without assigning an arbitrary risk score
 - Add stable finding IDs and categories for downstream processing
 - Separate OS/platform CPE evidence from application/service CPE evidence
 - Surface Windows RPC, NetBIOS, SMB, Telnet, and FTP exposure context
@@ -79,6 +82,9 @@ python -m unittest discover -s tests -v
 - `parser.py` — Nmap XML ingestion and validation
 - `models.py` — immutable scan, host, port, and script data models
 - `analyzer.py` — conservative evidence-based findings
+- `network_summary.py` — network-level host, port, and service summaries
+- `host_summary.py` — descriptive per-host summaries
+- `analysis_summary.py` — finding counts and severity distribution
 - `reporter.py` — text and JSON rendering
 - `tests/` — automated tests
 - `examples/` — safe example input
@@ -87,7 +93,7 @@ python -m unittest discover -s tests -v
 
 NetRecon keeps observations separate from findings. An open port is not automatically treated as a vulnerability, and service or OS detection is not treated as definitive proof. Findings are created from explicit scan evidence and include stable IDs, categories, evidence, and recommended follow-up.
 
-Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows.
+Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows. Multi-host summarization has also been validated end-to-end against a two-host lab scan, including repeated services across hosts.
 
 ## Responsible use
 
