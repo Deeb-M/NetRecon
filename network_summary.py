@@ -8,6 +8,23 @@ from models import Scan
 
 
 @dataclass(frozen=True)
+class SharedServiceEndpoint:
+    host: str
+    port: int
+    protocol: str
+    product: str | None
+    version: str | None
+    extra_info: str | None
+
+
+@dataclass(frozen=True)
+class SharedService:
+    service: str
+    host_count: int
+    endpoints: tuple[SharedServiceEndpoint, ...]
+
+
+@dataclass(frozen=True)
 class NetworkSummary:
     parsed_hosts: int
     up_hosts: int
@@ -38,3 +55,41 @@ def summarize_network(scan: Scan) -> NetworkSummary:
         unique_services=tuple(sorted(counts)),
         service_counts=service_counts,
     )
+
+
+def summarize_shared_services(scan: Scan) -> tuple[SharedService, ...]:
+    """Return services observed on open ports across more than one unique host."""
+    by_service: dict[str, list[SharedServiceEndpoint]] = {}
+
+    for host in scan.hosts:
+        for port in host.ports:
+            if port.state != "open":
+                continue
+            service = (port.service or "unknown").lower()
+            by_service.setdefault(service, []).append(
+                SharedServiceEndpoint(
+                    host=host.address,
+                    port=port.port,
+                    protocol=port.protocol,
+                    product=port.product,
+                    version=port.version,
+                    extra_info=port.extra_info,
+                )
+            )
+
+    shared: list[SharedService] = []
+    for service, endpoints in by_service.items():
+        hosts = {endpoint.host for endpoint in endpoints}
+        if len(hosts) < 2:
+            continue
+        shared.append(
+            SharedService(
+                service=service,
+                host_count=len(hosts),
+                endpoints=tuple(
+                    sorted(endpoints, key=lambda endpoint: (endpoint.host, endpoint.port, endpoint.protocol))
+                ),
+            )
+        )
+
+    return tuple(sorted(shared, key=lambda item: (-item.host_count, item.service)))
