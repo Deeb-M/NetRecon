@@ -144,6 +144,29 @@ class ReporterTests(unittest.TestCase):
         self.assertNotIn("  OpenSSH ", report)
         self.assertNotIn(" 9.6  ", report)
 
+    def test_text_report_ignores_whitespace_only_service_metadata(self) -> None:
+        scan = Scan(
+            source="blank-service-metadata.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(
+                        port=22,
+                        protocol="tcp",
+                        state="open",
+                        service="ssh",
+                        product="   ",
+                        version=" \t ",
+                        extra_info="  ",
+                    ),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("22/tcp open         ssh", report)
+        self.assertNotIn("ssh -", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
