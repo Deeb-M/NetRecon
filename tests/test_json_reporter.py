@@ -158,5 +158,25 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["shared_services"][0]["host_count"], 2)
 
 
+    def test_shared_services_group_blank_and_missing_service_as_unknown(self) -> None:
+        scan = Scan(
+            source="multi.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=9000, protocol="tcp", state="open", service=None),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=9001, protocol="tcp", state="open", service="   "),
+                )),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+
+        self.assertEqual(len(data["shared_services"]), 1)
+        self.assertEqual(data["shared_services"][0]["service"], "unknown")
+        self.assertEqual(data["shared_services"][0]["host_count"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()
