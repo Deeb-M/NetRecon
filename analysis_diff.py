@@ -43,6 +43,6 @@ def compare_findings(
         if old_finding is None and new_finding is not None:
             changes.append(FindingChange("new", new_finding))
         elif new_finding is None and old_finding is not None:
-            changes.append(FindingChange("resolved", old_finding))
+            changes.append(FindingChange("no_longer_observed", old_finding))
 
     return tuple(changes)
