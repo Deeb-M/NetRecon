@@ -161,7 +161,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
     return Scan(
         source=str(source),
         scanner=root.get("scanner", "").strip() or None,
-        scanner_version=root.get("version"),
+        scanner_version=root.get("version", "").strip() or None,
         arguments=root.get("args"),
         started_at=_int_attr(root, "start"),
         finished_at=_int_attr(finished_node, "time"),
