@@ -65,6 +65,9 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
     for host in sorted(old_hosts - new_hosts):
         changes.append(ExposureChange("host_not_observed", host, None, None))
 
+    for host in sorted(new_hosts - old_hosts):
+        changes.append(ExposureChange("host_newly_observed", host, None, None))
+
     for key in sorted(old.keys() | new.keys()):
         host, port_number, protocol = key
         old_port = old.get(key)
