@@ -1203,6 +1203,41 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "new")
 
+    def test_nse_evidence_source_outer_whitespace_matches_script_id(self) -> None:
+        finding = Finding(
+            finding_id="finding.nse",
+            category="test",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="low",
+            title="NSE finding",
+            evidence="evidence",
+            recommendation="review",
+            evidence_source=" nse:http-title ",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http", scripts=(ScriptResult("http-title", "old"),)),),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http", scripts=(ScriptResult("http-title", "new"),)),),
+            ),),
+        )
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "new")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
