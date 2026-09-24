@@ -2,19 +2,19 @@
 
 import unittest
 
-from models import Host, Port, Scan
+from models import Host, Port, Scan, ScanScope
 from scan_diff import compare_scans
 
 
 class ScanDiffTests(unittest.TestCase):
     def test_detects_new_closed_and_changed_open_port_exposure(self) -> None:
-        before = Scan(source="before.xml", hosts=(
+        before = Scan(source="before.xml", scan_scopes=(ScanScope("tcp", "80,139,445"),), hosts=(
             Host(address="192.0.2.10", status="up", ports=(
                 Port(80, "tcp", "open", "http", "Apache httpd", "2.4.67"),
                 Port(139, "tcp", "open", "netbios-ssn"),
             )),
         ))
-        after = Scan(source="after.xml", hosts=(
+        after = Scan(source="after.xml", scan_scopes=(ScanScope("tcp", "80,139,445"),), hosts=(
             Host(address="192.0.2.10", status="up", ports=(
                 Port(80, "tcp", "open", "http", "Apache httpd", "2.4.68"),
                 Port(445, "tcp", "open", "microsoft-ds"),
@@ -44,6 +44,41 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].change, "host_not_observed")
         self.assertEqual(changes[0].host, "192.0.2.20")
         self.assertIsNone(changes[0].port)
+
+    def test_open_port_not_scanned_afterward_is_not_reported_closed(self) -> None:
+        before = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "1-1000"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(8080, "tcp", "open", "http"),
+            )),),
+        )
+        after = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "22,80,443"),),
+            hosts=(Host(address="192.0.2.10", status="up"),),
+        )
+
+        self.assertEqual(compare_scans(before, after), ())
+
+    def test_scanned_port_range_can_confirm_no_longer_open(self) -> None:
+        before = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "1-1000"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(139, "tcp", "open", "netbios-ssn"),
+            )),),
+        )
+        after = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "100-200"),),
+            hosts=(Host(address="192.0.2.10", status="up"),),
+        )
+
+        changes = compare_scans(before, after)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "closed")
+        self.assertEqual(changes[0].port, 139)
 
     def test_ignores_unchanged_open_port_exposure(self) -> None:
         port = Port(22, "tcp", "open", "ssh", "OpenSSH", "9.6")
