@@ -9,9 +9,9 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
     findings: list[Finding] = []
 
     os_types = sorted({
-        port.os_type
+        port.os_type.strip()
         for port in host.ports
-        if port.os_type
+        if port.os_type and port.os_type.strip()
     })
     cpes = sorted({
         cpe
