@@ -24,6 +24,7 @@ class AnalysisDiffReporterTests(unittest.TestCase):
             FindingChange("no_longer_observed", resolved),
         ))
 
+        self.assertIn("Summary: NEWLY_OBSERVED=1, NO_LONGER_OBSERVED=1", output)
         self.assertIn("NEWLY_OBSERVED", output)
         self.assertIn("NO_LONGER_OBSERVED", output)
         self.assertIn("192.0.2.10:23/tcp", output)
@@ -42,6 +43,7 @@ class AnalysisDiffReporterTests(unittest.TestCase):
         payload = json.loads(render_analysis_diff_json((FindingChange("newly_observed", finding),)))
 
         self.assertEqual(payload["change_type"], "analysis")
+        self.assertEqual(payload["summary"], {"newly_observed": 1})
         self.assertEqual(payload["changes"][0]["change"], "newly_observed")
         self.assertEqual(payload["changes"][0]["finding"]["finding_id"], "http.default_page.detected")
         self.assertEqual(payload["changes"][0]["finding"]["evidence_source"], "nse:http-title")
