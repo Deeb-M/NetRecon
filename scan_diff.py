@@ -86,7 +86,7 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
             if not _port_was_scanned(after, port_number, protocol):
                 continue
             changes.append(ExposureChange(
-                "closed", host, port_number, protocol,
+                "no_longer_open", host, port_number, protocol,
                 before_service=old_port.service,
                 before_product=old_port.product,
                 before_version=old_port.version,
