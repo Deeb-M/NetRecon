@@ -65,6 +65,9 @@ def _ssh_algorithm_state(scan: Scan, finding: Finding) -> tuple[tuple[str, tuple
                         current = normalized_header
                         sections.setdefault(current, set())
                         continue
+                if separator:
+                    current = None
+                    continue
                 if current is not None:
                     sections[current].add(line.lower())
             return tuple(
