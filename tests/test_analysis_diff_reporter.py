@@ -8,7 +8,7 @@ from reporter import render_analysis_diff
 
 
 class AnalysisDiffReporterTests(unittest.TestCase):
-    def test_renders_new_and_resolved_findings(self) -> None:
+    def test_renders_new_and_no_longer_observed_findings(self) -> None:
         new = Finding(
             "service.telnet.exposed", "transport", "192.0.2.10", 23, "tcp",
             "medium", "Telnet service exposed", "23/tcp open telnet", "Review exposure",
@@ -20,11 +20,11 @@ class AnalysisDiffReporterTests(unittest.TestCase):
 
         output = render_analysis_diff((
             FindingChange("new", new),
-            FindingChange("resolved", resolved),
+            FindingChange("no_longer_observed", resolved),
         ))
 
         self.assertIn("NEW", output)
-        self.assertIn("RESOLVED", output)
+        self.assertIn("NO_LONGER_OBSERVED", output)
         self.assertIn("192.0.2.10:23/tcp", output)
         self.assertIn("192.0.2.20:80/tcp", output)
 
