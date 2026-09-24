@@ -87,6 +87,22 @@ class ScanDiffTests(unittest.TestCase):
 
         self.assertEqual(compare_scans(before, after), ())
 
+    def test_new_host_is_reported_once_without_port_level_new_changes(self) -> None:
+        before = Scan(source="before.xml", hosts=())
+        after = Scan(source="after.xml", hosts=(
+            Host(address="192.0.2.30", status="up", ports=(
+                Port(22, "tcp", "open", "ssh", "OpenSSH", "9.6"),
+                Port(80, "tcp", "open", "http", "Apache httpd", "2.4.68"),
+            )),
+        ))
+
+        changes = compare_scans(before, after)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "host_newly_observed")
+        self.assertEqual(changes[0].host, "192.0.2.30")
+        self.assertIsNone(changes[0].port)
+
 
 if __name__ == "__main__":
     unittest.main()
