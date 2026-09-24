@@ -955,6 +955,26 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.hostname, "lab.example")
         self.assertEqual(host.hostname_records, (("lab.example", "PTR"),))
 
+    def test_whitespace_only_hostname_type_defaults_to_unknown(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <hostnames>
+      <hostname name="lab.example" type="   "/>
+    </hostnames>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        host = scan.hosts[0]
+        self.assertEqual(host.hostname, "lab.example")
+        self.assertEqual(host.hostname_records, (("lab.example", "unknown"),))
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
