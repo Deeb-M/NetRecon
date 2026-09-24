@@ -57,10 +57,13 @@ def _ssh_algorithm_state(scan: Scan, finding: Finding) -> tuple[tuple[str, tuple
                 line = raw_line.strip()
                 if not line:
                     continue
-                if line.endswith(":") and line[:-1].lower() in section_names:
-                    current = line[:-1].lower()
-                    sections.setdefault(current, set())
-                    continue
+                header, separator, suffix = line.partition(":")
+                if separator and header.lower() in section_names:
+                    suffix = suffix.strip()
+                    if not suffix or (suffix.startswith("(") and suffix.endswith(")")):
+                        current = header.lower()
+                        sections.setdefault(current, set())
+                        continue
                 if current is not None:
                     sections[current].add(line)
             return tuple(
