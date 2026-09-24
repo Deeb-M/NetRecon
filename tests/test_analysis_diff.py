@@ -199,6 +199,36 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].finding, after_finding)
         self.assertEqual(changes[0].before_evidence, before_finding.evidence)
 
+    def test_ssh_algorithm_inventory_change_is_reported_with_previous_evidence(self) -> None:
+        before_finding = Finding(
+            finding_id="ssh.algorithms.inventory", category="protocol", host="192.0.2.10",
+            port=22, protocol="tcp", severity="info", title="SSH algorithm inventory collected",
+            evidence="Nmap ssh2-enum-algos reported: kex_algorithms: curve25519-sha256.",
+            recommendation="review", evidence_source="nse:ssh2-enum-algos",
+        )
+        after_finding = Finding(
+            finding_id="ssh.algorithms.inventory", category="protocol", host="192.0.2.10",
+            port=22, protocol="tcp", severity="info", title="SSH algorithm inventory collected",
+            evidence="Nmap ssh2-enum-algos reported: kex_algorithms: curve25519-sha256, diffie-hellman-group14-sha256.",
+            recommendation="review", evidence_source="nse:ssh2-enum-algos",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
+                ScriptResult("ssh2-enum-algos", "before inventory"),
+            )),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
+                ScriptResult("ssh2-enum-algos", "after inventory"),
+            )),),
+        ),))
+
+        changes = compare_findings((before_finding,), (after_finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "changed")
+        self.assertEqual(changes[0].finding, after_finding)
+        self.assertEqual(changes[0].before_evidence, before_finding.evidence)
+
     def test_platform_context_change_is_reported_with_previous_evidence(self) -> None:
         before_finding = Finding(
             finding_id="host.platform.context", category="context", host="192.0.2.10",
