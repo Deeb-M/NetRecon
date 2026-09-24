@@ -2198,6 +2198,27 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(scan.hosts[0].hostnames, ("z.example", "a.example"))
         self.assertEqual(scan.hosts[0].hostname, "z.example")
 
+    def test_address_order_is_preserved(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="00:11:22:33:44:55" addrtype="mac"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <address addr="2001:db8::10" addrtype="ipv6"/>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(
+            scan.hosts[0].addresses,
+            (("00:11:22:33:44:55", "mac"), ("192.0.2.10", "ipv4"), ("2001:db8::10", "ipv6")),
+        )
+        self.assertEqual(scan.hosts[0].address, "192.0.2.10")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
