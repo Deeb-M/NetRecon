@@ -11,8 +11,8 @@ from models import Port, Scan
 class ExposureChange:
     change: str
     host: str
-    port: int
-    protocol: str
+    port: int | None
+    protocol: str | None
     before_service: str | None = None
     after_service: str | None = None
     before_product: str | None = None
@@ -34,12 +34,20 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
     """Compare open-port exposure without assigning risk or severity."""
     old = _open_ports(before)
     new = _open_ports(after)
+    old_hosts = {host.address for host in before.hosts}
+    new_hosts = {host.address for host in after.hosts}
     changes: list[ExposureChange] = []
+
+    for host in sorted(old_hosts - new_hosts):
+        changes.append(ExposureChange("host_not_observed", host, None, None))
 
     for key in sorted(old.keys() | new.keys()):
         host, port_number, protocol = key
         old_port = old.get(key)
         new_port = new.get(key)
+
+        if host not in old_hosts or host not in new_hosts:
+            continue
 
         if old_port is None and new_port is not None:
             changes.append(ExposureChange(
