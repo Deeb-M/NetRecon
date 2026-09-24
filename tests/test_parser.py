@@ -975,6 +975,28 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.hostname, "lab.example")
         self.assertEqual(host.hostname_records, (("lab.example", "unknown"),))
 
+    def test_port_protocol_with_outer_whitespace_is_trimmed(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <ports>
+      <port protocol=" TCP " portid="443">
+        <state state="open"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        port = scan.hosts[0].ports[0]
+        self.assertEqual(port.port, 443)
+        self.assertEqual(port.protocol, "TCP")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
