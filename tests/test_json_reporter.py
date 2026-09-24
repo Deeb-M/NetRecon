@@ -40,6 +40,33 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["hosts"][0]["ports"][0]["port"], 443)
         self.assertEqual(data["hosts"][0]["ports"][0]["product"], "nginx")
 
+    def test_analysis_json_reports_services_shared_across_hosts(self) -> None:
+        scan = Scan(
+            source="multi.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol="tcp", state="open", service="http", product="Apache httpd", version="2.4.68"),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=5357, protocol="tcp", state="open", service="http", product="Microsoft HTTPAPI httpd", version="2.0"),
+                    Port(port=445, protocol="tcp", state="open", service="microsoft-ds"),
+                )),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+
+        self.assertEqual(len(data["shared_services"]), 1)
+        shared = data["shared_services"][0]
+        self.assertEqual(shared["service"], "http")
+        self.assertEqual(shared["host_count"], 2)
+        self.assertEqual(
+            [(endpoint["host"], endpoint["port"]) for endpoint in shared["endpoints"]],
+            [("192.0.2.10", 80), ("192.0.2.20", 5357)],
+        )
+        self.assertEqual(shared["endpoints"][0]["product"], "Apache httpd")
+        self.assertEqual(shared["endpoints"][1]["product"], "Microsoft HTTPAPI httpd")
+
     def test_analysis_json_contains_scan_and_findings(self) -> None:
         scan = Scan(
             source="scan.xml",
