@@ -119,7 +119,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                     port=port_number,
                     protocol=protocol,
                     state=state,
-                    service=service_node.get("name") if service_node is not None else None,
+                    service=(service_node.get("name", "").strip() or None) if service_node is not None else None,
                     product=service_node.get("product") if service_node is not None else None,
                     version=service_node.get("version") if service_node is not None else None,
                     extra_info=service_node.get("extrainfo") if service_node is not None else None,
