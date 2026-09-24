@@ -1064,5 +1064,25 @@ class AnalyzerTests(unittest.TestCase):
         ))
 
 
+    def test_whitespace_only_product_counts_as_unknown_product(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                8080, "tcp", "open", "http", product="   ",
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        unknown_product_findings = tuple(
+            finding for finding in findings
+            if finding.finding_id == "service.product.unknown"
+        )
+        self.assertEqual(len(unknown_product_findings), 1)
+        self.assertEqual(
+            unknown_product_findings[0].evidence_source,
+            "service:detection",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
