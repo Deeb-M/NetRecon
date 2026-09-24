@@ -80,6 +80,29 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("192.0.2.10:80/tcp  Apache httpd 2.4.68", report)
         self.assertIn("192.0.2.20:5357/tcp  Microsoft HTTPAPI httpd 2.0", report)
 
+    def test_text_report_normalizes_service_names_in_summaries(self) -> None:
+        scan = Scan(
+            source="normalized-services.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol="tcp", state="open", service=" HTTP "),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=8080, protocol="tcp", state="open", service="http"),
+                )),
+                Host(address="192.0.2.30", status="up", ports=(
+                    Port(port=9999, protocol="tcp", state="open", service="   "),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("Network Summary: 3 up, 3 open ports, 2 unique services", report)
+        self.assertIn("Open Services: http (2), unknown (1)", report)
+        self.assertIn("http: 2 hosts", report)
+        self.assertNotIn(" HTTP : 2 hosts", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
