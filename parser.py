@@ -86,7 +86,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         ports: list[Port] = []
         for port_node in host_node.findall("./ports/port"):
             port_id = port_node.get("portid")
-            protocol = port_node.get("protocol", "unknown")
+            protocol = port_node.get("protocol", "").strip() or "unknown"
             if port_id is None:
                 continue
 
