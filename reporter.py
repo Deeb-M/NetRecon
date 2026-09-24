@@ -179,6 +179,13 @@ def _coverage_payload(scan: Scan) -> list[dict[str, str]]:
 def _coverage_text(scan: Scan) -> str:
     if not scan.scan_scopes:
         return "unknown"
+
+    expanded = _expanded_coverage(scan)
+    if len(expanded) > _COVERAGE_TEXT_DETAIL_LIMIT:
+        protocols = sorted({protocol for protocol, _ in expanded})
+        protocol_text = ",".join(protocols) or "unknown"
+        return f"{len(expanded)} ports ({protocol_text}; details: --format json)"
+
     return "; ".join(
         f"{scope.protocol}:{scope.services}" for scope in scan.scan_scopes
     )
