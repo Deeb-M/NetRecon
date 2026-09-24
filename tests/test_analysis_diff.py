@@ -1081,6 +1081,32 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "no_longer_observed")
 
+    def test_hostname_case_and_outer_whitespace_keep_new_finding_comparison_active(self) -> None:
+        new_finding = Finding(
+            finding_id="finding.new",
+            category="test",
+            host="server.example.com",
+            port=None,
+            protocol=None,
+            severity="low",
+            title="New finding",
+            evidence="evidence",
+            recommendation="review",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(address="Server.Example.COM", status="up"),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(address=" server.example.com ", status="up"),),
+        )
+
+        changes = compare_findings((), (new_finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "new")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
