@@ -4,7 +4,7 @@ import unittest
 
 from analysis_diff import compare_findings
 from findings import Finding
-from models import Host, Scan, ScanScope
+from models import Host, Port, Scan, ScanScope, ScriptResult
 
 
 def _finding(finding_id: str, *, evidence: str = "evidence") -> Finding:
@@ -73,6 +73,68 @@ class AnalysisDiffTests(unittest.TestCase):
             compare_findings(before, (), before_scan, after_scan),
             (),
         )
+
+    def test_missing_nse_collection_does_not_create_no_longer_observed(self) -> None:
+        finding = Finding(
+            finding_id="http.methods.review",
+            category="configuration",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="medium",
+            title="HTTP methods require review",
+            evidence="Nmap http-methods reported PUT.",
+            recommendation="review",
+            evidence_source="nse:http-methods",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", scripts=(ScriptResult("http-methods", "Supported Methods: GET PUT"),)
+            ),)),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http"
+            ),)),),
+        )
+
+        self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
+
+    def test_collected_nse_source_can_confirm_no_longer_observed(self) -> None:
+        finding = Finding(
+            finding_id="http.methods.review",
+            category="configuration",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="medium",
+            title="HTTP methods require review",
+            evidence="Nmap http-methods reported PUT.",
+            recommendation="review",
+            evidence_source="nse:http-methods",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", scripts=(ScriptResult("http-methods", "Supported Methods: GET PUT"),)
+            ),)),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", scripts=(ScriptResult("http-methods", "Supported Methods: GET HEAD"),)
+            ),)),),
+        )
+
+        changes = compare_findings((finding,), (), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "no_longer_observed")
 
 
 if __name__ == "__main__":
