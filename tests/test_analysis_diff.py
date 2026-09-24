@@ -115,6 +115,32 @@ class AnalysisDiffTests(unittest.TestCase):
 
         self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
 
+    def test_unknown_product_service_change_is_reported_with_previous_evidence(self) -> None:
+        before_finding = Finding(
+            finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
+            port=8080, protocol="tcp", severity="info", title="Service lacks product identification",
+            evidence="Nmap identified service 'http' on 8080/tcp but did not identify a product.",
+            recommendation="review", evidence_source="service:detection",
+        )
+        after_finding = Finding(
+            finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
+            port=8080, protocol="tcp", severity="info", title="Service lacks product identification",
+            evidence="Nmap identified service 'http-proxy' on 8080/tcp but did not identify a product.",
+            recommendation="review", evidence_source="service:detection",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(8080, "tcp", "open", "http"),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(8080, "tcp", "open", "http-proxy"),),
+        ),))
+
+        changes = compare_findings((before_finding,), (after_finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "changed")
+        self.assertEqual(changes[0].finding, after_finding)
+        self.assertEqual(changes[0].before_evidence, before_finding.evidence)
+
     def test_unknown_product_can_resolve_when_service_detection_finds_product(self) -> None:
         finding = Finding(
             finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
