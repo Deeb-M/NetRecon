@@ -2,24 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime, timezone
 import re
 
+from findings import Finding
 from models import Scan
 
-
-@dataclass(frozen=True)
-class Finding:
-    finding_id: str
-    category: str
-    host: str
-    port: int | None
-    protocol: str | None
-    severity: str
-    title: str
-    evidence: str
-    recommendation: str
 
 
 def _parse_ssl_cert_time(output: str, label: str) -> datetime | None:
