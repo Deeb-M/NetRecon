@@ -43,6 +43,30 @@ class AnalysisDiffTests(unittest.TestCase):
             [("new", "finding.new"), ("no_longer_observed", "finding.old")],
         )
 
+    def test_equivalent_ipv6_text_does_not_change_finding_identity(self) -> None:
+        before_finding = Finding(
+            finding_id="finding.same", category="test",
+            host="2001:0db8:0000:0000:0000:0000:0000:0001",
+            port=80, protocol="tcp", severity="info", title="same",
+            evidence="evidence", recommendation="review",
+        )
+        after_finding = Finding(
+            finding_id="finding.same", category="test", host="2001:db8::1",
+            port=80, protocol="tcp", severity="info", title="same",
+            evidence="evidence", recommendation="review",
+        )
+        before_scan = Scan(source="before.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(
+            Host(address=before_finding.host, status="up"),
+        ))
+        after_scan = Scan(source="after.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(
+            Host(address=after_finding.host, status="up"),
+        ))
+
+        self.assertEqual(
+            compare_findings((before_finding,), (after_finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_protocol_case_does_not_change_finding_identity(self) -> None:
         before_finding = _finding("finding.same")
         after_finding = Finding(
