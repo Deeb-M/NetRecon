@@ -7,6 +7,7 @@ import json
 
 from analysis_summary import summarize_analysis
 from findings import Finding
+from host_summary import summarize_hosts
 from models import Host, Port, Scan
 from network_summary import summarize_network
 
@@ -136,6 +137,7 @@ def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
         "scan": asdict(scan),
         "summary": asdict(summarize_network(scan)),
         "analysis_summary": asdict(summarize_analysis(findings)),
+        "host_summaries": [asdict(summary) for summary in summarize_hosts(scan, findings)],
         "findings": [asdict(finding) for finding in prioritize_findings(findings)],
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
