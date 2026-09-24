@@ -307,6 +307,20 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(scan.scan_scopes[0].protocol, "udp")
         self.assertEqual(scan.scan_scopes[0].services, "53,161")
 
+    def test_scaninfo_with_services_and_missing_protocol_defaults_to_unknown(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <scaninfo type="custom" services="80,443"/>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(len(scan.scan_scopes), 1)
+        self.assertEqual(scan.scan_scopes[0].protocol, "unknown")
+        self.assertEqual(scan.scan_scopes[0].services, "80,443")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
