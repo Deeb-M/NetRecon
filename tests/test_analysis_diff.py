@@ -367,6 +367,31 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_ssh_algorithm_count_only_change_does_not_create_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="ssh.algorithms.inventory", category="protocol", host="192.0.2.10",
+            port=22, protocol="tcp", severity="info", title="SSH algorithm inventory collected",
+            evidence="Nmap ssh2-enum-algos reported: kex_algorithms.", recommendation="review",
+            evidence_source="nse:ssh2-enum-algos",
+        )
+        before_output = "kex_algorithms: (1)\n  curve25519-sha256"
+        after_output = "kex_algorithms: (99)\n  curve25519-sha256"
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
+                ScriptResult("ssh2-enum-algos", before_output),
+            )),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
+                ScriptResult("ssh2-enum-algos", after_output),
+            )),),
+        ),))
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_ssh_algorithm_inventory_count_header_detects_real_change(self) -> None:
         before_finding = Finding(
             finding_id="ssh.algorithms.inventory", category="protocol", host="192.0.2.10",
