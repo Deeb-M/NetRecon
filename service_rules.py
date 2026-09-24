@@ -23,7 +23,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
     for port in host.ports:
         for cpe in port.cpes:
             if cpe.startswith("cpe:/a:"):
-                application_contexts.setdefault((port.port, port.protocol), set()).add(cpe)
+                application_contexts.setdefault((port.port, port.protocol.lower()), set()).add(cpe)
 
     if os_types or os_cpes:
         evidence_parts = []
