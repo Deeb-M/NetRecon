@@ -28,6 +28,7 @@ class DiffReporterTests(unittest.TestCase):
 
         report = render_diff(changes)
 
+        self.assertIn("Summary: CHANGED=1, NEW=1, NO_LONGER_OPEN=1", report)
         self.assertIn("CHANGED 192.0.2.10:80/tcp  http Apache httpd 2.4.67 -> http Apache httpd 2.4.68", report)
         self.assertIn("NO_LONGER_OPEN 192.0.2.10:139/tcp  netbios-ssn", report)
         self.assertIn("NEW     192.0.2.10:445/tcp  microsoft-ds", report)
@@ -44,6 +45,7 @@ class DiffReporterTests(unittest.TestCase):
         payload = json.loads(render_diff_json(changes))
 
         self.assertEqual(payload["change_type"], "exposure")
+        self.assertEqual(payload["summary"], {"new": 1})
         self.assertEqual(payload["changes"][0]["change"], "new")
         self.assertEqual(payload["changes"][0]["port"], 443)
         self.assertEqual(payload["changes"][0]["after_product"], "Apache httpd")
