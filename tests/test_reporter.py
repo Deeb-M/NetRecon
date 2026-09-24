@@ -120,6 +120,30 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("9999/tcp open         unknown", report)
         self.assertNotIn(" HTTP ", report)
 
+    def test_text_report_strips_service_metadata_in_host_detail(self) -> None:
+        scan = Scan(
+            source="host-metadata-normalization.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(
+                        port=22,
+                        protocol="tcp",
+                        state="open",
+                        service="ssh",
+                        product=" OpenSSH ",
+                        version=" 9.6 ",
+                        extra_info=" Ubuntu ",
+                    ),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("ssh - OpenSSH 9.6 Ubuntu", report)
+        self.assertNotIn("  OpenSSH ", report)
+        self.assertNotIn(" 9.6  ", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
