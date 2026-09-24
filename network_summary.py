@@ -71,7 +71,7 @@ def summarize_shared_services(scan: Scan) -> tuple[SharedService, ...]:
                 SharedServiceEndpoint(
                     host=host.address,
                     port=port.port,
-                    protocol=port.protocol,
+                    protocol=port.protocol.strip().lower(),
                     product=port.product,
                     version=port.version,
                     extra_info=port.extra_info,
