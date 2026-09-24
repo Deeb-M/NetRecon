@@ -64,6 +64,21 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_host_down_afterward_does_not_resolve_finding(self) -> None:
+        finding = _finding("finding.old")
+        before_scan = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up"),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="down"),),
+        )
+
+        self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
+
     def test_unscanned_port_does_not_create_no_longer_observed_finding(self) -> None:
         before = (_finding("finding.old"),)
         before_scan = _scan("before.xml", "192.0.2.10", services="80")
