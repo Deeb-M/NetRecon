@@ -2082,6 +2082,22 @@ class ParserTests(unittest.TestCase):
             (("tcp", "80,443"), ("udp", "53")),
         )
 
+    def test_duplicate_scaninfo_entries_are_preserved(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <scaninfo type="syn" protocol="tcp" services="80,443"/>
+  <scaninfo type="syn" protocol="tcp" services="80,443"/>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(
+            tuple((scope.protocol, scope.services) for scope in scan.scan_scopes),
+            (("tcp", "80,443"), ("tcp", "80,443")),
+        )
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
