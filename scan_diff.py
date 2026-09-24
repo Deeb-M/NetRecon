@@ -32,7 +32,7 @@ def _host_identity(address: str) -> str:
 
 def _open_ports(scan: Scan) -> dict[tuple[str, int, str], Port]:
     return {
-        (_host_identity(host.address), port.port, port.protocol.lower()): port
+        (_host_identity(host.address), port.port, port.protocol.strip().lower()): port
         for host in scan.hosts
         for port in host.ports
         if port.state.lower() == "open"
