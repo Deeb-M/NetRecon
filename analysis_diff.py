@@ -81,10 +81,10 @@ def _platform_state(scan: Scan, finding: Finding) -> tuple[tuple[str, ...], tupl
             continue
         os_types = tuple(sorted({port.os_type.strip().lower() for port in host.ports if port.os_type and port.os_type.strip()}))
         os_cpes = tuple(sorted({
-            cpe.lower()
+            cpe.strip().lower()
             for port in host.ports
             for cpe in port.cpes
-            if cpe.lower().startswith("cpe:/o:")
+            if cpe.strip().lower().startswith("cpe:/o:")
         }))
         return os_types, os_cpes
     return (), ()
