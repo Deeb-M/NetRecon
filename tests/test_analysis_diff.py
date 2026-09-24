@@ -3025,16 +3025,16 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
-    def test_duplicate_platform_os_type_across_ports_does_not_create_semantic_change(self) -> None:
+    def test_platform_os_type_order_across_ports_does_not_create_semantic_change(self) -> None:
         finding = Finding(
             finding_id="host.platform.context",
-            category="test",
+            category="context",
             host="192.0.2.10",
             port=None,
             protocol=None,
-            severity="low",
-            title="Host platform context",
-            evidence="same evidence",
+            severity="info",
+            title="Platform context observed",
+            evidence="Platform evidence reported by Nmap.",
             recommendation="review",
             evidence_source="service:platform",
         )
@@ -3045,7 +3045,7 @@ class AnalysisDiffTests(unittest.TestCase):
                 status="up",
                 ports=(
                     Port(22, "tcp", "open", "ssh", os_type="Linux"),
-                    Port(80, "tcp", "open", "http", os_type="Linux"),
+                    Port(80, "tcp", "open", "http", os_type="Unix"),
                 ),
             ),),
         )
@@ -3054,7 +3054,10 @@ class AnalysisDiffTests(unittest.TestCase):
             hosts=(Host(
                 address="192.0.2.10",
                 status="up",
-                ports=(Port(22, "tcp", "open", "ssh", os_type="Linux"),),
+                ports=(
+                    Port(80, "tcp", "open", "http", os_type="Unix"),
+                    Port(22, "tcp", "open", "ssh", os_type="Linux"),
+                ),
             ),),
         )
 
