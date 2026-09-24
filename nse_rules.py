@@ -49,6 +49,11 @@ def _dns_name_matches(hostname: str, pattern: str) -> bool:
 from findings import Finding
 
 
+def _script_finding(script_id: str, **kwargs) -> Finding:
+    """Create a finding with explicit NSE evidence provenance."""
+    return Finding(evidence_source=f"nse:{script_id.lower()}", **kwargs)
+
+
 def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: datetime) -> tuple[Finding, ...]:
     findings: list[Finding] = []
     script_contexts = [
@@ -71,7 +76,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             and normalized_output.startswith("directory listing for ")
         ):
             findings.append(
-                Finding(
+                _script_finding(script.script_id,
                     finding_id="http.directory_listing.exposed",
                     category="exposure",
                     host=host.address,
@@ -89,7 +94,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             and "apache2 debian default page" in normalized_output
         ):
             findings.append(
-                Finding(
+                _script_finding(script.script_id,
                     finding_id="http.default_page.detected",
                     category="context",
                     host=host.address,
@@ -121,7 +126,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             )
             if review_methods:
                 findings.append(
-                    Finding(
+                    _script_finding(script.script_id,
                         finding_id="http.methods.review",
                         category="configuration",
                         host=host.address,
@@ -138,7 +143,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                 )
             elif methods and set(methods).issubset({"GET", "HEAD"}):
                 findings.append(
-                    Finding(
+                    _script_finding(script.script_id,
                         finding_id="http.methods.standard_read_only",
                         category="protocol",
                         host=host.address,
@@ -165,7 +170,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             )
             if sections:
                 findings.append(
-                    Finding(
+                    _script_finding(script.script_id,
                         finding_id="ssh.algorithms.inventory",
                         category="protocol",
                         host=host.address,
@@ -194,7 +199,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                 )
                 if unmatched:
                     findings.append(
-                        Finding(
+                        _script_finding(script.script_id,
                             finding_id="tls.certificate.identity_mismatch",
                             category="certificate",
                             host=host.address,
@@ -218,7 +223,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             valid_until = _parse_ssl_cert_time(output, "Not valid after:")
             if valid_until is not None and valid_until < reference_time:
                 findings.append(
-                    Finding(
+                    _script_finding(script.script_id,
                         finding_id="tls.certificate.expired",
                         category="certificate",
                         host=host.address,
@@ -232,7 +237,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                 )
             if valid_from is not None and valid_from > reference_time:
                 findings.append(
-                    Finding(
+                    _script_finding(script.script_id,
                         finding_id="tls.certificate.not_yet_valid",
                         category="certificate",
                         host=host.address,
@@ -253,7 +258,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             )
             if legacy_versions:
                 findings.append(
-                    Finding(
+                    _script_finding(script.script_id,
                         finding_id="tls.protocol.legacy_enabled",
                         category="protocol",
                         host=host.address,
@@ -271,7 +276,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
 
             if "anonymous key exchange" in normalized_output:
                 findings.append(
-                    Finding(
+                    _script_finding(script.script_id,
                         finding_id="tls.key_exchange.anonymous",
                         category="configuration",
                         host=host.address,
@@ -288,7 +293,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             smb1_markers = ("nt lm 0.12", "smbv1", "smb 1")
             smb1_reported = any(marker in normalized_output for marker in smb1_markers)
             findings.append(
-                Finding(
+                _script_finding(script.script_id,
                     finding_id=(
                         "smb.protocol.smb1.reported"
                         if smb1_reported
@@ -318,7 +323,7 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
             and "message signing enabled but not required" in normalized_output
         ):
             findings.append(
-                Finding(
+                _script_finding(script.script_id,
                     finding_id="smb.signing.review",
                     category="configuration",
                     host=host.address,
