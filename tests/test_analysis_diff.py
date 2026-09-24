@@ -21,7 +21,7 @@ def _finding(finding_id: str, *, evidence: str = "evidence") -> Finding:
 
 
 class AnalysisDiffTests(unittest.TestCase):
-    def test_detects_new_and_resolved_findings(self) -> None:
+    def test_detects_new_and_no_longer_observed_findings(self) -> None:
         before = (_finding("finding.old"), _finding("finding.same"))
         after = (_finding("finding.same"), _finding("finding.new"))
 
@@ -29,7 +29,7 @@ class AnalysisDiffTests(unittest.TestCase):
 
         self.assertEqual(
             [(change.change, change.finding.finding_id) for change in changes],
-            [("new", "finding.new"), ("resolved", "finding.old")],
+            [("new", "finding.new"), ("no_longer_observed", "finding.old")],
         )
 
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
