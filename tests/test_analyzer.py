@@ -1015,5 +1015,22 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIsNone(smb_findings[0].evidence_source)
 
 
+    def test_explicit_service_whitespace_preserves_detection_provenance(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                1445, "tcp", "open", " SMB ",
+            ),),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        smb_findings = tuple(
+            finding for finding in findings
+            if finding.finding_id == "service.smb.exposed"
+        )
+        self.assertEqual(len(smb_findings), 1)
+        self.assertEqual(smb_findings[0].evidence_source, "service:detection")
+
+
 if __name__ == "__main__":
     unittest.main()
