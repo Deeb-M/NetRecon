@@ -67,6 +67,48 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_platform_context_is_not_resolved_when_platform_evidence_not_recollected(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context", category="context", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="Host platform context identified",
+            evidence="service detection reported OS type(s): Linux.", recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http", os_type="Linux"),
+            ),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http"),
+            ),
+        ),))
+
+        self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
+
+    def test_platform_context_can_resolve_when_platform_evidence_is_recollected(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context", category="context", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="Host platform context identified",
+            evidence="service detection reported OS type(s): Linux.", recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http", os_type="Linux"),
+            ),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(443, "tcp", "open", "https", os_type="Windows"),
+            ),
+        ),))
+
+        changes = compare_findings((finding,), (), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "no_longer_observed")
+
     def test_protocol_case_does_not_change_finding_identity(self) -> None:
         before_finding = _finding("finding.same")
         after_finding = Finding(
