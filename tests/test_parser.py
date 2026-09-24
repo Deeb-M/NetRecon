@@ -577,6 +577,21 @@ class ParserTests(unittest.TestCase):
             (("2001:db8::10", "ipv6"), ("192.0.2.10", "ipv4")),
         )
 
+    def test_host_status_element_without_state_defaults_to_unknown(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(scan.hosts[0].status, "unknown")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
