@@ -72,9 +72,9 @@ def summarize_shared_services(scan: Scan) -> tuple[SharedService, ...]:
                     host=host.address,
                     port=port.port,
                     protocol=port.protocol.strip().lower(),
-                    product=port.product,
-                    version=port.version,
-                    extra_info=port.extra_info,
+                    product=port.product.strip() if port.product and port.product.strip() else None,
+                    version=port.version.strip() if port.version and port.version.strip() else None,
+                    extra_info=port.extra_info.strip() if port.extra_info and port.extra_info.strip() else None,
                 )
             )
 
