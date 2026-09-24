@@ -42,6 +42,12 @@ class Host:
 
 
 @dataclass(frozen=True)
+class ScanScope:
+    protocol: str
+    services: str
+
+
+@dataclass(frozen=True)
 class Scan:
     source: str
     scanner: str | None = None
@@ -53,4 +59,5 @@ class Scan:
     hosts_up: int | None = None
     hosts_down: int | None = None
     hosts_total: int | None = None
+    scan_scopes: tuple[ScanScope, ...] = field(default_factory=tuple)
     hosts: tuple[Host, ...] = field(default_factory=tuple)
