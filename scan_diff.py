@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ipaddress
 
 from models import Port, Scan
 
@@ -21,9 +22,17 @@ class ExposureChange:
     after_version: str | None = None
 
 
+def _host_identity(address: str) -> str:
+    """Normalize IP address text for comparison while preserving raw evidence elsewhere."""
+    try:
+        return str(ipaddress.ip_address(address))
+    except ValueError:
+        return address
+
+
 def _open_ports(scan: Scan) -> dict[tuple[str, int, str], Port]:
     return {
-        (host.address, port.port, port.protocol.lower()): port
+        (_host_identity(host.address), port.port, port.protocol.lower()): port
         for host in scan.hosts
         for port in host.ports
         if port.state.lower() == "open"
@@ -58,11 +67,11 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
     """Compare open-port exposure without assigning risk or severity."""
     old = _open_ports(before)
     new = _open_ports(after)
-    old_hosts = {host.address for host in before.hosts}
-    new_hosts = {host.address for host in after.hosts}
+    old_hosts = {_host_identity(host.address) for host in before.hosts}
+    new_hosts = {_host_identity(host.address) for host in after.hosts}
     comparable_hosts = (
-        {host.address for host in before.hosts if host.status.lower() == "up"}
-        & {host.address for host in after.hosts if host.status.lower() == "up"}
+        {_host_identity(host.address) for host in before.hosts if host.status.lower() == "up"}
+        & {_host_identity(host.address) for host in after.hosts if host.status.lower() == "up"}
     )
     changes: list[ExposureChange] = []
 
@@ -72,8 +81,8 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
     for host in sorted(new_hosts - old_hosts):
         changes.append(ExposureChange("host_newly_observed", host, None, None))
 
-    old_status = {host.address: host.status.lower() for host in before.hosts}
-    new_status = {host.address: host.status.lower() for host in after.hosts}
+    old_status = {_host_identity(host.address): host.status.lower() for host in before.hosts}
+    new_status = {_host_identity(host.address): host.status.lower() for host in after.hosts}
     for host in sorted(old_hosts & new_hosts):
         before_status = old_status[host]
         after_status = new_status[host]
