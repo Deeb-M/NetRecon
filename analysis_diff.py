@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from findings import Finding
+from models import Scan
 
 
 @dataclass(frozen=True)
@@ -25,10 +26,13 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
 def compare_findings(
     before: tuple[Finding, ...],
     after: tuple[Finding, ...],
+    before_scan: Scan,
+    after_scan: Scan,
 ) -> tuple[FindingChange, ...]:
-    """Report findings that appeared or disappeared between analyses."""
-    old = {_identity(finding): finding for finding in before}
-    new = {_identity(finding): finding for finding in after}
+    """Compare findings only for hosts observed in both scans."""
+    observed_hosts = ({host.address for host in before_scan.hosts} & {host.address for host in after_scan.hosts})
+    old = {_identity(finding): finding for finding in before if finding.host in observed_hosts}
+    new = {_identity(finding): finding for finding in after if finding.host in observed_hosts}
     changes: list[FindingChange] = []
 
     for key in sorted(old.keys() | new.keys(), key=lambda item: (
