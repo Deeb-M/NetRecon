@@ -72,6 +72,18 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
     for host in sorted(new_hosts - old_hosts):
         changes.append(ExposureChange("host_newly_observed", host, None, None))
 
+    old_status = {host.address: host.status.lower() for host in before.hosts}
+    new_status = {host.address: host.status.lower() for host in after.hosts}
+    for host in sorted(old_hosts & new_hosts):
+        before_status = old_status[host]
+        after_status = new_status[host]
+        if before_status == after_status:
+            continue
+        if before_status == "up" and after_status == "down":
+            changes.append(ExposureChange("host_down", host, None, None))
+        elif before_status == "down" and after_status == "up":
+            changes.append(ExposureChange("host_up", host, None, None))
+
     for key in sorted(old.keys() | new.keys()):
         host, port_number, protocol = key
         old_port = old.get(key)
