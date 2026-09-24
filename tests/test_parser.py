@@ -179,6 +179,31 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(port.product, "OpenSSH")
         self.assertIsNone(port.confidence)
 
+    def test_invalid_numeric_scan_metadata_becomes_none(self) -> None:
+        xml = """<nmaprun scanner="nmap" start="not-a-number">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+  </host>
+  <runstats>
+    <finished time="invalid" elapsed="unknown"/>
+    <hosts up="one" down="zero" total="one"/>
+  </runstats>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertIsNone(scan.started_at)
+        self.assertIsNone(scan.finished_at)
+        self.assertIsNone(scan.elapsed)
+        self.assertIsNone(scan.hosts_up)
+        self.assertIsNone(scan.hosts_down)
+        self.assertIsNone(scan.hosts_total)
+        self.assertEqual(scan.hosts[0].address, "192.0.2.10")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
