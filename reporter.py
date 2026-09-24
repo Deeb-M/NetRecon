@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 import json
 
+from analysis_summary import summarize_analysis
 from findings import Finding
 from models import Host, Port, Scan
 from network_summary import summarize_network
@@ -134,6 +135,7 @@ def render_analysis_json(scan: Scan, findings: tuple[Finding, ...]) -> str:
     payload = {
         "scan": asdict(scan),
         "summary": asdict(summarize_network(scan)),
+        "analysis_summary": asdict(summarize_analysis(findings)),
         "findings": [asdict(finding) for finding in prioritize_findings(findings)],
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
