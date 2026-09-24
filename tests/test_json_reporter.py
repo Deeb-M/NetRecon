@@ -223,6 +223,35 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(endpoint["extra_info"], "Ubuntu")
 
 
+    def test_analysis_json_converts_blank_shared_service_metadata_to_null(self) -> None:
+        scan = Scan(
+            source="shared-blank-metadata-json.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(
+                        port=80,
+                        protocol="tcp",
+                        state="open",
+                        service="http",
+                        product="   ",
+                        version="\t",
+                        extra_info="  ",
+                    ),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=8080, protocol="tcp", state="open", service="http"),
+                )),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+        endpoint = data["shared_services"][0]["endpoints"][0]
+
+        self.assertIsNone(endpoint["product"])
+        self.assertIsNone(endpoint["version"])
+        self.assertIsNone(endpoint["extra_info"])
+
+
     def test_shared_services_normalize_service_name_whitespace_and_case(self) -> None:
         scan = Scan(
             source="multi.xml",
