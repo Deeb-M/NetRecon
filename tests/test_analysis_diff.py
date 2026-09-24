@@ -3025,6 +3025,44 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_duplicate_platform_os_type_across_ports_does_not_create_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context",
+            category="test",
+            host="192.0.2.10",
+            port=None,
+            protocol=None,
+            severity="low",
+            title="Host platform context",
+            evidence="same evidence",
+            recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(
+                    Port(22, "tcp", "open", "ssh", os_type="Linux"),
+                    Port(80, "tcp", "open", "http", os_type="Linux"),
+                ),
+            ),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="192.0.2.10",
+                status="up",
+                ports=(Port(22, "tcp", "open", "ssh", os_type="Linux"),),
+            ),),
+        )
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
