@@ -84,6 +84,27 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                 )
             )
 
+        if (
+            script_id == "http-title"
+            and "apache2 debian default page" in normalized_output
+        ):
+            findings.append(
+                Finding(
+                    finding_id="http.default_page.detected",
+                    category="context",
+                    host=host.address,
+                    port=script_port,
+                    protocol=script_protocol,
+                    severity="info",
+                    title="Default HTTP page detected",
+                    evidence=f"Nmap http-title reported: {output}",
+                    recommendation=(
+                        "Confirm whether the default web-server page is intentionally exposed "
+                        "and replace or remove it when it is not part of the intended service."
+                    ),
+                )
+            )
+
         if script_id == "http-methods" and "supported methods:" in normalized_output:
             supported_marker = "supported methods:"
             supported_start = normalized_output.index(supported_marker) + len(supported_marker)
