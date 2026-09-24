@@ -36,6 +36,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Compare evidence-based findings over time with Analysis Changes: `NEW`, `NEWLY_OBSERVED`, and `NO_LONGER_OBSERVED`
 - Preserve NSE evidence provenance so change analysis can distinguish a real finding change from a script that was simply not collected
 - Protect change analysis from false conclusions when a host or port was not included in the later scan
+- Produce machine-readable JSON for both Exposure Changes and Analysis Changes
 - Run automated tests with GitHub Actions
 
 ## Quick start
@@ -76,10 +77,22 @@ Compare exposure between two scans:
 python netrecon.py before.xml after.xml --diff
 ```
 
+Return exposure changes as JSON:
+
+```bash
+python netrecon.py before.xml after.xml --diff --format json
+```
+
 Compare evidence-based findings between two scans:
 
 ```bash
 python netrecon.py before.xml after.xml --analysis-diff
+```
+
+Return analysis changes as JSON, including finding evidence provenance:
+
+```bash
+python netrecon.py before.xml after.xml --analysis-diff --format json
 ```
 
 Try the included safe sample:
@@ -117,7 +130,7 @@ Current Intelligence coverage is intentionally conservative. New rules are added
 
 Change intelligence follows the same evidence-first rule. NetRecon does not treat a missing host as closed ports, does not treat an unscanned port as closed, and does not treat an uncollected evidence source as proof that a finding appeared or disappeared. Exposure and analysis comparisons use observed host, Nmap port-scope context, and NSE evidence provenance so that absence of observation is not silently converted into a state change.
 
-For NSE-derived findings, `NEW` means the same NSE evidence source was collected before and the finding was absent; `NEWLY_OBSERVED` means the evidence source was not collected before, so NetRecon only claims that the finding is newly observed; and `NO_LONGER_OBSERVED` requires the relevant evidence source to be collected again without supporting the previous finding. These semantics have been validated end-to-end with controlled `http-title` lab scans.
+For NSE-derived findings, `NEW` means the same NSE evidence source was collected before and the finding was absent; `NEWLY_OBSERVED` means the evidence source was not collected before, so NetRecon only claims that the finding is newly observed; and `NO_LONGER_OBSERVED` requires the relevant evidence source to be collected again without supporting the previous finding. These semantics have been validated end-to-end with controlled `http-title` lab scans. JSON output for both analysis changes and exposure changes has also been validated end-to-end against real lab scan files.
 
 ## Responsible use
 
