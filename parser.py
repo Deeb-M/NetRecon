@@ -94,6 +94,8 @@ def parse_nmap_xml(path: str | Path) -> Scan:
                 port_number = int(port_id)
             except ValueError:
                 continue
+            if not 1 <= port_number <= 65535:
+                continue
 
             state_node = port_node.find("state")
             state = state_node.get("state", "").strip() or "unknown" if state_node is not None else "unknown"
