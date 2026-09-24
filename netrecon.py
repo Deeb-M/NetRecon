@@ -8,7 +8,8 @@ from pathlib import Path
 
 from analyzer import analyze_scan
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_json, render_findings, render_json, render_text
+from reporter import render_analysis_json, render_diff, render_findings, render_json, render_text
+from scan_diff import compare_scans
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -17,6 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Parse Nmap XML and summarize discovered hosts, ports, and services.",
     )
     parser.add_argument("scan", type=Path, help="Path to an Nmap XML (-oX) file")
+    parser.add_argument("compare_scan", nargs="?", type=Path, help="Second Nmap XML file used with --diff")
     parser.add_argument(
         "--format",
         choices=("text", "json"),
@@ -28,6 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Add conservative evidence-based findings",
     )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="Compare two Nmap XML scans and report exposure changes",
+    )
     return parser
 
 
@@ -36,9 +43,17 @@ def main() -> int:
 
     try:
         scan = parse_nmap_xml(args.scan)
+        compare_scan = parse_nmap_xml(args.compare_scan) if args.compare_scan else None
     except NmapParseError as exc:
         print(f"Error: {exc}")
         return 2
+
+    if args.diff:
+        if compare_scan is None:
+            print("Error: --diff requires a second scan file")
+            return 2
+        print(render_diff(compare_scans(scan, compare_scan)))
+        return 0
 
     findings = analyze_scan(scan) if args.analyze else ()
 
