@@ -50,6 +50,8 @@ class ReporterTests(unittest.TestCase):
 
         self.assertIn("Scanner: nmap 7.95", report)
         self.assertIn("Hosts: 1 parsed / 1 total (1 up, 0 down)", report)
+        self.assertIn("Network Summary: 1 up, 1 open ports, 1 unique services", report)
+        self.assertIn("Open Services: ssh (1)", report)
         self.assertIn("lab.example [192.0.2.10] (up)", report)
         self.assertIn("mac:00:11:22:33:44:55", report)
         self.assertIn("22/tcp", report)
