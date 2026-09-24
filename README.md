@@ -94,7 +94,7 @@ python -m unittest discover -s tests -v
 
 NetRecon keeps observations separate from findings. An open port is not automatically treated as a vulnerability, and service or OS detection is not treated as definitive proof. Findings are created from explicit scan evidence and include stable IDs, categories, evidence, and recommended follow-up.
 
-Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows. Multi-host summarization has also been validated end-to-end against a two-host lab scan, including repeated services across hosts.
+Current Intelligence coverage is intentionally conservative. New rules are added incrementally, covered by automated tests, and validated against real authorized lab scans before being relied on in analyst workflows. Multi-host summarization and cross-host shared-service mapping have also been validated end-to-end against a two-host lab scan, including HTTP services implemented by different products on different ports.
 
 ## Responsible use
 
