@@ -276,6 +276,37 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].finding, after_finding)
         self.assertEqual(changes[0].before_evidence, before_finding.evidence)
 
+    def test_ssh_algorithm_inventory_formatting_change_does_not_create_semantic_change(self) -> None:
+        before_finding = Finding(
+            finding_id="ssh.algorithms.inventory", category="protocol", host="192.0.2.10",
+            port=22, protocol="tcp", severity="info", title="SSH algorithm inventory collected",
+            evidence="Nmap ssh2-enum-algos reported: kex_algorithms.", recommendation="review",
+            evidence_source="nse:ssh2-enum-algos",
+        )
+        after_finding = Finding(
+            finding_id="ssh.algorithms.inventory", category="protocol", host="192.0.2.10",
+            port=22, protocol="tcp", severity="info", title="SSH algorithm inventory collected",
+            evidence="SSH inventory includes the key-exchange section.", recommendation="review",
+            evidence_source="nse:ssh2-enum-algos",
+        )
+        before_output = "kex_algorithms:\\n  curve25519-sha256\\n  diffie-hellman-group14-sha256"
+        after_output = "kex_algorithms:\\n    curve25519-sha256\\n    diffie-hellman-group14-sha256\\n"
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
+                ScriptResult("ssh2-enum-algos", before_output),
+            )),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
+                ScriptResult("ssh2-enum-algos", after_output),
+            )),),
+        ),))
+
+        self.assertEqual(
+            compare_findings((before_finding,), (after_finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_ssh_algorithm_inventory_change_is_reported_with_previous_evidence(self) -> None:
         before_finding = Finding(
             finding_id="ssh.algorithms.inventory", category="protocol", host="192.0.2.10",
