@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from models import Scan
+from scan_diff import _host_identity
 
 
 @dataclass(frozen=True)
@@ -79,7 +80,7 @@ def summarize_shared_services(scan: Scan) -> tuple[SharedService, ...]:
 
     shared: list[SharedService] = []
     for service, endpoints in by_service.items():
-        hosts = {endpoint.host for endpoint in endpoints}
+        hosts = {_host_identity(endpoint.host) for endpoint in endpoints}
         if len(hosts) < 2:
             continue
         shared.append(
