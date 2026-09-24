@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from models import Host, Port, Scan, ScriptResult
+from models import Host, Port, Scan, ScanScope, ScriptResult
 
 
 class NmapParseError(ValueError):
@@ -44,6 +44,15 @@ def parse_nmap_xml(path: str | Path) -> Scan:
 
     finished_node = root.find("./runstats/finished")
     hosts_node = root.find("./runstats/hosts")
+
+    scan_scopes = tuple(
+        ScanScope(
+            protocol=node.get("protocol", "unknown"),
+            services=node.get("services", ""),
+        )
+        for node in root.findall("scaninfo")
+        if node.get("services")
+    )
 
     hosts: list[Host] = []
 
@@ -160,5 +169,6 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         hosts_up=_int_attr(hosts_node, "up"),
         hosts_down=_int_attr(hosts_node, "down"),
         hosts_total=_int_attr(hosts_node, "total"),
+        scan_scopes=scan_scopes,
         hosts=tuple(hosts),
     )
