@@ -441,6 +441,40 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "no_longer_observed")
 
+    def test_http_method_state_transition_reports_old_removed_and_new_added(self) -> None:
+        before_finding = Finding(
+            finding_id="http.methods.standard_read_only", category="protocol", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="Standard read-only HTTP methods reported",
+            evidence="Nmap http-methods reported supported methods: GET HEAD", recommendation="review",
+            evidence_source="nse:http-methods",
+        )
+        after_finding = Finding(
+            finding_id="http.methods.review", category="configuration", host="192.0.2.10",
+            port=80, protocol="tcp", severity="medium", title="HTTP methods require review",
+            evidence="Nmap http-methods reported supported methods: GET HEAD PUT; review methods: PUT",
+            recommendation="review", evidence_source="nse:http-methods",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", scripts=(
+                ScriptResult("http-methods", "Supported Methods: GET HEAD"),
+            )),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", scripts=(
+                ScriptResult("http-methods", "Supported Methods: GET HEAD PUT"),
+            )),),
+        ),))
+
+        changes = compare_findings((before_finding,), (after_finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 2)
+        self.assertEqual(
+            {(change.change, change.finding.finding_id) for change in changes},
+            {
+                ("no_longer_observed", "http.methods.standard_read_only"),
+                ("new", "http.methods.review"),
+            },
+        )
+
     def test_new_service_detection_finding_is_newly_observed_when_detection_was_not_collected_before(self) -> None:
         finding = Finding(
             finding_id="service.telnet.exposed", category="transport", host="192.0.2.10",
