@@ -62,6 +62,11 @@ class JsonReporterTests(unittest.TestCase):
         data = json.loads(render_analysis_json(scan, findings))
 
         self.assertEqual(data["scan"]["source"], "scan.xml")
+        self.assertEqual(data["summary"]["parsed_hosts"], 1)
+        self.assertEqual(data["summary"]["up_hosts"], 1)
+        self.assertEqual(data["summary"]["open_ports"], 0)
+        self.assertEqual(data["summary"]["unique_services"], [])
+        self.assertEqual(data["summary"]["service_counts"], [])
         self.assertEqual(data["findings"][0]["finding_id"], "example.finding")
         self.assertEqual(data["findings"][0]["category"], "test")
         self.assertEqual(data["findings"][0]["port"], 445)
