@@ -27,6 +27,17 @@ class ServiceRulesTests(unittest.TestCase):
         self.assertEqual(finding.protocol, "tcp")
         self.assertEqual(finding.evidence_source, "service:detection")
 
+    def test_closed_telnet_port_produces_no_findings(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=23, protocol="tcp", state="closed", service="telnet"),),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(findings, ())
+
 
 if __name__ == "__main__":
     unittest.main()
