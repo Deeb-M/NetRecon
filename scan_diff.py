@@ -60,6 +60,10 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
     new = _open_ports(after)
     old_hosts = {host.address for host in before.hosts}
     new_hosts = {host.address for host in after.hosts}
+    comparable_hosts = (
+        {host.address for host in before.hosts if host.status.lower() == "up"}
+        & {host.address for host in after.hosts if host.status.lower() == "up"}
+    )
     changes: list[ExposureChange] = []
 
     for host in sorted(old_hosts - new_hosts):
@@ -73,7 +77,7 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
         old_port = old.get(key)
         new_port = new.get(key)
 
-        if host not in old_hosts or host not in new_hosts:
+        if host not in comparable_hosts:
             continue
 
         if old_port is None and new_port is not None:
