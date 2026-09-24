@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import math
 import xml.etree.ElementTree as ET
 
 from models import Host, Port, Scan, ScanScope, ScriptResult
@@ -48,7 +49,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
 
     def _non_negative_float_attr(node: ET.Element | None, name: str) -> float | None:
         value = _float_attr(node, name)
-        return value if value is not None and value >= 0 else None
+        return value if value is not None and math.isfinite(value) and value >= 0 else None
 
     finished_node = root.find("./runstats/finished")
     hosts_node = root.find("./runstats/hosts")
