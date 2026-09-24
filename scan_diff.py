@@ -28,7 +28,7 @@ def _host_identity(address: str) -> str:
     try:
         return str(ipaddress.ip_address(normalized))
     except ValueError:
-        return normalized
+        return normalized.lower()
 
 
 def _open_ports(scan: Scan) -> dict[tuple[str, int, str], Port]:
