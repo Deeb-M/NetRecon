@@ -41,7 +41,11 @@ def prioritize_findings(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
 def _service_label(port: Port) -> str:
     parts = [value for value in (port.product, port.version, port.extra_info) if value]
     detected = " ".join(parts)
-    service = port.service or "unknown"
+    service = (
+        port.service.strip().lower()
+        if port.service and port.service.strip()
+        else "unknown"
+    )
     return f"{service} - {detected}" if detected else service
 
 
