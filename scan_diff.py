@@ -23,7 +23,7 @@ class ExposureChange:
 
 def _open_ports(scan: Scan) -> dict[tuple[str, int, str], Port]:
     return {
-        (host.address, port.port, port.protocol): port
+        (host.address, port.port, port.protocol.lower()): port
         for host in scan.hosts
         for port in host.ports
         if port.state.lower() == "open"
