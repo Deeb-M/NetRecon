@@ -72,7 +72,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
         if port.state.lower() != "open":
             continue
 
-        service = (port.service or "").lower()
+        service = (port.service or "").strip().lower()
         specific_context = False
 
         if service in {"microsoft-ds", "smb"} or (port.port == 445 and not service):
