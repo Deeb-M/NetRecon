@@ -48,7 +48,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
     scan_scopes = tuple(
         ScanScope(
             protocol=node.get("protocol", "unknown"),
-            services=node.get("services", ""),
+            services=node.get("services", "").strip(),
         )
         for node in root.findall("scaninfo")
         if node.get("services") and node.get("services", "").strip()
