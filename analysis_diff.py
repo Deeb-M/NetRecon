@@ -65,7 +65,7 @@ def _ssh_algorithm_state(scan: Scan, finding: Finding) -> tuple[tuple[str, tuple
                         sections.setdefault(current, set())
                         continue
                 if current is not None:
-                    sections[current].add(line)
+                    sections[current].add(line.lower())
             return tuple(
                 (section, tuple(sorted(values)))
                 for section, values in sorted(sections.items())
