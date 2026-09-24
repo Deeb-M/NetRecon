@@ -45,6 +45,22 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].host, "192.0.2.20")
         self.assertIsNone(changes[0].port)
 
+    def test_host_down_afterward_does_not_imply_open_port_closed(self) -> None:
+        before = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http"),
+            )),),
+        )
+        after = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="down"),),
+        )
+
+        self.assertEqual(compare_scans(before, after), ())
+
     def test_open_port_not_scanned_afterward_is_not_reported_closed(self) -> None:
         before = Scan(
             source="before.xml",
