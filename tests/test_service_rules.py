@@ -38,6 +38,21 @@ class ServiceRulesTests(unittest.TestCase):
 
         self.assertEqual(findings, ())
 
+    def test_port_23_without_service_is_treated_as_telnet(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=23, protocol="tcp", state="open", service=None),),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "service.telnet.exposed")
+        self.assertEqual(finding.evidence_source, None)
+        self.assertIn("Telnet-compatible service", finding.evidence)
+
 
 if __name__ == "__main__":
     unittest.main()
