@@ -14,12 +14,13 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
             os_type = port.os_type.strip()
             os_types_by_identity.setdefault(os_type.lower(), os_type)
     os_types = sorted(os_types_by_identity.values(), key=str.lower)
-    cpes = sorted({
-        cpe
-        for port in host.ports
-        for cpe in port.cpes
-    })
-    os_cpes = [cpe.strip() for cpe in cpes if cpe.strip().lower().startswith("cpe:/o:")]
+    os_cpes_by_identity: dict[str, str] = {}
+    for port in host.ports:
+        for cpe in port.cpes:
+            normalized_cpe = cpe.strip()
+            if normalized_cpe.lower().startswith("cpe:/o:"):
+                os_cpes_by_identity.setdefault(normalized_cpe.lower(), normalized_cpe)
+    os_cpes = sorted(os_cpes_by_identity.values(), key=str.lower)
     application_contexts: dict[tuple[int, str], dict[str, str]] = {}
     for port in host.ports:
         for cpe in port.cpes:
