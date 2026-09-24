@@ -35,6 +35,50 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
     )
 
 
+def _ssh_algorithm_state(scan: Scan, finding: Finding) -> tuple[tuple[str, tuple[str, ...]], ...] | None:
+    """Return normalized ssh2-enum-algos sections and algorithms for an endpoint."""
+    section_names = {
+        "kex_algorithms",
+        "server_host_key_algorithms",
+        "encryption_algorithms",
+        "mac_algorithms",
+        "compression_algorithms",
+    }
+    finding_host = _host_identity(finding.host)
+    for host in scan.hosts:
+        if _host_identity(host.address) != finding_host:
+            continue
+        for port in host.ports:
+            if port.port != finding.port:
+                continue
+            if finding.protocol is not None and port.protocol.lower() != finding.protocol.lower():
+                continue
+            script = next(
+                (script for script in port.scripts if script.script_id.lower() == "ssh2-enum-algos"),
+                None,
+            )
+            if script is None:
+                return None
+
+            sections: dict[str, set[str]] = {}
+            current: str | None = None
+            for raw_line in script.output.splitlines():
+                line = raw_line.strip()
+                if not line:
+                    continue
+                if line.endswith(":") and line[:-1].lower() in section_names:
+                    current = line[:-1].lower()
+                    sections.setdefault(current, set())
+                    continue
+                if current is not None:
+                    sections[current].add(line)
+            return tuple(
+                (section, tuple(sorted(values)))
+                for section, values in sorted(sections.items())
+            )
+    return None
+
+
 def _platform_state(scan: Scan, finding: Finding) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return normalized host platform state from OS type and OS CPE evidence."""
     finding_host = _host_identity(finding.host)
@@ -162,7 +206,15 @@ def compare_findings(
             )
             changes.append(FindingChange(change, new_finding))
         elif old_finding is not None and new_finding is not None:
-            if old_finding.finding_id == "host.platform.context":
+            if old_finding.finding_id == "ssh.algorithms.inventory":
+                before_state = _ssh_algorithm_state(before_scan, old_finding)
+                after_state = _ssh_algorithm_state(after_scan, new_finding)
+                semantic_changed = (
+                    before_state is not None
+                    and after_state is not None
+                    and before_state != after_state
+                )
+            elif old_finding.finding_id == "host.platform.context":
                 semantic_changed = (
                     _platform_state(before_scan, old_finding)
                     != _platform_state(after_scan, new_finding)
