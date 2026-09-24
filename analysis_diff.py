@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from findings import Finding
 from models import Scan
+from scan_diff import _port_was_scanned
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,11 @@ def compare_findings(
         if old_finding is None and new_finding is not None:
             changes.append(FindingChange("new", new_finding))
         elif new_finding is None and old_finding is not None:
+            if old_finding.port is not None:
+                if old_finding.protocol is None or not _port_was_scanned(
+                    after_scan, old_finding.port, old_finding.protocol
+                ):
+                    continue
             changes.append(FindingChange("no_longer_observed", old_finding))
 
     return tuple(changes)
