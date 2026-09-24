@@ -156,7 +156,9 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
     if not source.startswith("nse:"):
         return False
 
-    script_id = source.removeprefix("nse:").lower()
+    script_id = source.removeprefix("nse:").strip().lower()
+    if not script_id:
+        return False
     if finding.port is None:
         return any(script.script_id.strip().lower() == script_id for script in host.scripts)
 
