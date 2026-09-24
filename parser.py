@@ -58,13 +58,13 @@ def parse_nmap_xml(path: str | Path) -> Scan:
 
     for host_node in root.findall("host"):
         address_nodes = [
-            node for node in host_node.findall("address") if node.get("addr")
+            node for node in host_node.findall("address") if node.get("addr") and node.get("addr", "").strip()
         ]
         if not address_nodes:
             continue
 
         addresses = tuple(
-            (node.get("addr", ""), node.get("addrtype", "unknown"))
+            (node.get("addr", "").strip(), node.get("addrtype", "unknown"))
             for node in address_nodes
         )
         primary_node = next(
@@ -147,7 +147,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
 
         hosts.append(
             Host(
-                address=primary_node.get("addr", ""),
+                address=primary_node.get("addr", "").strip(),
                 status=status,
                 hostname=hostname,
                 addresses=addresses,
