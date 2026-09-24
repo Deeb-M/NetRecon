@@ -24,6 +24,27 @@ def _identity(finding: Finding) -> tuple[str, str, int | None, str | None]:
     )
 
 
+def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
+    source = finding.evidence_source
+    if not source or not source.startswith("nse:"):
+        return True
+
+    script_id = source.removeprefix("nse:").lower()
+    host = next((host for host in scan.hosts if host.address == finding.host), None)
+    if host is None:
+        return False
+
+    if finding.port is None:
+        return any(script.script_id.lower() == script_id for script in host.scripts)
+
+    return any(
+        port.port == finding.port
+        and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
+        and any(script.script_id.lower() == script_id for script in port.scripts)
+        for port in host.ports
+    )
+
+
 def compare_findings(
     before: tuple[Finding, ...],
     after: tuple[Finding, ...],
@@ -53,6 +74,8 @@ def compare_findings(
                     after_scan, old_finding.port, old_finding.protocol
                 ):
                     continue
+            if not _evidence_source_observed(after_scan, old_finding):
+                continue
             changes.append(FindingChange("no_longer_observed", old_finding))
 
     return tuple(changes)
