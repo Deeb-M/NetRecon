@@ -417,5 +417,26 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(compare_scans(before, after), ())
 
 
+    def test_hostname_case_does_not_change_exposure_identity(self) -> None:
+        before = Scan(
+            source="before.xml",
+            hosts=(Host(
+                address="Server.Example.COM",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http"),),
+            ),),
+        )
+        after = Scan(
+            source="after.xml",
+            hosts=(Host(
+                address="server.example.com",
+                status="up",
+                ports=(Port(80, "tcp", "open", "http"),),
+            ),),
+        )
+
+        self.assertEqual(compare_scans(before, after), ())
+
+
 if __name__ == "__main__":
     unittest.main()
