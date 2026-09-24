@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 import json
 
-from analyzer import Finding
+from findings import Finding
 from models import Host, Port, Scan
 
 
