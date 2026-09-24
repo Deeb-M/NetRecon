@@ -911,5 +911,26 @@ class AnalyzerTests(unittest.TestCase):
         ))
 
 
+    def test_platform_os_type_case_and_whitespace_are_deduplicated(self) -> None:
+        scan = Scan(source="test.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http", os_type="General Purpose"),
+                Port(443, "tcp", "open", "https", os_type=" general purpose "),
+            ),
+        ),))
+
+        findings = analyze_scan(scan)
+
+        platform_findings = tuple(
+            finding for finding in findings
+            if finding.finding_id == "host.platform.context"
+        )
+        self.assertEqual(len(platform_findings), 1)
+        self.assertEqual(
+            platform_findings[0].evidence.lower().count("general purpose"),
+            1,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
