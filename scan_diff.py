@@ -123,12 +123,12 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
 
         assert old_port is not None and new_port is not None
         before_identity = (
-            old_port.service.strip().lower() if old_port.service is not None else None,
+            old_port.service.strip().lower() if old_port.service and old_port.service.strip() else None,
             old_port.product,
             old_port.version,
         )
         after_identity = (
-            new_port.service.strip().lower() if new_port.service is not None else None,
+            new_port.service.strip().lower() if new_port.service and new_port.service.strip() else None,
             new_port.product,
             new_port.version,
         )
