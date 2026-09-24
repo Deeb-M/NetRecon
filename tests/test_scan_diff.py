@@ -85,6 +85,38 @@ class ScanDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].host, "192.0.2.10")
         self.assertIsNone(changes[0].port)
 
+    def test_unknown_host_status_does_not_create_status_or_port_change(self) -> None:
+        before = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http"),
+            )),),
+        )
+        after = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="unknown"),),
+        )
+
+        self.assertEqual(compare_scans(before, after), ())
+
+    def test_unknown_to_up_does_not_create_host_up_or_new_port_change(self) -> None:
+        before = Scan(
+            source="before.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="unknown"),),
+        )
+        after = Scan(
+            source="after.xml",
+            scan_scopes=(ScanScope("tcp", "80"),),
+            hosts=(Host(address="192.0.2.10", status="up", ports=(
+                Port(80, "tcp", "open", "http"),
+            )),),
+        )
+
+        self.assertEqual(compare_scans(before, after), ())
+
     def test_open_port_not_scanned_afterward_is_not_reported_closed(self) -> None:
         before = Scan(
             source="before.xml",
