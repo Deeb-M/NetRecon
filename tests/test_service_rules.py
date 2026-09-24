@@ -14,7 +14,10 @@ class ServiceRulesTests(unittest.TestCase):
 
         findings = analyze_service_context(host)
 
-        self.assertEqual(len(findings), 1)
+        self.assertEqual(
+            tuple(finding.finding_id for finding in findings),
+            ("service.telnet.exposed", "service.product.unknown"),
+        )
         finding = findings[0]
         self.assertEqual(finding.finding_id, "service.telnet.exposed")
         self.assertEqual(finding.category, "transport")
