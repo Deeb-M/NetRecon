@@ -106,7 +106,11 @@ def compare_findings(
             changes.append(FindingChange(change, new_finding))
         elif old_finding is not None and new_finding is not None:
             if (
-                old_finding.finding_id in {"service.application.context", "host.platform.context"}
+                old_finding.finding_id in {
+                    "service.application.context",
+                    "host.platform.context",
+                    "ssh.algorithms.inventory",
+                }
                 and old_finding.evidence != new_finding.evidence
             ):
                 changes.append(FindingChange("changed", new_finding, old_finding.evidence))
