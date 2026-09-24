@@ -141,6 +141,32 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "no_longer_observed")
 
+    def test_application_context_change_is_reported_with_previous_evidence(self) -> None:
+        before_finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPE(s): cpe:/a:apache:http_server:2.4.68.", recommendation="review",
+            evidence_source="service:application",
+        )
+        after_finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPE(s): cpe:/a:nginx:nginx:1.26.", recommendation="review",
+            evidence_source="service:application",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", cpes=("cpe:/a:apache:http_server:2.4.68",)),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", cpes=("cpe:/a:nginx:nginx:1.26",)),),
+        ),))
+
+        changes = compare_findings((before_finding,), (after_finding,), before_scan, after_scan)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "changed")
+        self.assertEqual(changes[0].finding, after_finding)
+        self.assertEqual(changes[0].before_evidence, before_finding.evidence)
+
     def test_platform_context_is_not_resolved_when_platform_evidence_not_recollected(self) -> None:
         finding = Finding(
             finding_id="host.platform.context", category="context", host="192.0.2.10",
