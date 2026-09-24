@@ -454,6 +454,31 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(changes[0].finding, after_finding)
         self.assertEqual(changes[0].before_evidence, before_finding.evidence)
 
+    def test_duplicate_platform_cpe_does_not_create_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="host.platform.context", category="context", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="Platform context observed",
+            evidence="Platform evidence reported by Nmap.", recommendation="review",
+            evidence_source="service:platform",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", cpes=(
+                    "cpe:/o:example:os:1.0", "cpe:/o:example:os:1.0",
+                ),
+            ),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                80, "tcp", "open", "http", cpes=("cpe:/o:example:os:1.0",),
+            ),),
+        ),))
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_duplicate_application_cpe_does_not_create_semantic_change(self) -> None:
         finding = Finding(
             finding_id="service.application.context", category="context", host="192.0.2.10",
