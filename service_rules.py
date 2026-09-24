@@ -43,6 +43,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 title="Host platform context identified",
                 evidence="; ".join(evidence_parts) + ".",
                 recommendation="Use this platform context to guide authorized follow-up checks; do not treat service-derived OS identification as definitive host fingerprinting.",
+                evidence_source="service:platform",
             )
         )
 
