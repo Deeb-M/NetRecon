@@ -322,12 +322,12 @@ class AnalysisDiffTests(unittest.TestCase):
         )
         before_scan = Scan(source="before.xml", hosts=(Host(
             address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
-                ScriptResult("ssh2-enum-algos", "before inventory"),
+                ScriptResult("ssh2-enum-algos", "kex_algorithms:\n  curve25519-sha256"),
             )),),
         ),))
         after_scan = Scan(source="after.xml", hosts=(Host(
             address="192.0.2.10", status="up", ports=(Port(22, "tcp", "open", "ssh", scripts=(
-                ScriptResult("ssh2-enum-algos", "after inventory"),
+                ScriptResult("ssh2-enum-algos", "kex_algorithms:\n  curve25519-sha256\n  diffie-hellman-group14-sha256"),
             )),),
         ),))
 
