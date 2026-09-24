@@ -141,7 +141,7 @@ def _evidence_source_observed(scan: Scan, finding: Finding) -> bool:
         return any(
             port.port == finding.port
             and (finding.protocol is None or port.protocol.lower() == finding.protocol.lower())
-            and any(cpe.lower().startswith("cpe:/a:") for cpe in port.cpes)
+            and any(cpe.strip().lower().startswith("cpe:/a:") for cpe in port.cpes)
             for port in host.ports
         )
 
