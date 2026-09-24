@@ -24,6 +24,26 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(telnet.host, "192.0.2.10")
         self.assertIn("23/tcp", telnet.evidence)
 
+    def test_explicit_service_findings_record_detection_provenance_but_port_fallback_does_not(self) -> None:
+        explicit = Scan(source="explicit.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(23, "tcp", "open", "telnet"),),
+        ),))
+        fallback = Scan(source="fallback.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(23, "tcp", "open"),),
+        ),))
+
+        explicit_finding = next(
+            finding for finding in analyze_scan(explicit)
+            if finding.finding_id == "service.telnet.exposed"
+        )
+        fallback_finding = next(
+            finding for finding in analyze_scan(fallback)
+            if finding.finding_id == "service.telnet.exposed"
+        )
+
+        self.assertEqual(explicit_finding.evidence_source, "service:detection")
+        self.assertIsNone(fallback_finding.evidence_source)
+
     def test_does_not_infer_well_known_service_when_nmap_identifies_conflicting_service(self) -> None:
         scan = Scan(source="conflict.xml", hosts=(Host(
             address="192.0.2.10", status="up", ports=(
