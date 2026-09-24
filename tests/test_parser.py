@@ -204,6 +204,31 @@ class ParserTests(unittest.TestCase):
         self.assertIsNone(scan.hosts_total)
         self.assertEqual(scan.hosts[0].address, "192.0.2.10")
 
+    def test_missing_numeric_scan_metadata_remains_none(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+  </host>
+  <runstats>
+    <finished/>
+    <hosts/>
+  </runstats>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertIsNone(scan.started_at)
+        self.assertIsNone(scan.finished_at)
+        self.assertIsNone(scan.elapsed)
+        self.assertIsNone(scan.hosts_up)
+        self.assertIsNone(scan.hosts_down)
+        self.assertIsNone(scan.hosts_total)
+        self.assertEqual(scan.hosts[0].address, "192.0.2.10")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
