@@ -454,12 +454,12 @@ class AnalysisDiffTests(unittest.TestCase):
             evidence="Nmap http-methods reported supported methods: GET HEAD PUT; review methods: PUT",
             recommendation="review", evidence_source="nse:http-methods",
         )
-        before_scan = Scan(source="before.xml", hosts=(Host(
+        before_scan = Scan(source="before.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
             address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", scripts=(
                 ScriptResult("http-methods", "Supported Methods: GET HEAD"),
             )),),
         ),))
-        after_scan = Scan(source="after.xml", hosts=(Host(
+        after_scan = Scan(source="after.xml", scan_scopes=(ScanScope("tcp", "80"),), hosts=(Host(
             address="192.0.2.10", status="up", ports=(Port(80, "tcp", "open", "http", scripts=(
                 ScriptResult("http-methods", "Supported Methods: GET HEAD PUT"),
             )),),
