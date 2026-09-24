@@ -60,6 +60,26 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("script ssh-hostkey:", report)
 
 
+    def test_text_report_shows_cross_host_shared_services(self) -> None:
+        scan = Scan(
+            source="multi.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up", ports=(
+                    Port(port=80, protocol="tcp", state="open", service="http", product="Apache httpd", version="2.4.68"),
+                )),
+                Host(address="192.0.2.20", status="up", ports=(
+                    Port(port=5357, protocol="tcp", state="open", service="http", product="Microsoft HTTPAPI httpd", version="2.0"),
+                )),
+            ),
+        )
+
+        report = render_text(scan)
+
+        self.assertIn("Shared Services", report)
+        self.assertIn("http: 2 hosts", report)
+        self.assertIn("192.0.2.10:80/tcp  Apache httpd 2.4.68", report)
+        self.assertIn("192.0.2.20:5357/tcp  Microsoft HTTPAPI httpd 2.0", report)
+
     def test_findings_are_prioritized_by_severity(self) -> None:
         findings = (
             Finding("info.context", "context", "192.0.2.10", None, None, "info", "Context", "info evidence", "Review."),
