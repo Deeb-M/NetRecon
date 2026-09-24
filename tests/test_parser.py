@@ -92,6 +92,28 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(host.scripts[0].script_id, "uptime")
         self.assertIn("2 days", host.scripts[0].output)
 
+    def test_skips_host_without_address_but_keeps_valid_hosts(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <ports>
+      <port protocol="tcp" portid="80"><state state="open"/></port>
+    </ports>
+  </host>
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.20" addrtype="ipv4"/>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        self.assertEqual(len(scan.hosts), 1)
+        self.assertEqual(scan.hosts[0].address, "192.0.2.20")
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
