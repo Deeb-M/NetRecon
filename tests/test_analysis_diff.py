@@ -115,6 +115,31 @@ class AnalysisDiffTests(unittest.TestCase):
 
         self.assertEqual(compare_findings((finding,), (), before_scan, after_scan), ())
 
+    def test_unknown_product_evidence_wording_change_does_not_create_semantic_change(self) -> None:
+        before_finding = Finding(
+            finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
+            port=8080, protocol="tcp", severity="info", title="Service lacks product identification",
+            evidence="Nmap identified service 'http' on 8080/tcp but did not identify a product.",
+            recommendation="review", evidence_source="service:detection",
+        )
+        after_finding = Finding(
+            finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
+            port=8080, protocol="tcp", severity="info", title="Service lacks product identification",
+            evidence="Service detection identified http on 8080/tcp; product remains unknown.",
+            recommendation="review", evidence_source="service:detection",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(8080, "tcp", "open", "http"),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(8080, "tcp", "open", "http"),),
+        ),))
+
+        self.assertEqual(
+            compare_findings((before_finding,), (after_finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_unknown_product_service_change_is_reported_with_previous_evidence(self) -> None:
         before_finding = Finding(
             finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
