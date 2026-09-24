@@ -79,7 +79,7 @@ def _platform_state(scan: Scan, finding: Finding) -> tuple[tuple[str, ...], tupl
     for host in scan.hosts:
         if _host_identity(host.address) != finding_host:
             continue
-        os_types = tuple(sorted({port.os_type.strip().lower() for port in host.ports if port.os_type.strip()}))
+        os_types = tuple(sorted({port.os_type.strip().lower() for port in host.ports if port.os_type and port.os_type.strip()}))
         os_cpes = tuple(sorted({
             cpe.lower()
             for port in host.ports
