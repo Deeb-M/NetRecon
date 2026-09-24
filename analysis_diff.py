@@ -67,7 +67,12 @@ def compare_findings(
         new_finding = new.get(key)
 
         if old_finding is None and new_finding is not None:
-            changes.append(FindingChange("new", new_finding))
+            change = (
+                "new"
+                if _evidence_source_observed(before_scan, new_finding)
+                else "newly_observed"
+            )
+            changes.append(FindingChange(change, new_finding))
         elif new_finding is None and old_finding is not None:
             if old_finding.port is not None:
                 if old_finding.protocol is None or not _port_was_scanned(
