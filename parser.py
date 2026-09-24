@@ -34,6 +34,10 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         except ValueError:
             return None
 
+    def _non_negative_int_attr(node: ET.Element | None, name: str) -> int | None:
+        value = _int_attr(node, name)
+        return value if value is not None and value >= 0 else None
+
     def _float_attr(node: ET.Element | None, name: str) -> float | None:
         if node is None or not node.get(name):
             return None
@@ -168,9 +172,9 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         started_at=_int_attr(root, "start"),
         finished_at=_int_attr(finished_node, "time"),
         elapsed=_float_attr(finished_node, "elapsed"),
-        hosts_up=_int_attr(hosts_node, "up"),
-        hosts_down=_int_attr(hosts_node, "down"),
-        hosts_total=_int_attr(hosts_node, "total"),
+        hosts_up=_non_negative_int_attr(hosts_node, "up"),
+        hosts_down=_non_negative_int_attr(hosts_node, "down"),
+        hosts_total=_non_negative_int_attr(hosts_node, "total"),
         scan_scopes=scan_scopes,
         hosts=tuple(hosts),
     )
