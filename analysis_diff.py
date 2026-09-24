@@ -52,7 +52,10 @@ def compare_findings(
     after_scan: Scan,
 ) -> tuple[FindingChange, ...]:
     """Compare findings only for hosts observed in both scans."""
-    observed_hosts = ({host.address for host in before_scan.hosts} & {host.address for host in after_scan.hosts})
+    observed_hosts = (
+        {host.address for host in before_scan.hosts if host.status.lower() == "up"}
+        & {host.address for host in after_scan.hosts if host.status.lower() == "up"}
+    )
     old = {_identity(finding): finding for finding in before if finding.host in observed_hosts}
     new = {_identity(finding): finding for finding in after if finding.host in observed_hosts}
     changes: list[FindingChange] = []
