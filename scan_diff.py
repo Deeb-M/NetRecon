@@ -24,10 +24,11 @@ class ExposureChange:
 
 def _host_identity(address: str) -> str:
     """Normalize IP address text for comparison while preserving raw evidence elsewhere."""
+    normalized = address.strip()
     try:
-        return str(ipaddress.ip_address(address))
+        return str(ipaddress.ip_address(normalized))
     except ValueError:
-        return address
+        return normalized
 
 
 def _open_ports(scan: Scan) -> dict[tuple[str, int, str], Port]:
