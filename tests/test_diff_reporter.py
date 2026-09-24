@@ -62,7 +62,10 @@ class DiffReporterTests(unittest.TestCase):
         self.assertIn("Before Coverage: tcp:80,443", report)
         self.assertIn("After Coverage:  tcp:443", report)
         self.assertIn("Coverage Changed: YES", report)
+        self.assertIn("No Longer Scanned: tcp/80", report)
         self.assertTrue(payload["coverage"]["changed"])
+        self.assertEqual(payload["coverage"]["newly_scanned"], [])
+        self.assertEqual(payload["coverage"]["no_longer_scanned"], ["tcp/80"])
         self.assertEqual(payload["coverage"]["before"], [{"protocol": "tcp", "services": "80,443"}])
         self.assertEqual(payload["coverage"]["after"], [{"protocol": "tcp", "services": "443"}])
 
@@ -76,6 +79,8 @@ class DiffReporterTests(unittest.TestCase):
         self.assertIn("Before Coverage: tcp:80,443", report)
         self.assertIn("After Coverage:  tcp:443", report)
         self.assertIn("Coverage Changed: YES", report)
+        self.assertIn("Newly Scanned: none", report)
+        self.assertIn("No Longer Scanned: tcp/80", report)
         self.assertIn("Changes: none", report)
 
     def test_reports_unchanged_scan_coverage(self) -> None:
@@ -87,7 +92,23 @@ class DiffReporterTests(unittest.TestCase):
         payload = json.loads(render_diff_json(changes, before, after))
 
         self.assertIn("Coverage Changed: NO", report)
+        self.assertIn("Newly Scanned: none", report)
+        self.assertIn("No Longer Scanned: none", report)
         self.assertFalse(payload["coverage"]["changed"])
+        self.assertEqual(payload["coverage"]["newly_scanned"], [])
+        self.assertEqual(payload["coverage"]["no_longer_scanned"], [])
+
+    def test_reports_newly_scanned_ports(self) -> None:
+        before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80"),))
+        after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
+
+        report = render_diff((), before, after)
+        payload = json.loads(render_diff_json((), before, after))
+
+        self.assertIn("Newly Scanned: tcp/443", report)
+        self.assertIn("No Longer Scanned: none", report)
+        self.assertEqual(payload["coverage"]["newly_scanned"], ["tcp/443"])
+        self.assertEqual(payload["coverage"]["no_longer_scanned"], [])
 
 
 if __name__ == "__main__":
