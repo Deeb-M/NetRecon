@@ -64,11 +64,11 @@ def parse_nmap_xml(path: str | Path) -> Scan:
             continue
 
         addresses = tuple(
-            (node.get("addr", "").strip(), node.get("addrtype", "unknown"))
+            (node.get("addr", "").strip(), node.get("addrtype", "").strip() or "unknown")
             for node in address_nodes
         )
         primary_node = next(
-            (node for node in address_nodes if node.get("addrtype") in {"ipv4", "ipv6"}),
+            (node for node in address_nodes if node.get("addrtype", "").strip() in {"ipv4", "ipv6"}),
             address_nodes[0],
         )
 
