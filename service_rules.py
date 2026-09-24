@@ -8,11 +8,12 @@ from findings import Finding
 def analyze_service_context(host) -> tuple[Finding, ...]:
     findings: list[Finding] = []
 
-    os_types = sorted({
-        port.os_type.strip().lower()
-        for port in host.ports
-        if port.os_type and port.os_type.strip()
-    })
+    os_types_by_identity: dict[str, str] = {}
+    for port in host.ports:
+        if port.os_type and port.os_type.strip():
+            os_type = port.os_type.strip()
+            os_types_by_identity.setdefault(os_type.lower(), os_type)
+    os_types = sorted(os_types_by_identity.values(), key=str.lower)
     cpes = sorted({
         cpe
         for port in host.ports
