@@ -36,7 +36,7 @@ class NetworkSummary:
 
 def summarize_network(scan: Scan) -> NetworkSummary:
     """Summarize host and open-service observations across the scan."""
-    up_hosts = sum(1 for host in scan.hosts if host.status.lower() == "up")
+    up_hosts = sum(1 for host in scan.hosts if host.status.strip().lower() == "up")
     open_ports = 0
     counts: dict[str, int] = {}
 
