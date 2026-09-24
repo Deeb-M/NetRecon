@@ -192,10 +192,8 @@ def _coverage_text(scan: Scan) -> str:
 
 
 def _coverage_changed(before_scan: Scan, after_scan: Scan) -> bool:
-    """Return whether Nmap reported different scan scopes."""
-    before = {(scope.protocol.lower(), scope.services) for scope in before_scan.scan_scopes}
-    after = {(scope.protocol.lower(), scope.services) for scope in after_scan.scan_scopes}
-    return before != after
+    """Return whether the effective numeric protocol/port coverage differs."""
+    return _expanded_coverage(before_scan) != _expanded_coverage(after_scan)
 
 
 def _expanded_coverage(scan: Scan) -> set[tuple[str, int]]:
