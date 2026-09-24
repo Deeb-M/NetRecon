@@ -122,8 +122,16 @@ def compare_scans(before: Scan, after: Scan) -> tuple[ExposureChange, ...]:
             continue
 
         assert old_port is not None and new_port is not None
-        before_identity = (old_port.service, old_port.product, old_port.version)
-        after_identity = (new_port.service, new_port.product, new_port.version)
+        before_identity = (
+            old_port.service.lower() if old_port.service is not None else None,
+            old_port.product,
+            old_port.version,
+        )
+        after_identity = (
+            new_port.service.lower() if new_port.service is not None else None,
+            new_port.product,
+            new_port.version,
+        )
         if before_identity != after_identity:
             changes.append(ExposureChange(
                 "changed", host, port_number, protocol,
