@@ -184,6 +184,13 @@ def _coverage_text(scan: Scan) -> str:
     )
 
 
+def _coverage_changed(before_scan: Scan, after_scan: Scan) -> bool:
+    """Return whether Nmap reported different scan scopes."""
+    before = {(scope.protocol.lower(), scope.services) for scope in before_scan.scan_scopes}
+    after = {(scope.protocol.lower(), scope.services) for scope in after_scan.scan_scopes}
+    return before != after
+
+
 def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
     """Render exposure changes as stable, machine-readable JSON."""
     payload = {
@@ -193,6 +200,7 @@ def render_diff_json(changes: tuple[ExposureChange, ...], before_scan: Scan | No
     }
     if before_scan is not None and after_scan is not None:
         payload["coverage"] = {
+            "changed": _coverage_changed(before_scan, after_scan),
             "before": _coverage_payload(before_scan),
             "after": _coverage_payload(after_scan),
         }
@@ -243,6 +251,7 @@ def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = 
             "Summary: none",
             f"Before Coverage: {_coverage_text(before_scan)}",
             f"After Coverage:  {_coverage_text(after_scan)}",
+            f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}",
             "Changes: none",
         ])
 
@@ -252,6 +261,9 @@ def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = 
     if before_scan is not None and after_scan is not None:
         lines.append(f"Before Coverage: {_coverage_text(before_scan)}")
         lines.append(f"After Coverage:  {_coverage_text(after_scan)}")
+        lines.append(
+            f"Coverage Changed: {'YES' if _coverage_changed(before_scan, after_scan) else 'NO'}"
+        )
     for change in changes:
         if change.change == "host_not_observed":
             lines.append(f"HOST_NOT_OBSERVED {change.host}")
