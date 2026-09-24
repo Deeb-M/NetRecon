@@ -619,6 +619,29 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_whitespace_only_service_does_not_count_as_detection_provenance(self) -> None:
+        finding = Finding(
+            finding_id="service.product.unknown", category="visibility", host="192.0.2.10",
+            port=8080, protocol="tcp", severity="info", title="Service product not identified",
+            evidence="Service detected without product metadata.", recommendation="review",
+            evidence_source="service:detection",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                8080, "tcp", "open", "   ",
+            ),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                8080, "tcp", "open", "http",
+            ),),
+        ),))
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "newly_observed")
+
     def test_application_cpe_whitespace_counts_as_observed_provenance(self) -> None:
         finding = Finding(
             finding_id="service.application.context", category="context", host="192.0.2.10",
