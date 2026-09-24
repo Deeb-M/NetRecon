@@ -74,7 +74,7 @@ def _host_lines(host: Host) -> list[str]:
     else:
         for port in host.ports:
             line = (
-                f"  {port.port}/{port.protocol:<3} "
+                f"  {port.port}/{port.protocol.strip().lower():<3} "
                 f"{port.state:<12} {_service_label(port)}"
             )
             if port.tunnel:
