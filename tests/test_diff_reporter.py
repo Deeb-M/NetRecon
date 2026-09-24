@@ -83,6 +83,18 @@ class DiffReporterTests(unittest.TestCase):
         self.assertIn("No Longer Scanned: tcp/80", report)
         self.assertIn("Changes: none", report)
 
+    def test_equivalent_coverage_formatting_is_not_reported_as_changed(self) -> None:
+        before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80,81,82,443"),))
+        after = Scan("after.xml", scan_scopes=(ScanScope("TCP", "443,80-82"),))
+
+        report = render_diff((), before, after)
+        payload = json.loads(render_diff_json((), before, after))
+
+        self.assertIn("Coverage Changed: NO", report)
+        self.assertIn("Newly Scanned: none", report)
+        self.assertIn("No Longer Scanned: none", report)
+        self.assertFalse(payload["coverage"]["changed"])
+
     def test_reports_unchanged_scan_coverage(self) -> None:
         before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
         after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "80,443"),))
