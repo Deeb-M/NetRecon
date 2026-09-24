@@ -838,6 +838,23 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(scan.hosts, ())
 
+    def test_address_with_outer_whitespace_is_trimmed(self) -> None:
+        xml = """<nmaprun scanner="nmap">
+  <host>
+    <status state="up"/>
+    <address addr=" 192.0.2.10 " addrtype="ipv4"/>
+  </host>
+</nmaprun>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+
+            scan = parse_nmap_xml(path)
+
+        host = scan.hosts[0]
+        self.assertEqual(host.address, "192.0.2.10")
+        self.assertEqual(host.addresses, (("192.0.2.10", "ipv4"),))
+
     def test_rejects_missing_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "missing.xml"
