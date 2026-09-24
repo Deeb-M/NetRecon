@@ -573,6 +573,29 @@ class AnalysisDiffTests(unittest.TestCase):
             (),
         )
 
+    def test_application_cpe_outer_whitespace_does_not_create_semantic_change(self) -> None:
+        finding = Finding(
+            finding_id="service.application.context", category="context", host="192.0.2.10",
+            port=443, protocol="tcp", severity="info", title="Application context identified",
+            evidence="Application CPEs reported by Nmap.", recommendation="review",
+            evidence_source="service:application",
+        )
+        before_scan = Scan(source="before.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                443, "tcp", "open", "https", cpes=(" cpe:/a:example:web:1.0 ",),
+            ),),
+        ),))
+        after_scan = Scan(source="after.xml", hosts=(Host(
+            address="192.0.2.10", status="up", ports=(Port(
+                443, "tcp", "open", "https", cpes=("cpe:/a:example:web:1.0",),
+            ),),
+        ),))
+
+        self.assertEqual(
+            compare_findings((finding,), (finding,), before_scan, after_scan),
+            (),
+        )
+
     def test_duplicate_application_cpe_does_not_create_semantic_change(self) -> None:
         finding = Finding(
             finding_id="service.application.context", category="context", host="192.0.2.10",
