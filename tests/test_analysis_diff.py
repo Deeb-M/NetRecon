@@ -1238,6 +1238,33 @@ class AnalysisDiffTests(unittest.TestCase):
         self.assertEqual(len(changes), 1)
         self.assertEqual(changes[0].change, "new")
 
+    def test_whitespace_only_evidence_source_matches_unspecified_source(self) -> None:
+        finding = Finding(
+            finding_id="finding.new",
+            category="test",
+            host="192.0.2.10",
+            port=80,
+            protocol="tcp",
+            severity="low",
+            title="New finding",
+            evidence="evidence",
+            recommendation="review",
+            evidence_source="   ",
+        )
+        before_scan = Scan(
+            source="before.xml",
+            hosts=(Host(address="192.0.2.10", status="up"),),
+        )
+        after_scan = Scan(
+            source="after.xml",
+            hosts=(Host(address="192.0.2.10", status="up"),),
+        )
+
+        changes = compare_findings((), (finding,), before_scan, after_scan)
+
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].change, "new")
+
     def test_evidence_change_does_not_change_finding_identity(self) -> None:
         before = (_finding("finding.same", evidence="before"),)
         after = (_finding("finding.same", evidence="after"),)
