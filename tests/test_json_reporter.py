@@ -159,6 +159,23 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["host_summaries"][0]["services"], ["http"])
 
 
+    def test_analysis_json_host_summary_normalizes_status_whitespace_and_case(self) -> None:
+        scan = Scan(
+            source="host-summary-status.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status=" UP ",
+                ),
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, ()))
+
+        self.assertEqual(data["summary"]["up_hosts"], 1)
+        self.assertEqual(data["host_summaries"][0]["status"], "up")
+
+
     def test_shared_services_normalize_service_name_whitespace_and_case(self) -> None:
         scan = Scan(
             source="multi.xml",
