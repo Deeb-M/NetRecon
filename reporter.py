@@ -235,7 +235,16 @@ def render_findings(findings: tuple[Finding, ...]) -> str:
 def render_diff(changes: tuple[ExposureChange, ...], before_scan: Scan | None = None, after_scan: Scan | None = None) -> str:
     """Render scan-to-scan exposure changes for analyst review."""
     if not changes:
-        return "Exposure Changes: none"
+        if before_scan is None or after_scan is None:
+            return "Exposure Changes: none"
+        return "\n".join([
+            "Exposure Changes",
+            "----------------",
+            "Summary: none",
+            f"Before Coverage: {_coverage_text(before_scan)}",
+            f"After Coverage:  {_coverage_text(after_scan)}",
+            "Changes: none",
+        ])
 
     summary = _change_summary(changes)
     summary_text = ", ".join(f"{key.upper()}={value}" for key, value in summary.items())
