@@ -34,6 +34,21 @@ class AnalysisSummaryTests(unittest.TestCase):
             (("critical", 1), ("high", 1), ("medium", 1), ("low", 1), ("info", 1)),
         )
 
+    def test_unknown_severities_are_sorted_after_canonical_severities(self) -> None:
+        findings = (
+            Finding("f1", "x", "h1", None, None, "warning", "One", "e", "r"),
+            Finding("f2", "x", "h2", None, None, "medium", "Two", "e", "r"),
+            Finding("f3", "x", "h3", None, None, "advisory", "Three", "e", "r"),
+            Finding("f4", "x", "h4", None, None, "WARNING", "Four", "e", "r"),
+        )
+
+        summary = summarize_analysis(findings)
+
+        self.assertEqual(
+            summary.severity_counts,
+            (("medium", 1), ("advisory", 1), ("warning", 2)),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
