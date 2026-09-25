@@ -353,6 +353,33 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(finding.protocol, "tcp")
         self.assertEqual(finding.evidence_source, "nse:smb-protocols")
 
+    def test_modern_smb_protocol_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="smb-protocols", output="dialects: SMB 2.02 SMB 3.11"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "smb.protocol.modern_only")
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "info")
+        self.assertEqual(finding.evidence_source, "nse:smb-protocols")
+
 
 if __name__ == "__main__":
     unittest.main()
