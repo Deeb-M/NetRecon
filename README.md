@@ -47,15 +47,20 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 
 NetRecon requires Python 3.10 or newer and has no runtime third-party dependencies.
 
-On Kali Linux and other distributions that protect the system Python environment, install NetRecon in a virtual environment:
+On Kali Linux and other distributions that protect the system Python environment, install the current public release in a virtual environment:
 
 ```bash
 git clone https://github.com/Deeb-M/NetRecon.git
 cd NetRecon
+git checkout v0.1.0
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install .
 ```
+
+This checks out the exact `v0.1.0` release instead of the development `main` branch.
+
+To test the latest development version instead, clone the repository and remain on `main`.
 
 The installed CLI can then be invoked as `netrecon`.
 
