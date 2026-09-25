@@ -43,6 +43,22 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Produce machine-readable JSON for both Exposure Changes and Analysis Changes, including change summaries
 - Run automated tests with GitHub Actions
 
+## Installation
+
+NetRecon requires Python 3.10 or newer and has no runtime third-party dependencies.
+
+On Kali Linux and other distributions that protect the system Python environment, install NetRecon in a virtual environment:
+
+```bash
+git clone https://github.com/Deeb-M/NetRecon.git
+cd NetRecon
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+```
+
+The installed CLI can then be invoked as `netrecon`.
+
 ## Quick start
 
 Generate XML with Nmap on a system or network you are authorized to test:
@@ -54,55 +70,55 @@ nmap -sV -oX scan.xml <authorized-target>
 Read the scan as a terminal report:
 
 ```bash
-python netrecon.py scan.xml
+netrecon scan.xml
 ```
 
 Produce JSON:
 
 ```bash
-python netrecon.py scan.xml --format json
+netrecon scan.xml --format json
 ```
 
 Add evidence-based analysis:
 
 ```bash
-python netrecon.py scan.xml --analyze
+netrecon scan.xml --analyze
 ```
 
 Return scan data and findings in one JSON document:
 
 ```bash
-python netrecon.py scan.xml --analyze --format json
+netrecon scan.xml --analyze --format json
 ```
 
 Compare exposure between two scans:
 
 ```bash
-python netrecon.py before.xml after.xml --diff
+netrecon before.xml after.xml --diff
 ```
 
 Return exposure changes as JSON:
 
 ```bash
-python netrecon.py before.xml after.xml --diff --format json
+netrecon before.xml after.xml --diff --format json
 ```
 
 Compare evidence-based findings between two scans:
 
 ```bash
-python netrecon.py before.xml after.xml --analysis-diff
+netrecon before.xml after.xml --analysis-diff
 ```
 
 Return analysis changes as JSON, including finding evidence provenance:
 
 ```bash
-python netrecon.py before.xml after.xml --analysis-diff --format json
+netrecon before.xml after.xml --analysis-diff --format json
 ```
 
 Try the included safe sample:
 
 ```bash
-python netrecon.py examples/sample.xml
+netrecon examples/sample.xml
 ```
 
 Run all tests:
