@@ -324,6 +324,35 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(finding.severity, "medium")
         self.assertEqual(finding.evidence_source, "nse:ssl-enum-ciphers")
 
+    def test_smb1_protocol_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="smb-protocols", output="dialects: NT LM 0.12 SMB 2.02 SMB 3.11"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "smb.protocol.smb1.reported")
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "medium")
+        self.assertEqual(finding.port, 445)
+        self.assertEqual(finding.protocol, "tcp")
+        self.assertEqual(finding.evidence_source, "nse:smb-protocols")
+
 
 if __name__ == "__main__":
     unittest.main()
