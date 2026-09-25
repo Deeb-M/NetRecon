@@ -380,6 +380,35 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(finding.severity, "info")
         self.assertEqual(finding.evidence_source, "nse:smb-protocols")
 
+    def test_smb_signing_review_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="smb2-security-mode", output="Message signing enabled but not required"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "smb.signing.review")
+        self.assertEqual(finding.category, "configuration")
+        self.assertEqual(finding.severity, "medium")
+        self.assertEqual(finding.port, 445)
+        self.assertEqual(finding.protocol, "tcp")
+        self.assertEqual(finding.evidence_source, "nse:smb2-security-mode")
+
 
 if __name__ == "__main__":
     unittest.main()
