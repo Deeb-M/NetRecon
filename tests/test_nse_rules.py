@@ -173,6 +173,35 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(finding.severity, "medium")
         self.assertEqual(finding.evidence_source, "nse:ssl-cert")
 
+    def test_tls_certificate_identity_mismatch_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="ssl-cert", output="Subject Alternative Name: DNS:www.example.com Issuer: Example CA"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=("api.example.com",),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "tls.certificate.identity_mismatch")
+        self.assertEqual(finding.category, "certificate")
+        self.assertEqual(finding.severity, "medium")
+        self.assertIn("api.example.com", finding.evidence)
+        self.assertIn("www.example.com", finding.evidence)
+        self.assertEqual(finding.evidence_source, "nse:ssl-cert")
+
 
 if __name__ == "__main__":
     unittest.main()
