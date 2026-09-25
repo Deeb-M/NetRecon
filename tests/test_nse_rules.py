@@ -62,6 +62,33 @@ class NseRulesTests(unittest.TestCase):
         self.assertIn("PUT DELETE", finding.evidence)
         self.assertEqual(finding.evidence_source, "nse:http-methods")
 
+    def test_http_standard_methods_produce_read_only_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=80,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="http-methods", output="Supported Methods: GET HEAD"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "http.methods.standard_read_only")
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "info")
+        self.assertEqual(finding.evidence_source, "nse:http-methods")
+
 
 if __name__ == "__main__":
     unittest.main()
