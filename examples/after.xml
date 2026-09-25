@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<nmaprun scanner="nmap" args="nmap -sV -p 8080 192.0.2.10">
+  <scaninfo type="syn" protocol="tcp" numservices="1" services="8080"/>
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <hostnames><hostname name="lab.example"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="8080">
+        <state state="open"/>
+        <service name="http" product="Apache httpd"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>
