@@ -6,7 +6,7 @@ Branch: main
 
 ## Verified checkpoint
 
-NetRecon **v0.1.0** has been published as the project's first public **Alpha pre-release**.
+NetRecon **v0.1.0** remains the project's first public **Alpha pre-release** and an immutable historical release checkpoint.
 
 Release:
 - Tag: `v0.1.0`
@@ -15,22 +15,26 @@ Release:
 - Release type: Pre-release
 - License: MIT
 - Supported Python versions validated by CI: 3.10, 3.11, 3.12, 3.13, 3.14
+- Release assets: no separately uploaded assets; GitHub provides the source archives for the tag
+- The published tag must not be moved to include later development changes
 
-The latest user-run full regression suite passed:
+The release itself was published with a verified **379-test** baseline.
+
+Post-release development on `main` has continued deliberately. The latest user-run full regression suite passed:
 
 ```text
-Ran 379 tests in 0.045s
+Ran 381 tests in 0.050s
 
 OK
 ```
 
-This release and the 379-test baseline are the authoritative continuation point.
+The authoritative continuation point for current development is therefore **main with 381 tests passing**, while `v0.1.0` remains the historical release snapshot.
 
 ## Current project phase
 
-The systematic regression-expansion phase and the Product Readiness work for **v0.1.0** are complete.
+The systematic regression-expansion phase and Product Readiness work for **v0.1.0** are complete.
 
-Do not add tests merely to increase the test count. Future development should begin from the released `v0.1.0` baseline and make deliberate, evidence-driven changes.
+Post-release work has begun with focused CLI/Product UX and documentation improvements. Do not add tests merely to increase the test count. Future development should remain deliberate, evidence-driven, and compatible with the evidence-first design.
 
 NetRecon remains an **Alpha** project. Core functionality is stable and covered by automated tests, while the Intelligence layer remains under active development.
 
@@ -51,6 +55,78 @@ The first public release milestone includes:
 - Repository description and cybersecurity-related topics
 - Annotated Git tag `v0.1.0`
 - Public GitHub pre-release `NetRecon v0.1.0`
+
+## Post-release work completed on main
+
+### CLI/Product polish
+
+- Added `netrecon --version`, sourced from installed package metadata rather than a duplicated hard-coded version.
+- Added a focused CLI regression test verifying that `--version` exits successfully and reports `netrecon 0.1.0` without requiring a scan.
+- Improved the CLI description so it accurately describes analysis, comparison, evidence-based findings, and exposure summaries.
+- Corrected `compare_scan` help text so it explicitly applies to both `--diff` and `--analysis-diff`.
+- Added a focused regression test for the improved help text.
+
+### New-user installation and UX validation
+
+A clean user-style installation was tested outside the development repository on Kali with Python 3.14.6.
+
+Verified:
+- Fresh clone succeeded.
+- Virtual environment installation with `python -m pip install .` succeeded.
+- Built/installed package version was `0.1.0`.
+- Installed `netrecon` CLI worked independently of the source repository.
+- `--help`, safe sample parsing, evidence-based analysis, and JSON output worked.
+- Missing scan, missing file, malformed XML, non-Nmap XML, incomplete `--diff`, and incomplete `--analysis-diff` produced controlled CLI errors.
+
+This validation identified product/documentation issues rather than scanner or Intelligence failures. The actionable CLI help/version issues have been corrected.
+
+### Safe comparison examples
+
+Added:
+- `examples/before.xml`
+- `examples/after.xml`
+
+The pair uses the documentation-only TEST-NET address `192.0.2.10` and the same `tcp:8080` scan coverage in both files.
+
+The before scan identifies `http` without a product. The after scan identifies `http` with product `Apache httpd`.
+
+Manual end-to-end validation passed:
+
+`--diff`:
+- Reports one `CHANGED` exposure.
+- Shows `http -> http Apache httpd`.
+- Reports identical before/after coverage: `tcp:8080`.
+- Does not manufacture a coverage change.
+
+`--analysis-diff`:
+- Reports one `NO_LONGER_OBSERVED` informational finding.
+- Correctly identifies that the previous `Service lacks product identification` finding is no longer observed after product evidence is collected.
+- Preserves evidence-first semantics and does not infer a vulnerability.
+
+The README now documents both safe comparison commands.
+
+### Release versus development installation
+
+A new-user documentation issue was confirmed after post-release commits accumulated on `main`:
+
+- `v0.1.0` still points to tagged commit `1749fcf`.
+- `main` is intentionally ahead of that release.
+- A plain `git clone` therefore installs current development code, not the exact published release.
+
+The README installation instructions now explicitly check out `v0.1.0` for the current public release:
+
+```bash
+git clone https://github.com/Deeb-M/NetRecon.git
+cd NetRecon
+git checkout v0.1.0
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install .
+```
+
+The README separately explains that users who want the latest development version should remain on `main`.
+
+Do not move or retag `v0.1.0` to include post-release work.
 
 ## Completed test coverage
 
@@ -84,11 +160,15 @@ Before changing production behavior:
    ```
 6. Preserve the evidence-first design and avoid speculative vulnerability claims.
 
-The current verified baseline is **379 tests passing**.
+The current verified development baseline is **381 tests passing**.
 
 ## Next development direction
 
-Treat `v0.1.0` as the stable Alpha checkpoint. Future work should focus on meaningful Intelligence-layer improvements, bug fixes, documentation, or release-driven enhancements rather than increasing the test count for its own sake.
+Treat `v0.1.0` as the stable historical Alpha release checkpoint and current `main` as post-release development.
+
+Future work should focus on meaningful Intelligence-layer improvements, bug fixes, documentation, or release-driven enhancements rather than increasing the test count for its own sake.
+
+Potential release-process improvement identified during validation: future releases can consider attaching the built `.whl` and source distribution `.tar.gz` as explicit GitHub Release assets. This is not a current defect and was not required for `v0.1.0`.
 
 Any production change after `v0.1.0` belongs to post-release development and should preserve compatibility unless a change is intentionally documented.
 
