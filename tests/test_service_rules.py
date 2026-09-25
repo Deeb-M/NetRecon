@@ -107,6 +107,24 @@ class ServiceRulesTests(unittest.TestCase):
         self.assertEqual(finding.evidence_source, "service:application")
         self.assertIn("cpe:/a:example:webapp:1.0", finding.evidence)
 
+    def test_application_context_deduplicates_cpes_case_insensitively(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="closed", cpes=(
+                    "cpe:/a:Example:WebApp:1.0",
+                    " CPE:/A:EXAMPLE:WEBAPP:1.0 ",
+                )),
+            ),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].finding_id, "service.application.context")
+        self.assertEqual(findings[0].evidence.count("WebApp"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
