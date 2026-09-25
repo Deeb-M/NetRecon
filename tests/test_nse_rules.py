@@ -269,6 +269,34 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0].finding_id, "tls.certificate.identity_mismatch")
 
+    def test_legacy_tls_protocol_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="ssl-enum-ciphers", output="TLSv1.0: ciphers TLSv1.2: ciphers"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "tls.protocol.legacy_enabled")
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "medium")
+        self.assertIn("TLSv1.0", finding.evidence)
+        self.assertEqual(finding.evidence_source, "nse:ssl-enum-ciphers")
+
 
 if __name__ == "__main__":
     unittest.main()
