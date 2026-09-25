@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from importlib.metadata import version
 from pathlib import Path
 
 from analysis_diff import compare_findings
@@ -17,6 +18,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="netrecon",
         description="Parse Nmap XML and summarize discovered hosts, ports, and services.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {version('netrecon')}",
     )
     parser.add_argument("scan", type=Path, help="Path to an Nmap XML (-oX) file")
     parser.add_argument("compare_scan", nargs="?", type=Path, help="Second Nmap XML file used with --diff")
