@@ -87,6 +87,26 @@ class ServiceRulesTests(unittest.TestCase):
         self.assertIn("Linux", finding.evidence)
         self.assertIn("cpe:/o:linux:linux_kernel", finding.evidence)
 
+    def test_application_cpe_produces_port_context_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(port=443, protocol="TCP", state="closed", cpes=(" cpe:/a:example:webapp:1.0 ",)),
+            ),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "service.application.context")
+        self.assertEqual(finding.category, "context")
+        self.assertEqual(finding.port, 443)
+        self.assertEqual(finding.protocol, "tcp")
+        self.assertEqual(finding.evidence_source, "service:application")
+        self.assertIn("cpe:/a:example:webapp:1.0", finding.evidence)
+
 
 if __name__ == "__main__":
     unittest.main()
