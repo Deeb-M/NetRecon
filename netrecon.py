@@ -17,7 +17,7 @@ from scan_diff import compare_scans
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="netrecon",
-        description="Parse Nmap XML and summarize discovered hosts, ports, and services.",
+        description="Analyze and compare Nmap XML scans with evidence-based findings and exposure summaries.",
     )
     parser.add_argument(
         "--version",
@@ -25,7 +25,12 @@ def build_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s {version('netrecon')}",
     )
     parser.add_argument("scan", type=Path, help="Path to an Nmap XML (-oX) file")
-    parser.add_argument("compare_scan", nargs="?", type=Path, help="Second Nmap XML file used with --diff")
+    parser.add_argument(
+        "compare_scan",
+        nargs="?",
+        type=Path,
+        help="Second Nmap XML file used with --diff or --analysis-diff",
+    )
     parser.add_argument(
         "--format",
         choices=("text", "json"),
