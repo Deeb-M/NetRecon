@@ -1,6 +1,6 @@
 # NetRecon Development Handoff
 
-Last updated: 2026-09-24
+Last updated: 2026-09-25
 Repository: Deeb-M/NetRecon
 Branch: main
 
@@ -9,98 +9,70 @@ Branch: main
 The latest user-run full regression suite passed:
 
 ```text
-Ran 276 tests in 0.041s
+Ran 379 tests in 0.043s
 
 OK
 ```
 
-This is the authoritative continuation point. The next new regression test must be **Test #277**.
+This is the authoritative continuation point.
+
+## Current project phase
+
+The systematic regression-expansion phase is complete. Do not add tests merely to increase the test count.
+
+NetRecon is now in **Product Readiness** work: preparing the repository to be a clear, maintainable public project while preserving the evidence-first behavior already protected by the regression suite.
+
+## Completed test coverage
+
+Direct or substantial regression coverage now exists for:
+
+- Nmap XML parsing and normalization
+- CLI behavior and error handling
+- Core analyzer orchestration
+- Service-derived security analysis
+- NSE-derived HTTP, SSH, TLS/certificate, and SMB analysis
+- Host summaries
+- Network and shared-service summaries
+- Analysis summaries and severity ordering
+- Exposure diff behavior and scan coverage semantics
+- Analysis diff behavior and evidence provenance
+- Text and JSON reporters
+
+The latest additions closed direct coverage gaps in `host_summary.py`, `network_summary.py`, `service_rules.py`, `nse_rules.py`, and `analysis_summary.py`.
+
+`models.py` and `findings.py` are primarily immutable dataclass definitions and do not need artificial tests that merely verify Python stores fields.
+
+## Regression rule
+
+Before changing production behavior:
+
+1. Inspect the relevant production code and existing tests.
+2. Search for exact and semantic duplicate tests.
+3. Add a regression test when a bug, new behavior, or meaningful uncovered branch justifies it.
+4. Make the smallest justified production change.
+5. Run the full suite:
+   ```bash
+   git pull && python3 -m unittest discover -s tests -v
+   ```
+6. Preserve the evidence-first design and avoid speculative vulnerability claims.
+
+The current verified baseline is **379 tests passing**.
+
+## Product Readiness priorities
+
+Work through these deliberately rather than treating them as a test-count exercise:
+
+1. Keep README usage and architecture aligned with actual CLI behavior.
+2. Add standard public-repository metadata where appropriate (for example licensing and contribution/security guidance).
+3. Decide and implement a clean Python packaging/install story before advertising installation commands.
+4. Keep GitHub Actions aligned with the supported Python versions and full regression suite.
+5. Review examples and public documentation for safe, reproducible usage.
+6. Only then consider a tagged public release/versioning milestone.
 
 ## Working method
 
-Work slowly and add exactly one regression test at a time.
+NetRecon is not a Codex project. Work through the GitHub connector and the user's local Kali environment.
 
-1. Inspect the relevant production code and existing tests before adding anything.
-2. Search existing test method names and semantically similar tests first. Never create a duplicate unittest method; Python class method overriding can silently hide the earlier test and leave the discovered test count unchanged.
-3. Choose exactly one meaningful next behavior or edge case.
-4. Add the test directly to GitHub on `main`.
-5. Tell the user:
-   - "נוסף Test מספר **N**."
-   - what the test checks;
-   - whether current code is expected to PASS or FAIL and the exact reason;
-   - then give exactly:
-     ```bash
-     git pull && python3 -m unittest discover -s tests -v
-     ```
-   - state the expected total test count/status.
-6. The user runs the command locally on Kali and sends the result.
-7. If the test fails, explain the exact assertion/failure, make the smallest justified production fix, and ask for the same full-suite command again.
-8. If the suite returns OK, immediately move to the next test. Do not recap the previous test and do not wait for the user to say "תמשיך".
-9. Do not use a fixed target number as a stopping criterion. Cover meaningful behavior and edge cases thoroughly, including small robustness cases, because this is intended to be a public-quality project.
-10. NetRecon is not a Codex project. Work through the GitHub connector and the user's local Kali test run.
+Prefer one meaningful change at a time. Explain what is being changed, why it matters to the project, and how it should be verified locally.
 
-## Current focus
-
-Current work is systematic regression coverage of `parser.py` / `tests/test_parser.py`.
-
-Parser coverage was originally sparse and has been expanded heavily. Recent tests cover missing/invalid numeric metadata, missing ports/services/hostnames, invalid ports, service confidence, CPE cleanup, script defaults, scan scopes, address selection, hostname normalization, and parser-boundary whitespace handling.
-
-## Recent parser fixes now protected by regression tests
-
-- Ignore `scaninfo` entries whose `services` is missing, empty, or whitespace-only.
-- Trim outer whitespace from `ScanScope.services`.
-- Trim `ScanScope.protocol`; blank/missing/whitespace-only protocol becomes `"unknown"`.
-- Reject host addresses that are missing, empty, or whitespace-only.
-- Trim host address values before storing them.
-- Trim `addrtype`; blank/whitespace-only type becomes `"unknown"`.
-- Use trimmed `addrtype` when preferring IPv4/IPv6 over non-IP addresses.
-- Trim hostname names; ignore empty/whitespace-only hostname names.
-- Trim hostname record types; blank/missing/whitespace-only type becomes `"unknown"`.
-- Trim port protocol; blank/missing/whitespace-only protocol becomes `"unknown"`.
-
-## Latest regression sequence
-
-- #268: whitespace-only host address is rejected. Initially failed; fixed address filtering/trimming.
-- #269: valid address with outer whitespace is stored trimmed. Passed.
-- #270: whitespace around `addrtype=" ipv4 "` must not break IP preference. Initially failed; fixed addrtype normalization.
-- #271: whitespace-only addrtype becomes `"unknown"`. Passed.
-- #272: hostname name with outer whitespace is trimmed. Initially failed; fixed hostname-name normalization/filtering.
-- #273: whitespace-only hostname name is ignored. Passed.
-- #274: hostname type with outer whitespace is trimmed. Initially failed; fixed hostname-type normalization.
-- #275: whitespace-only hostname type becomes `"unknown"`. Passed.
-- #276: port `protocol=" TCP "` is stored as `"TCP"`. Initially failed; production fix normalizes port protocol. Full suite then passed **276/276**.
-
-## Current parser details relevant to the next tests
-
-At the checkpoint:
-- `scaninfo.protocol = node.get("protocol", "").strip() or "unknown"`
-- `scaninfo.services = node.get("services", "").strip()`, and whitespace-only services are skipped.
-- host addresses are filtered using nonblank `addr.strip()`.
-- stored host addresses are stripped.
-- stored addrtype is stripped or `"unknown"`.
-- primary IP selection tests stripped addrtype against `{"ipv4", "ipv6"}`.
-- hostname names are stripped and blank names ignored.
-- hostname types are stripped or `"unknown"`.
-- port protocol is `port_node.get("protocol", "").strip() or "unknown"`.
-- port ID is converted with `int(port_id)`; missing/nonnumeric IDs are skipped.
-- host/port state currently uses the XML `state` attribute directly with `"unknown"` only when absent; whitespace normalization has not yet been systematically covered.
-- service attributes (`name`, `product`, `version`, `extrainfo`, `tunnel`, `method`, `ostype`, `devicetype`) are still largely copied directly from XML and are a likely area for further systematic edge-case tests.
-- port and host script `id`/`output` safe defaults have tests, but partial/whitespace normalization cases may still need coverage.
-- CPE values are stripped and blank CPE entries are ignored.
-
-## Good direction for Test #277 and onward
-
-Continue from parser boundary normalization without assuming a specific test blindly. First inspect existing test names/semantics.
-
-Likely useful next areas include:
-- port protocol empty/whitespace-only explicit cases, now expected to become `"unknown"`;
-- host status and port state outer-whitespace / blank-value behavior;
-- service metadata outer-whitespace and blank-value semantics;
-- script ID/output partial and whitespace cases;
-- port number boundary validation if the model/parser contract warrants it.
-
-Do not add a test merely because it appears in this list. Verify that it is not already covered and that the expected behavior is sensible for NetRecon.
-
-## Important historical lesson
-
-A previous Test #229 accidentally reused an existing unittest method name. The later method silently replaced the earlier one, so the discovered test count did not increase. This was cleaned up. Always inspect for both exact-name and semantic duplication before every new test.
+Do not use a fixed test target as a development goal. Tests are a safety net for meaningful behavior, not the product itself.
