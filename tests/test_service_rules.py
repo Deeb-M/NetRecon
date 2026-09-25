@@ -142,6 +142,22 @@ class ServiceRulesTests(unittest.TestCase):
         self.assertEqual(findings[0].evidence.count("Linux"), 1)
         self.assertEqual(findings[0].evidence.count("cpe:/o:Example:OS:1"), 1)
 
+    def test_ftp_open_port_produces_transport_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=21, protocol="tcp", state="open", service="ftp", product="vsftpd"),),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "service.ftp.exposed")
+        self.assertEqual(finding.category, "transport")
+        self.assertEqual(finding.severity, "info")
+        self.assertEqual(finding.evidence_source, "service:detection")
+
 
 if __name__ == "__main__":
     unittest.main()
