@@ -202,6 +202,28 @@ class NseRulesTests(unittest.TestCase):
         self.assertIn("www.example.com", finding.evidence)
         self.assertEqual(finding.evidence_source, "nse:ssl-cert")
 
+    def test_tls_certificate_matching_san_has_no_identity_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="ssl-cert", output="Subject Alternative Name: DNS:api.example.com Issuer: Example CA"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=("api.example.com",),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(findings, ())
+
 
 if __name__ == "__main__":
     unittest.main()
