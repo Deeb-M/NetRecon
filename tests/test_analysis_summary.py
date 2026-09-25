@@ -49,6 +49,13 @@ class AnalysisSummaryTests(unittest.TestCase):
             (("medium", 1), ("advisory", 1), ("warning", 2)),
         )
 
+    def test_empty_findings_produce_zero_summary(self) -> None:
+        summary = summarize_analysis(())
+
+        self.assertEqual(summary.total_findings, 0)
+        self.assertEqual(summary.affected_hosts, 0)
+        self.assertEqual(summary.severity_counts, ())
+
 
 if __name__ == "__main__":
     unittest.main()
