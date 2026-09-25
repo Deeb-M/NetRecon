@@ -158,6 +158,20 @@ class ServiceRulesTests(unittest.TestCase):
         self.assertEqual(finding.severity, "info")
         self.assertEqual(finding.evidence_source, "service:detection")
 
+    def test_netbios_service_produces_exposure_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=139, protocol="tcp", state="open", service="netbios-ssn"),),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(tuple(finding.finding_id for finding in findings), ("service.netbios.exposed",))
+        self.assertEqual(findings[0].category, "exposure")
+        self.assertEqual(findings[0].severity, "info")
+        self.assertEqual(findings[0].evidence_source, "service:detection")
+
 
 if __name__ == "__main__":
     unittest.main()
