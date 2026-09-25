@@ -54,7 +54,7 @@ git clone https://github.com/Deeb-M/NetRecon.git
 cd NetRecon
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install .
 ```
 
 The installed CLI can then be invoked as `netrecon`.
