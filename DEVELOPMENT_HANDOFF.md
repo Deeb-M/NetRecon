@@ -6,25 +6,55 @@ Branch: main
 
 ## Verified checkpoint
 
+NetRecon **v0.1.0** has been published as the project's first public **Alpha pre-release**.
+
+Release:
+- Tag: `v0.1.0`
+- Release title: `NetRecon v0.1.0`
+- Tagged commit: `1749fcfc0d7ee66baf44ece08ef6b791413ccb4f`
+- Release type: Pre-release
+- License: MIT
+- Supported Python versions validated by CI: 3.10, 3.11, 3.12, 3.13, 3.14
+
 The latest user-run full regression suite passed:
 
 ```text
-Ran 379 tests in 0.043s
+Ran 379 tests in 0.045s
 
 OK
 ```
 
-This is the authoritative continuation point.
+This release and the 379-test baseline are the authoritative continuation point.
 
 ## Current project phase
 
-The systematic regression-expansion phase is complete. Do not add tests merely to increase the test count.
+The systematic regression-expansion phase and the Product Readiness work for **v0.1.0** are complete.
 
-NetRecon is now in **Product Readiness** work: preparing the repository to be a clear, maintainable public project while preserving the evidence-first behavior already protected by the regression suite.
+Do not add tests merely to increase the test count. Future development should begin from the released `v0.1.0` baseline and make deliberate, evidence-driven changes.
+
+NetRecon remains an **Alpha** project. Core functionality is stable and covered by automated tests, while the Intelligence layer remains under active development.
+
+## v0.1.0 readiness completed
+
+The first public release milestone includes:
+
+- Installable Python package with the `netrecon` CLI entry point
+- Standard installation documented through a virtual environment
+- Clean source distribution and universal Python wheel builds
+- SPDX MIT package metadata and project URLs
+- MIT `LICENSE` with Deeb Mzareb attribution
+- `CONTRIBUTING.md`
+- `SECURITY.md`
+- GitHub Private Vulnerability Reporting enabled
+- GitHub Actions covering Python 3.10 through 3.14
+- Safe reproducible example scan data
+- Repository description and cybersecurity-related topics
+- Annotated Git tag `v0.1.0`
+- Public GitHub pre-release `NetRecon v0.1.0`
 
 ## Completed test coverage
 
-Direct or substantial regression coverage now exists for:
+Direct or substantial regression coverage exists for:
 
 - Nmap XML parsing and normalization
 - CLI behavior and error handling
@@ -37,8 +67,6 @@ Direct or substantial regression coverage now exists for:
 - Exposure diff behavior and scan coverage semantics
 - Analysis diff behavior and evidence provenance
 - Text and JSON reporters
-
-The latest additions closed direct coverage gaps in `host_summary.py`, `network_summary.py`, `service_rules.py`, `nse_rules.py`, and `analysis_summary.py`.
 
 `models.py` and `findings.py` are primarily immutable dataclass definitions and do not need artificial tests that merely verify Python stores fields.
 
@@ -58,16 +86,11 @@ Before changing production behavior:
 
 The current verified baseline is **379 tests passing**.
 
-## Product Readiness priorities
+## Next development direction
 
-Work through these deliberately rather than treating them as a test-count exercise:
+Treat `v0.1.0` as the stable Alpha checkpoint. Future work should focus on meaningful Intelligence-layer improvements, bug fixes, documentation, or release-driven enhancements rather than increasing the test count for its own sake.
 
-1. Keep README usage and architecture aligned with actual CLI behavior.
-2. Add standard public-repository metadata where appropriate (for example licensing and contribution/security guidance).
-3. Decide and implement a clean Python packaging/install story before advertising installation commands.
-4. Keep GitHub Actions aligned with the supported Python versions and full regression suite.
-5. Review examples and public documentation for safe, reproducible usage.
-6. Only then consider a tagged public release/versioning milestone.
+Any production change after `v0.1.0` belongs to post-release development and should preserve compatibility unless a change is intentionally documented.
 
 ## Working method
 
