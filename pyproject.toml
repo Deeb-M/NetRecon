@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Evidence-aware analysis and comparison of Nmap XML scans."
 readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
 authors = [
     { name = "Deeb Mzareb" },
 ]
@@ -19,6 +20,10 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Security",
 ]
+
+[project.urls]
+Repository = "https://github.com/Deeb-M/NetRecon"
+Issues = "https://github.com/Deeb-M/NetRecon/issues"
 
 [project.scripts]
 netrecon = "netrecon:main"
