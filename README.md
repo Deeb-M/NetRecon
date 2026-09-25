@@ -126,13 +126,15 @@ Try the included safe sample:
 netrecon examples/sample.xml
 ```
 
-Try the included safe comparison pair to see an exposure change:
+The following safe comparison examples are available on the development `main` branch and are not included in the `v0.1.0` release.
+
+To see an exposure change on `main`:
 
 ```bash
 netrecon examples/before.xml examples/after.xml --diff
 ```
 
-Use the same pair to see how improved service evidence changes the analysis:
+To see how improved service evidence changes the analysis on `main`:
 
 ```bash
 netrecon examples/before.xml examples/after.xml --analysis-diff
