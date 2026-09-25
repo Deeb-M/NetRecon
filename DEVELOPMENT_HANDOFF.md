@@ -80,6 +80,24 @@ Verified:
 
 This validation identified product/documentation issues rather than scanner or Intelligence failures. The actionable CLI help/version issues have been corrected.
 
+A second clean new-user release-path validation was then completed after the installation documentation change. From a separate `~/netrecon-new-user` directory, the repository was cloned fresh and `git checkout v0.1.0` correctly resolved to tagged commit `1749fcf` in detached-HEAD state. A new virtual environment was created and `python -m pip install .` successfully built and installed `netrecon-0.1.0-py3-none-any.whl`.
+
+The installed release was then exercised from `/tmp`, outside the repository. Verified:
+- `netrecon --help` worked from the installed environment.
+- Python package metadata reported exactly `0.1.0`.
+- `examples/sample.xml` parsed successfully.
+- `--analyze` produced the expected conservative INFO finding for missing HTTP product identification.
+- `--analyze --format json` produced structured scan, summary, host-summary, and finding data with `evidence_source: service:detection`.
+- Running with no scan produced a controlled argparse error.
+- A missing scan file produced a clean `scan file not found` error.
+- Malformed XML produced a clean `invalid Nmap XML` error.
+- Valid non-Nmap XML produced `XML root is not <nmaprun>`.
+- `--diff` without a second scan produced a controlled error.
+- `--analysis-diff` without a second scan produced a controlled error.
+- No Python traceback appeared in these user-error paths.
+
+This confirms that the documented `v0.1.0` installation path installs and runs the exact published release independently of the development checkout.
+
 ### Safe comparison examples
 
 Added:
@@ -125,6 +143,8 @@ python -m pip install .
 ```
 
 The README separately explains that users who want the latest development version should remain on `main`.
+
+The clean release-path test also confirmed that `v0.1.0` contains only `examples/sample.xml`; the later `examples/before.xml` and `examples/after.xml` comparison pair exists only on post-release `main`. The README was therefore corrected again to label those comparison examples explicitly as development-`main` examples so release users are not instructed to run files that do not exist in `v0.1.0`.
 
 Do not move or retag `v0.1.0` to include post-release work.
 
