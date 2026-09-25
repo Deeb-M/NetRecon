@@ -121,6 +121,18 @@ Try the included safe sample:
 netrecon examples/sample.xml
 ```
 
+Try the included safe comparison pair to see an exposure change:
+
+```bash
+netrecon examples/before.xml examples/after.xml --diff
+```
+
+Use the same pair to see how improved service evidence changes the analysis:
+
+```bash
+netrecon examples/before.xml examples/after.xml --analysis-diff
+```
+
 Run all tests:
 
 ```bash
