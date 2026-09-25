@@ -297,6 +297,33 @@ class NseRulesTests(unittest.TestCase):
         self.assertIn("TLSv1.0", finding.evidence)
         self.assertEqual(finding.evidence_source, "nse:ssl-enum-ciphers")
 
+    def test_anonymous_tls_key_exchange_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="ssl-enum-ciphers", output="TLSv1.2: anonymous key exchange"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "tls.key_exchange.anonymous")
+        self.assertEqual(finding.category, "configuration")
+        self.assertEqual(finding.severity, "medium")
+        self.assertEqual(finding.evidence_source, "nse:ssl-enum-ciphers")
+
 
 if __name__ == "__main__":
     unittest.main()
