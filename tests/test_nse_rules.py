@@ -146,6 +146,33 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(finding.port, 443)
         self.assertEqual(finding.evidence_source, "nse:ssl-cert")
 
+    def test_not_yet_valid_tls_certificate_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="ssl-cert", output="Not valid before: 2027-01-01T00:00:00 Not valid after: 2028-01-01T00:00:00"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "tls.certificate.not_yet_valid")
+        self.assertEqual(finding.category, "certificate")
+        self.assertEqual(finding.severity, "medium")
+        self.assertEqual(finding.evidence_source, "nse:ssl-cert")
+
 
 if __name__ == "__main__":
     unittest.main()
