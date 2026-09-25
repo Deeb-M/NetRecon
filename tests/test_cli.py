@@ -1,12 +1,25 @@
 """Tests for NetRecon command-line argument validation."""
 
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from unittest.mock import patch
 
 from netrecon import build_parser
 
 
 class CliTests(unittest.TestCase):
+    def test_version_reports_installed_package_version_without_scan(self) -> None:
+        parser = build_parser()
+        output = StringIO()
+
+        with redirect_stdout(output):
+            with self.assertRaises(SystemExit) as context:
+                parser.parse_args(["--version"])
+
+        self.assertEqual(context.exception.code, 0)
+        self.assertEqual(output.getvalue().strip(), "netrecon 0.1.0")
+
     def test_rejects_analyze_with_diff(self) -> None:
         parser = build_parser()
 
