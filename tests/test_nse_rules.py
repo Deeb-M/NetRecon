@@ -118,6 +118,34 @@ class NseRulesTests(unittest.TestCase):
         self.assertIn("encryption_algorithms", finding.evidence)
         self.assertEqual(finding.evidence_source, "nse:ssh2-enum-algos")
 
+    def test_expired_tls_certificate_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="ssl-cert", output="Not valid before: 2025-01-01T00:00:00 Not valid after: 2026-01-01T00:00:00"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "tls.certificate.expired")
+        self.assertEqual(finding.category, "certificate")
+        self.assertEqual(finding.severity, "medium")
+        self.assertEqual(finding.port, 443)
+        self.assertEqual(finding.evidence_source, "nse:ssl-cert")
+
 
 if __name__ == "__main__":
     unittest.main()
