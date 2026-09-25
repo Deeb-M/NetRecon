@@ -159,3 +159,9 @@ For NSE-derived findings, `NEW` means the same NSE evidence source was collected
 ## Responsible use
 
 Use NetRecon only with scan data from systems you own or are explicitly authorized to test.
+
+## License
+
+NetRecon is released under the MIT License.
+
+Created and maintained by Deeb Mzareb.
