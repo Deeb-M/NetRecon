@@ -246,6 +246,29 @@ class NseRulesTests(unittest.TestCase):
 
         self.assertEqual(findings, ())
 
+    def test_tls_certificate_wildcard_san_does_not_match_multiple_labels(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(script_id="ssl-cert", output="Subject Alternative Name: DNS:*.example.com Issuer: Example CA"),),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=("deep.api.example.com",),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].finding_id, "tls.certificate.identity_mismatch")
+
 
 if __name__ == "__main__":
     unittest.main()
