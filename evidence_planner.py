@@ -32,6 +32,14 @@ class EvidenceRequest:
     script_id: str
 
 
+@dataclass(frozen=True)
+class HostEvidencePlan:
+    """Evidence collection plan for one discovered host."""
+
+    target: str
+    requests: tuple[EvidenceRequest, ...]
+
+
 def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
     """Return detailed NSE evidence requests for discovered open services."""
     requests: list[EvidenceRequest] = []
@@ -73,4 +81,12 @@ def plan_evidence(host: Host) -> tuple[str, ...]:
     return tuple(
         request.script_id
         for request in plan_evidence_requests(host)
+    )
+
+
+def plan_host_evidence(host: Host) -> HostEvidencePlan:
+    """Return a complete evidence collection plan for one host."""
+    return HostEvidencePlan(
+        target=host.address,
+        requests=plan_evidence_requests(host),
     )
