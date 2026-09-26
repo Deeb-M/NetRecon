@@ -8,3 +8,6 @@ venv/
 build/
 dist/
 *.egg-info/
+
+# Local Nmap/XML scan artifacts
+/*.xml

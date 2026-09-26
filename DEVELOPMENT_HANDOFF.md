@@ -1,6 +1,6 @@
 # NetRecon Development Handoff
 
-Last updated: 2026-09-25
+Last updated: 2026-09-26
 Repository: Deeb-M/NetRecon
 Branch: main
 
@@ -23,12 +23,12 @@ The release itself was published with a verified **379-test** baseline.
 Post-release development on `main` has continued deliberately. The latest user-run full regression suite passed:
 
 ```text
-Ran 381 tests in 0.050s
+Ran 395 tests in 0.096s
 
 OK
 ```
 
-The authoritative continuation point for current development is therefore **main with 381 tests passing**, while `v0.1.0` remains the historical release snapshot.
+The authoritative continuation point for current development is therefore **main with 395 tests passing**, while `v0.1.0` remains the historical release snapshot.
 
 ## Current project phase
 
@@ -180,7 +180,46 @@ Before changing production behavior:
    ```
 6. Preserve the evidence-first design and avoid speculative vulnerability claims.
 
-The current verified development baseline is **381 tests passing**.
+The current verified development baseline is **395 tests passing**.
+
+## Evidence Planner milestone
+
+Post-release development has begun moving NetRecon toward a broader evidence-orchestration architecture.
+
+Product direction:
+
+Nmap discovers the network. NetRecon decides what evidence to collect, turns it into intelligence, and shows the analyst what deserves attention.
+
+Intended flow:
+
+Target -> Discovery -> Normalized Service Inventory -> Evidence Planner -> Evidence Collection -> Existing Analyzer / Intelligence -> Analyst Workflow
+
+The first Evidence Planner implementation is now present in evidence_planner.py.
+
+Current behavior:
+- EvidenceRequest preserves port, protocol, and NSE script_id.
+- plan_evidence_requests() creates structured per-port evidence requests.
+- plan_evidence() remains a compatibility/simple view returning script IDs.
+- Only open services are considered.
+- Evidence already present on a specific port is not requested again.
+- Evidence present on one port does not suppress collection on another port.
+- SSH maps to ssh2-enum-algos.
+- HTTP maps to http-title and http-methods.
+- HTTPS composes HTTP evidence with ssl-cert and ssl-enum-ciphers.
+- SMB (microsoft-ds or smb) maps to smb-protocols and smb2-security-mode.
+- Open 445/tcp with no identified service uses SMB as a conservative port-based fallback.
+- Explicit service identification on port 445 takes precedence over the SMB fallback.
+- Multiple ports requesting the same NSE script remain separate structured requests; do not globally deduplicate them and lose port context.
+
+Planning principle:
+
+The Evidence Planner should request evidence only when NetRecon already knows how to interpret that evidence.
+
+Important architectural boundary:
+
+NetRecon does not yet execute Nmap or NSE automatically. Do not jump directly to subprocess/Nmap execution. Continue developing and validating the planning contract first. A future orchestration layer should consume structured EvidenceRequest objects rather than infer targets from a flat script list.
+
+Local Nmap/XML scan artifacts generated in the repository root are ignored through /*.xml. This deliberately does not ignore XML files in subdirectories, allowing intentional fixtures such as tests/fixtures/*.xml to remain versioned.
 
 ## Next development direction
 
