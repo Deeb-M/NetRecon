@@ -26,9 +26,12 @@ class NmapCommand:
 
 def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
     """Build Nmap argv for a collection specification without executing it."""
+    scan_type = ("-sU",) if spec.protocol == "udp" else ()
+
     return NmapCommand(
         arguments=(
             "nmap",
+            *scan_type,
             "-p",
             str(spec.port),
             "--script",
