@@ -1,4 +1,6 @@
+import subprocess
 import unittest
+from unittest.mock import patch
 
 from evidence_collector import (
     CollectionResult,
@@ -7,6 +9,7 @@ from evidence_collector import (
     build_collection_specs,
     build_nmap_command,
     build_nmap_commands,
+    execute_nmap_command,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
 
@@ -275,6 +278,41 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "<nmaprun></nmaprun>")
         self.assertEqual(result.stderr, "")
+
+
+    @patch("evidence_collector.subprocess.run")
+    def test_executes_nmap_command_without_shell(
+        self,
+        run_mock,
+    ) -> None:
+        command = NmapCommand(
+            arguments=("nmap", "-p", "443", "192.0.2.95"),
+        )
+        run_mock.return_value = subprocess.CompletedProcess(
+            args=command.arguments,
+            returncode=0,
+            stdout="<nmaprun></nmaprun>",
+            stderr="",
+        )
+
+        result = execute_nmap_command(command)
+
+        run_mock.assert_called_once_with(
+            command.arguments,
+            capture_output=True,
+            text=True,
+            check=False,
+            shell=False,
+        )
+        self.assertEqual(
+            result,
+            CollectionResult(
+                command=command,
+                returncode=0,
+                stdout="<nmaprun></nmaprun>",
+                stderr="",
+            ),
+        )
 
 
 if __name__ == "__main__":
