@@ -17,6 +17,29 @@ class CollectionSpec:
     script_ids: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class NmapCommand:
+    """Transparent Nmap argv prepared for evidence collection."""
+
+    arguments: tuple[str, ...]
+
+
+def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
+    """Build Nmap argv for a collection specification without executing it."""
+    return NmapCommand(
+        arguments=(
+            "nmap",
+            "-p",
+            str(spec.port),
+            "--script",
+            ",".join(spec.script_ids),
+            "-oX",
+            "-",
+            spec.target,
+        )
+    )
+
+
 def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]:
     """Group a host evidence plan into executable collection units."""
     grouped: dict[tuple[int, str], list[str]] = {}
