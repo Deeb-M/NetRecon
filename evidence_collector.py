@@ -52,18 +52,25 @@ class ParsedCollectionResult:
     scan: Scan | None
 
 
+def _same_host_address(left: str, right: str) -> bool:
+    """Compare host addresses safely, including equivalent IPv6 representations."""
+    try:
+        return ip_address(left.strip()) == ip_address(right.strip())
+    except ValueError:
+        return False
+
+
 def merge_collection_outcomes_into_host(
     discovered: Host,
     outcomes: tuple[ParsedCollectionResult, ...],
 ) -> Host:
     """Merge ports from successful collection outcomes into a discovered host."""
-    target = ip_address(discovered.address.strip())
     collected_ports = tuple(
         port
         for outcome in outcomes
         if outcome.scan is not None
         for host in outcome.scan.hosts
-        if ip_address(host.address.strip()) == target
+        if _same_host_address(host.address, discovered.address)
         for port in host.ports
     )
     return merge_host_evidence(discovered, collected_ports)
