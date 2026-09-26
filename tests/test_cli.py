@@ -212,5 +212,40 @@ class CliTests(unittest.TestCase):
         render_mock.assert_called_once_with(first_result)
 
 
+    @patch("netrecon.render_evidence_collection_json", return_value='{"status": "complete"}')
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_honors_json_format(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+        render_json_mock,
+    ) -> None:
+        from evidence_collector import CorrelatedEvidenceResult
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        host = Host(address="192.0.2.50", status="up")
+        plan = HostEvidencePlan(target=host.address, requests=())
+        result = CorrelatedEvidenceResult(outcomes=(), host=host, findings=())
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(host,))
+        plan_mock.return_value = plan
+        collect_mock.return_value = result
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--collect-evidence", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        render_json_mock.assert_called_once_with(result)
+        self.assertEqual(output.getvalue().strip(), '{"status": "complete"}')
+
+
 if __name__ == "__main__":
     unittest.main()
