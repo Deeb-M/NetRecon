@@ -1,6 +1,6 @@
 import unittest
 
-from evidence_collector import CollectionSpec, NmapCommand, build_collection_specs, build_nmap_command
+from evidence_collector import (\n    CollectionSpec,\n    NmapCommand,\n    build_collection_specs,\n    build_nmap_command,\n    build_nmap_commands,\n)
 from evidence_planner import EvidenceRequest, HostEvidencePlan
 
 
@@ -133,6 +133,28 @@ class EvidenceCollectorTests(unittest.TestCase):
             "Unsupported collection protocol: unknown",
         ):
             build_nmap_command(spec)
+
+
+    def test_builds_all_commands_from_host_evidence_plan(self) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.70",
+            requests=(
+                EvidenceRequest(80, "tcp", "http-title"),
+                EvidenceRequest(443, "tcp", "ssl-cert"),
+            ),
+        )
+
+        self.assertEqual(
+            build_nmap_commands(plan),
+            (
+                NmapCommand(
+                    ("nmap", "-p", "80", "--script", "http-title", "-oX", "-", "192.0.2.70")
+                ),
+                NmapCommand(
+                    ("nmap", "-p", "443", "--script", "ssl-cert", "-oX", "-", "192.0.2.70")
+                ),
+            ),
+        )
 
 
 if __name__ == "__main__":
