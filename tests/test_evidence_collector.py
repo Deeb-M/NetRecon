@@ -575,7 +575,7 @@ class EvidenceCollectorTests(unittest.TestCase):
 
         result = collect_host_evidence(plan)
 
-        execute_mock.assert_called_once_with(plan)
+        execute_mock.assert_called_once_with(plan, timeout=None)
         self.assertEqual(
             [call.args[0] for call in parse_mock.call_args_list],
             [first, second],
@@ -597,7 +597,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         execute_mock.return_value = ()
 
         self.assertEqual(collect_host_evidence(plan), ())
-        execute_mock.assert_called_once_with(plan)
+        execute_mock.assert_called_once_with(plan, timeout=None)
         parse_mock.assert_not_called()
 
 
@@ -783,6 +783,39 @@ class EvidenceCollectorTests(unittest.TestCase):
             shell=False,
             timeout=30,
         )
+
+
+    @patch("evidence_collector.execute_nmap_command")
+    def test_host_plan_propagates_collection_timeout(
+        self,
+        execute_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.113",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+        execute_mock.return_value = CollectionResult(
+            NmapCommand(
+                (
+                    "nmap",
+                    "-p",
+                    "443",
+                    "--script",
+                    "ssl-cert",
+                    "-oX",
+                    "-",
+                    "192.0.2.113",
+                )
+            ),
+            0,
+            "<nmaprun />",
+            "",
+        )
+
+        execute_host_evidence_plan(plan, timeout=45)
+
+        execute_mock.assert_called_once()
+        self.assertEqual(execute_mock.call_args.kwargs, {"timeout": 45})
 
 
 if __name__ == "__main__":
