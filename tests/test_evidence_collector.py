@@ -314,6 +314,7 @@ class EvidenceCollectorTests(unittest.TestCase):
             text=True,
             check=False,
             shell=False,
+            timeout=None,
         )
         self.assertEqual(
             result,
@@ -753,6 +754,35 @@ class EvidenceCollectorTests(unittest.TestCase):
             "Nmap executable not found",
         ):
             execute_nmap_command(command)
+
+
+    @patch("evidence_collector.subprocess.run")
+    def test_reports_nmap_collection_timeout(
+        self,
+        run_mock,
+    ) -> None:
+        run_mock.side_effect = subprocess.TimeoutExpired(
+            cmd=("nmap", "-p", "443", "192.0.2.112"),
+            timeout=30,
+        )
+        command = NmapCommand(
+            ("nmap", "-p", "443", "192.0.2.112"),
+        )
+
+        with self.assertRaisesRegex(
+            EvidenceCollectionError,
+            "Nmap evidence collection timed out",
+        ):
+            execute_nmap_command(command, timeout=30)
+
+        run_mock.assert_called_once_with(
+            command.arguments,
+            capture_output=True,
+            text=True,
+            check=False,
+            shell=False,
+            timeout=30,
+        )
 
 
 if __name__ == "__main__":
