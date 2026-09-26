@@ -1614,5 +1614,20 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(analyzed_scan.hosts, (discovered,))
 
 
+    def test_failed_collection_outcome_exposes_stderr_for_reporting(self) -> None:
+        command = NmapCommand(("nmap",))
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(
+                command,
+                1,
+                "",
+                "  permission denied  ",
+            ),
+            scan=None,
+        )
+
+        self.assertEqual(outcome.failure_message, "permission denied")
+
+
 if __name__ == "__main__":
     unittest.main()
