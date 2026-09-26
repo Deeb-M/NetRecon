@@ -315,5 +315,28 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    @patch("evidence_collector.subprocess.run")
+    def test_preserves_failed_nmap_process_result(
+        self,
+        run_mock,
+    ) -> None:
+        command = NmapCommand(
+            arguments=("nmap", "-p", "443", "192.0.2.96"),
+        )
+        run_mock.return_value = subprocess.CompletedProcess(
+            args=command.arguments,
+            returncode=2,
+            stdout="",
+            stderr="nmap failed",
+        )
+
+        result = execute_nmap_command(command)
+
+        self.assertEqual(result.command, command)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "nmap failed")
+
+
 if __name__ == "__main__":
     unittest.main()
