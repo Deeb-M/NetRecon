@@ -440,5 +440,28 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(scan.hosts[0].ports[0].service, "https")
 
 
+    @patch("evidence_collector.parse_nmap_xml_text")
+    def test_rejects_failed_collection_before_parsing_stdout(
+        self,
+        parse_mock,
+    ) -> None:
+        result = CollectionResult(
+            command=NmapCommand(
+                arguments=("nmap", "-p", "443", "192.0.2.101"),
+            ),
+            returncode=2,
+            stdout="<partial />",
+            stderr="nmap failed",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot parse failed evidence collection: return code 2",
+        ):
+            parse_collection_result(result)
+
+        parse_mock.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
