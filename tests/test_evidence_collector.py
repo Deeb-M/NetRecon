@@ -577,5 +577,23 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(result, outcomes)
 
 
+    @patch("evidence_collector.parse_collection_outcome")
+    @patch("evidence_collector.execute_host_evidence_plan")
+    def test_empty_host_plan_collection_is_safe_no_op(
+        self,
+        execute_mock,
+        parse_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.106",
+            requests=(),
+        )
+        execute_mock.return_value = ()
+
+        self.assertEqual(collect_host_evidence(plan), ())
+        execute_mock.assert_called_once_with(plan)
+        parse_mock.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
