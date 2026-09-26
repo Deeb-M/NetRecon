@@ -150,6 +150,15 @@ def analyze_collection_outcomes(
     )
 
 
+def collect_and_analyze_host_evidence(
+    plan: HostEvidencePlan,
+) -> tuple[Finding, ...]:
+    """Collect, parse, and analyze all requested evidence for one host."""
+    return analyze_collection_outcomes(
+        collect_host_evidence(plan)
+    )
+
+
 def collect_host_evidence(
     plan: HostEvidencePlan,
 ) -> tuple[ParsedCollectionResult, ...]:
