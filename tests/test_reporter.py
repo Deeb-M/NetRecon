@@ -1,5 +1,6 @@
 """Tests for NetRecon text reporting."""
 
+import json
 import unittest
 
 from analyzer import Finding
@@ -10,7 +11,7 @@ from evidence_collector import (
     ParsedCollectionResult,
 )
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_evidence_collection, render_findings, render_text
+from reporter import render_evidence_collection, render_evidence_collection_json, render_findings, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -407,6 +408,25 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Host: 192.0.2.135", report)
         self.assertIn("Status: complete", report)
         self.assertNotIn("Failure:", report)
+
+
+    def test_renders_partial_evidence_collection_as_json(self) -> None:
+        command = NmapCommand(("nmap",))
+        failed = ParsedCollectionResult(
+            result=CollectionResult(command, 1, "", "permission denied"),
+            scan=None,
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(failed,),
+            host=Host(address="192.0.2.136", status="up"),
+            findings=(),
+        )
+
+        payload = json.loads(render_evidence_collection_json(result))
+
+        self.assertEqual(payload["host"], "192.0.2.136")
+        self.assertEqual(payload["status"], "partial")
+        self.assertEqual(payload["failures"], ["permission denied"])
 
 
 if __name__ == "__main__":
