@@ -6,6 +6,7 @@ from evidence_collector import (
     CollectionResult,
     CollectionSpec,
     NmapCommand,
+    ParsedCollectionResult,
     build_collection_specs,
     build_nmap_command,
     build_nmap_commands,
@@ -461,6 +462,25 @@ class EvidenceCollectorTests(unittest.TestCase):
             parse_collection_result(result)
 
         parse_mock.assert_not_called()
+
+
+    def test_parsed_collection_result_preserves_result_without_scan(self) -> None:
+        result = CollectionResult(
+            command=NmapCommand(
+                arguments=("nmap", "-p", "443", "192.0.2.102"),
+            ),
+            returncode=2,
+            stdout="",
+            stderr="nmap failed",
+        )
+
+        parsed = ParsedCollectionResult(
+            result=result,
+            scan=None,
+        )
+
+        self.assertEqual(parsed.result, result)
+        self.assertIsNone(parsed.scan)
 
 
 if __name__ == "__main__":
