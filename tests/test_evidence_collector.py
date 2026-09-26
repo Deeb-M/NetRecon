@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from evidence_collector import (
+    CorrelatedEvidenceResult,
     CollectionResult,
     CollectionSpec,
     EvidenceCollectionError,
@@ -1404,6 +1405,45 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(result.host, discovered)
         self.assertEqual(result.findings, (finding,))
         collect_mock.assert_called_once_with(plan, timeout=15)
+
+
+    @patch("evidence_collector.collect_correlated_host_evidence")
+    def test_findings_wrapper_uses_correlated_evidence_result(
+        self,
+        collect_mock,
+    ) -> None:
+        discovered = Host(address="192.0.2.127", status="up")
+        plan = HostEvidencePlan(target="192.0.2.127", requests=())
+        finding = Finding(
+            finding_id="wrapper-finding",
+            category="test",
+            host="192.0.2.127",
+            port=None,
+            protocol=None,
+            severity="info",
+            title="Test",
+            evidence="evidence",
+            recommendation="review",
+        )
+        collect_mock.return_value = CorrelatedEvidenceResult(
+            outcomes=(),
+            host=discovered,
+            findings=(finding,),
+        )
+
+        self.assertEqual(
+            collect_correlate_and_analyze_host_evidence(
+                discovered,
+                plan,
+                timeout=20,
+            ),
+            (finding,),
+        )
+        collect_mock.assert_called_once_with(
+            discovered,
+            plan,
+            timeout=20,
+        )
 
 
 if __name__ == "__main__":
