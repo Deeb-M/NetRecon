@@ -7,6 +7,22 @@ from dataclasses import dataclass
 from models import Host
 
 
+SERVICE_EVIDENCE: dict[str, tuple[str, ...]] = {
+    "ssh": ("ssh2-enum-algos",),
+    "http": ("http-title", "http-methods"),
+    "https": (
+        "http-title",
+        "http-methods",
+        "ssl-cert",
+        "ssl-enum-ciphers",
+    ),
+    "microsoft-ds": ("smb-protocols", "smb2-security-mode"),
+    "smb": ("smb-protocols", "smb2-security-mode"),
+}
+
+SMB_EVIDENCE = SERVICE_EVIDENCE["smb"]
+
+
 @dataclass(frozen=True)
 class EvidenceRequest:
     """One requested NSE evidence collection action for a specific port."""
@@ -30,31 +46,14 @@ def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
             for script in port.scripts
         }
 
-        requested: tuple[str, ...] = ()
+        requested = SERVICE_EVIDENCE.get(service, ())
 
-        if service == "ssh":
-            requested = ("ssh2-enum-algos",)
-
-        if service == "http":
-            requested = ("http-title", "http-methods")
-
-        if service == "https":
-            requested = (
-                "http-title",
-                "http-methods",
-                "ssl-cert",
-                "ssl-enum-ciphers",
-            )
-
-        if service in {"microsoft-ds", "smb"} or (
+        if (
             not service
             and port.port == 445
             and port.protocol.strip().lower() == "tcp"
         ):
-            requested = (
-                "smb-protocols",
-                "smb2-security-mode",
-            )
+            requested = SMB_EVIDENCE
 
         requests.extend(
             EvidenceRequest(
