@@ -88,6 +88,16 @@ def execute_nmap_command(command: NmapCommand) -> CollectionResult:
     )
 
 
+def execute_host_evidence_plan(
+    plan: HostEvidencePlan,
+) -> tuple[CollectionResult, ...]:
+    """Execute every prepared command for one host evidence plan."""
+    return tuple(
+        execute_nmap_command(command)
+        for command in build_nmap_commands(plan)
+    )
+
+
 def build_nmap_commands(plan: HostEvidencePlan) -> tuple[NmapCommand, ...]:
     """Build all Nmap commands required by a host evidence plan."""
     return tuple(
