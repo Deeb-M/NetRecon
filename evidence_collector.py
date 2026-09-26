@@ -26,8 +26,11 @@ class NmapCommand:
 
 def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
     """Build Nmap argv for a collection specification without executing it."""
+    target = spec.target.strip()
     protocol = spec.protocol.strip().lower()
 
+    if not target:
+        raise ValueError("Evidence collection requires a target")
     if protocol not in {"tcp", "udp"}:
         raise ValueError(f"Unsupported collection protocol: {spec.protocol}")
     if not spec.script_ids:
@@ -45,7 +48,7 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
             ",".join(spec.script_ids),
             "-oX",
             "-",
-            spec.target,
+            target,
         )
     )
 
