@@ -15,6 +15,7 @@ from evidence_collector import (
     build_nmap_command,
     build_nmap_commands,
     collect_and_analyze_host_evidence,
+    collect_correlate_and_analyze_host_evidence,
     collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
@@ -1266,6 +1267,40 @@ class EvidenceCollectorTests(unittest.TestCase):
             merged.ports[0].scripts,
             (ScriptResult("ssl-cert", "certificate evidence"),),
         )
+
+
+    @patch("evidence_collector.analyze_correlated_host_evidence")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_correlated_host_orchestration_collects_then_analyzes_discovery_context(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(
+            address="192.0.2.123",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        plan = HostEvidencePlan(
+            target="192.0.2.123",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+        outcomes = ()
+        collect_mock.return_value = outcomes
+        analyze_mock.return_value = ()
+
+        self.assertEqual(
+            collect_correlate_and_analyze_host_evidence(
+                discovered,
+                plan,
+                timeout=30,
+            ),
+            (),
+        )
+        collect_mock.assert_called_once_with(plan, timeout=30)
+        analyze_mock.assert_called_once_with(discovered, outcomes)
 
 
 if __name__ == "__main__":
