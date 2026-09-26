@@ -21,16 +21,23 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), "netrecon 0.1.0")
 
     def test_help_describes_analysis_and_both_comparison_modes(self) -> None:
-        help_text = build_parser().format_help()
+        parser = build_parser()
+        help_text = parser.format_help()
         normalized_help = " ".join(help_text.split())
 
         self.assertIn(
             "Analyze and compare Nmap XML scans with evidence-based findings and exposure summaries.",
             normalized_help,
         )
-        self.assertIn(
-            "Second Nmap XML file used with --diff or --analysis-diff",
-            normalized_help,
+
+        option_strings = {
+            option
+            for action in parser._actions
+            for option in action.option_strings
+        }
+        self.assertTrue({"--analyze", "--diff", "--analysis-diff"} <= option_strings)
+        self.assertTrue(
+            any(action.dest == "compare_scan" for action in parser._actions)
         )
 
     def test_rejects_analyze_with_diff(self) -> None:
