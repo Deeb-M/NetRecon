@@ -145,5 +145,32 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), "Evidence report")
 
 
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_reports_collection_error_without_traceback(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+    ) -> None:
+        from evidence_collector import EvidenceCollectionError
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        host = Host(address="192.0.2.30", status="up")
+        plan_mock.return_value = HostEvidencePlan(target=host.address, requests=())
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(host,))
+        collect_mock.side_effect = EvidenceCollectionError("Nmap executable not found")
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "--collect-evidence"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 2)
+
+        self.assertEqual(output.getvalue().strip(), "Error: Nmap executable not found")
+
+
 if __name__ == "__main__":
     unittest.main()
