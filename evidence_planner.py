@@ -21,7 +21,7 @@ def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
     requests: list[EvidenceRequest] = []
 
     for port in host.ports:
-        if port.state.lower() != "open":
+        if port.state.strip().lower() != "open":
             continue
 
         service = (port.service or "").strip().lower()
@@ -49,7 +49,7 @@ def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
         if service in {"microsoft-ds", "smb"} or (
             not service
             and port.port == 445
-            and port.protocol.lower() == "tcp"
+            and port.protocol.strip().lower() == "tcp"
         ):
             requested = (
                 "smb-protocols",
@@ -59,7 +59,7 @@ def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
         requests.extend(
             EvidenceRequest(
                 port=port.port,
-                protocol=port.protocol.lower(),
+                protocol=port.protocol.strip().lower(),
                 script_id=script_id,
             )
             for script_id in requested
