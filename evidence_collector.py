@@ -282,6 +282,11 @@ class CorrelatedEvidenceResult:
         """Return True only when every requested collection outcome parsed successfully."""
         return all(outcome.scan is not None for outcome in self.outcomes)
 
+    @property
+    def failed_outcomes(self) -> tuple[ParsedCollectionResult, ...]:
+        """Return only collection outcomes that did not produce parsed evidence."""
+        return tuple(outcome for outcome in self.outcomes if outcome.scan is None)
+
 
 def collect_correlated_host_evidence(
     discovered: Host,
