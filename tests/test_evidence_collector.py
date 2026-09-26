@@ -172,5 +172,20 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(build_nmap_commands(plan), ())
 
 
+    def test_rejects_collection_spec_without_scripts(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.90",
+            port=443,
+            protocol="tcp",
+            script_ids=(),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Evidence collection requires at least one script",
+        ):
+            build_nmap_command(spec)
+
+
 if __name__ == "__main__":
     unittest.main()
