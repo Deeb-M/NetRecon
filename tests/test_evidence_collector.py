@@ -17,12 +17,13 @@ from evidence_collector import (
     collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
+    merge_port_evidence,
     parse_collection_outcome,
     parse_collection_result,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
 from findings import Finding
-from models import Scan
+from models import Port, Scan, ScriptResult
 
 
 class EvidenceCollectorTests(unittest.TestCase):
@@ -838,6 +839,36 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
         collect_mock.assert_called_once_with(plan, timeout=60)
         analyze_mock.assert_called_once_with(())
+
+
+    def test_port_evidence_merge_preserves_discovery_metadata(self) -> None:
+        discovered = Port(
+            port=443,
+            protocol="tcp",
+            state="open",
+            service="https",
+            product="nginx",
+            version="1.24",
+        )
+        collected = Port(
+            port=443,
+            protocol="TCP",
+            state="open",
+            service="ssl/http",
+            product="different",
+            version="different",
+            scripts=(ScriptResult("ssl-cert", "certificate evidence"),),
+        )
+
+        merged = merge_port_evidence(discovered, collected)
+
+        self.assertEqual(merged.service, "https")
+        self.assertEqual(merged.product, "nginx")
+        self.assertEqual(merged.version, "1.24")
+        self.assertEqual(
+            merged.scripts,
+            (ScriptResult("ssl-cert", "certificate evidence"),),
+        )
 
 
 if __name__ == "__main__":
