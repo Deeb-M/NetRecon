@@ -226,5 +226,22 @@ class EvidenceCollectorTests(unittest.TestCase):
             build_nmap_command(spec)
 
 
+    def test_rejects_collection_port_outside_valid_range(self) -> None:
+        for port in (0, -1, 65536):
+            with self.subTest(port=port):
+                spec = CollectionSpec(
+                    target="192.0.2.92",
+                    port=port,
+                    protocol="tcp",
+                    script_ids=("http-title",),
+                )
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    f"Invalid collection port: {port}",
+                ):
+                    build_nmap_command(spec)
+
+
 if __name__ == "__main__":
     unittest.main()
