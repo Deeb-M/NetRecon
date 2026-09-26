@@ -1654,5 +1654,25 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertIsNone(outcome.failure_message)
 
 
+    def test_correlated_result_exposes_only_failed_outcomes(self) -> None:
+        host = Host(address="192.0.2.133", status="up")
+        command = NmapCommand(("nmap",))
+        successful = ParsedCollectionResult(
+            result=CollectionResult(command, 0, "<nmaprun />", ""),
+            scan=Scan(source="nmap stdout"),
+        )
+        failed = ParsedCollectionResult(
+            result=CollectionResult(command, 1, "", "collection failed"),
+            scan=None,
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(successful, failed),
+            host=host,
+            findings=(),
+        )
+
+        self.assertEqual(result.failed_outcomes, (failed,))
+
+
 if __name__ == "__main__":
     unittest.main()
