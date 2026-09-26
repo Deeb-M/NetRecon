@@ -24,6 +24,16 @@ class NmapCommand:
     arguments: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class CollectionResult:
+    """Captured result of one evidence collection command."""
+
+    command: NmapCommand
+    returncode: int
+    stdout: str
+    stderr: str
+
+
 def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
     """Build Nmap argv for a collection specification without executing it."""
     target = spec.target.strip()
