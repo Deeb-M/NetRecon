@@ -1550,5 +1550,26 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(analyzed_scan.hosts, (result.host,))
 
 
+    def test_correlated_result_reports_incomplete_collection(self) -> None:
+        host = Host(address="192.0.2.130", status="up")
+        command = NmapCommand(("nmap",))
+        result = CorrelatedEvidenceResult(
+            outcomes=(
+                ParsedCollectionResult(
+                    result=CollectionResult(command, 0, "<nmaprun />", ""),
+                    scan=Scan(source="nmap stdout"),
+                ),
+                ParsedCollectionResult(
+                    result=CollectionResult(command, 1, "", "collection failed"),
+                    scan=None,
+                ),
+            ),
+            host=host,
+            findings=(),
+        )
+
+        self.assertFalse(result.collection_complete)
+
+
 if __name__ == "__main__":
     unittest.main()
