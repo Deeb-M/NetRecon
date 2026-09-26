@@ -17,6 +17,7 @@ from evidence_collector import (
     collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
+    merge_collection_outcomes_into_host,
     merge_host_evidence,
     merge_host_port_evidence,
     merge_port_evidence,
@@ -1024,6 +1025,53 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
         self.assertEqual(
             merged.ports[1].scripts,
+            (ScriptResult("ssl-cert", "certificate evidence"),),
+        )
+
+
+    def test_collection_outcomes_merge_only_successful_evidence_into_host(self) -> None:
+        discovered = Host(
+            address="192.0.2.118",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        command = NmapCommand(("nmap",))
+        failed = ParsedCollectionResult(
+            result=CollectionResult(command, 1, "", "failed"),
+            scan=None,
+        )
+        successful = ParsedCollectionResult(
+            result=CollectionResult(command, 0, "<nmaprun />", ""),
+            scan=Scan(
+                source="nmap stdout",
+                hosts=(
+                    Host(
+                        address="192.0.2.118",
+                        status="up",
+                        ports=(
+                            Port(
+                                port=443,
+                                protocol="tcp",
+                                state="open",
+                                scripts=(
+                                    ScriptResult("ssl-cert", "certificate evidence"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        merged = merge_collection_outcomes_into_host(
+            discovered,
+            (failed, successful),
+        )
+
+        self.assertEqual(
+            merged.ports[0].scripts,
             (ScriptResult("ssl-cert", "certificate evidence"),),
         )
 
