@@ -62,9 +62,14 @@ def merge_port_evidence(
     ):
         raise ValueError("Cannot merge evidence from a different port")
 
+    scripts = list(discovered.scripts)
+    for script in collected.scripts:
+        if script not in scripts:
+            scripts.append(script)
+
     return replace(
         discovered,
-        scripts=discovered.scripts + collected.scripts,
+        scripts=tuple(scripts),
     )
 
 
