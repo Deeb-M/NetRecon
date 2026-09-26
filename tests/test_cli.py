@@ -320,8 +320,51 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(
             json.loads(output.getvalue()),
-            {"error": "collection timed out"},
+            {"results": [], "error": "collection timed out"},
         )
+
+
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_json_failure_preserves_completed_hosts(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+    ) -> None:
+        import json
+
+        from evidence_collector import CorrelatedEvidenceResult, EvidenceCollectionError
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        first = Host(address="192.0.2.80", status="up")
+        second = Host(address="192.0.2.81", status="up")
+        first_result = CorrelatedEvidenceResult(outcomes=(), host=first, findings=())
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(first, second))
+        plan_mock.side_effect = (
+            HostEvidencePlan(target=first.address, requests=()),
+            HostEvidencePlan(target=second.address, requests=()),
+        )
+        collect_mock.side_effect = (
+            first_result,
+            EvidenceCollectionError("second host timed out"),
+        )
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--collect-evidence", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 2)
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(payload["error"], "second host timed out")
+        self.assertEqual(payload["results"][0]["host"], first.address)
+        self.assertEqual(payload["results"][0]["status"], "complete")
 
 
 if __name__ == "__main__":
