@@ -535,5 +535,49 @@ class EvidencePlannerTests(unittest.TestCase):
         )
 
 
+    def test_open_udp_445_without_service_does_not_force_smb(self) -> None:
+        host = Host(
+            address="192.0.2.40",
+            status="up",
+            ports=(
+                Port(
+                    port=445,
+                    protocol="udp",
+                    state="open",
+                    service=None,
+                ),
+            ),
+        )
+
+        plan = plan_evidence_requests(host)
+
+        self.assertEqual(plan, ())
+
+
+    def test_open_tcp_445_with_whitespace_service_uses_smb_fallback(self) -> None:
+        host = Host(
+            address="192.0.2.41",
+            status="up",
+            ports=(
+                Port(
+                    port=445,
+                    protocol=" TCP ",
+                    state=" OPEN ",
+                    service="   ",
+                ),
+            ),
+        )
+
+        plan = plan_evidence_requests(host)
+
+        self.assertEqual(
+            plan,
+            (
+                EvidenceRequest(445, "tcp", "smb-protocols"),
+                EvidenceRequest(445, "tcp", "smb2-security-mode"),
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
