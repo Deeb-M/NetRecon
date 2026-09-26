@@ -504,3 +504,43 @@ Before an Evidence Collector is implemented, continue validating the planner/col
 
 When collection is introduced, it should consume a self-contained `HostEvidencePlan`, preserve transparent Nmap command/evidence provenance, and remain separate from analysis/intelligence logic.
 
+
+
+## Evidence Collection checkpoint — 2026-09-27
+
+Development has now crossed the earlier planner-only boundary.
+
+Current validated baseline before this documentation checkpoint:
+- **439/439 tests passing locally on Kali**.
+- GitHub CI is the synchronization gate.
+- The public `v0.1.0` release remains immutable at `1749fcf`.
+
+### Implemented collection pipeline
+
+The current end-to-end internal flow is:
+
+`HostEvidencePlan -> CollectionSpec -> NmapCommand -> CollectionResult -> ParsedCollectionResult -> Scan -> Analyzer -> Findings`
+
+The collector now:
+- groups requested NSE scripts by target port/protocol;
+- builds transparent argv tuples rather than shell command strings;
+- uses `shell=False`;
+- emits XML to stdout with `-oX -`;
+- executes prepared Nmap commands while capturing stdout/stderr and return code;
+- preserves non-zero Nmap process results instead of inventing successful evidence;
+- parses successful XML directly from memory;
+- preserves failed collection outcomes with `scan=None`;
+- analyzes only successfully parsed scans;
+- supports complete host-plan collection and analysis;
+- supports an explicit timeout propagated through the full host pipeline;
+- reports a missing Nmap executable and collection timeout through `EvidenceCollectionError`.
+
+No CI regression test executes real Nmap; subprocess execution is mocked.
+
+### Architectural boundary
+
+Nmap execution exists as an isolated internal collection layer, but it is **not yet connected to the CLI or automatic target scanning**.
+
+Do not connect the collector directly to the existing analyzer by replacing the original discovery host with a partial evidence scan. Evidence collection scans may contain only one requested port and would lose discovery context. Before user-facing orchestration, define how collected evidence is merged/correlated with the original normalized host while preserving provenance.
+
+The next meaningful design boundary is therefore evidence correlation/merge, followed by a deliberately small CLI orchestration proof of concept once that contract is stable.
