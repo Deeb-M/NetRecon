@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from parser import NmapParseError, parse_nmap_xml
+from parser import NmapParseError, parse_nmap_xml, parse_nmap_xml_text
 
 
 SAMPLE_XML = """<?xml version="1.0"?>
@@ -2247,6 +2247,18 @@ class ParserTests(unittest.TestCase):
             path.write_text("<root/>", encoding="utf-8")
             with self.assertRaises(NmapParseError):
                 parse_nmap_xml(path)
+
+
+    def test_parses_nmap_xml_text_without_temp_file(self) -> None:
+        scan = parse_nmap_xml_text(
+            SAMPLE_XML,
+            source="nmap stdout",
+        )
+
+        self.assertEqual(scan.source, "nmap stdout")
+        self.assertEqual(scan.scanner, "nmap")
+        self.assertEqual(len(scan.hosts), 1)
+        self.assertEqual(scan.hosts[0].address, "192.0.2.10")
 
 
 if __name__ == "__main__":
