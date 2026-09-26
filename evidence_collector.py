@@ -228,6 +228,20 @@ def parse_collection_outcome(
     )
 
 
+def analyze_correlated_host_evidence(
+    discovered: Host,
+    outcomes: tuple[ParsedCollectionResult, ...],
+) -> tuple[Finding, ...]:
+    """Analyze a discovered host after merging its successfully collected evidence."""
+    merged = merge_collection_outcomes_into_host(discovered, outcomes)
+    return analyze_scan(
+        Scan(
+            source="correlated evidence",
+            hosts=(merged,),
+        )
+    )
+
+
 def analyze_collection_outcome(
     outcome: ParsedCollectionResult,
 ) -> tuple[Finding, ...]:
