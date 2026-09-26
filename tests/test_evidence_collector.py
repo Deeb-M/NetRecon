@@ -7,6 +7,7 @@ from evidence_collector import (
     CollectionSpec,
     NmapCommand,
     ParsedCollectionResult,
+    analyze_collection_outcome,
     build_collection_specs,
     build_nmap_command,
     build_nmap_commands,
@@ -593,6 +594,23 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(collect_host_evidence(plan), ())
         execute_mock.assert_called_once_with(plan)
         parse_mock.assert_not_called()
+
+
+    @patch("evidence_collector.analyze_scan")
+    def test_failed_collection_outcome_is_not_analyzed(
+        self,
+        analyze_mock,
+    ) -> None:
+        result = CollectionResult(
+            NmapCommand(("nmap", "-p", "443", "192.0.2.107")),
+            2,
+            "",
+            "failed",
+        )
+        outcome = ParsedCollectionResult(result=result, scan=None)
+
+        self.assertEqual(analyze_collection_outcome(outcome), ())
+        analyze_mock.assert_not_called()
 
 
 if __name__ == "__main__":
