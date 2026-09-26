@@ -17,13 +17,14 @@ from evidence_collector import (
     collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
+    merge_host_port_evidence,
     merge_port_evidence,
     parse_collection_outcome,
     parse_collection_result,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
 from findings import Finding
-from models import Port, Scan, ScriptResult
+from models import Host, Port, Scan, ScriptResult
 
 
 class EvidenceCollectorTests(unittest.TestCase):
@@ -938,6 +939,32 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(
             merged.scripts,
             (old_evidence, new_evidence),
+        )
+
+
+    def test_host_port_evidence_merge_updates_only_matching_port(self) -> None:
+        http = Port(port=80, protocol="tcp", state="open", service="http")
+        https = Port(port=443, protocol="tcp", state="open", service="https")
+        discovered = Host(
+            address="192.0.2.115",
+            status="up",
+            ports=(http, https),
+        )
+        collected = Port(
+            port=443,
+            protocol="TCP",
+            state="open",
+            service="ssl/http",
+            scripts=(ScriptResult("ssl-cert", "certificate evidence"),),
+        )
+
+        merged = merge_host_port_evidence(discovered, collected)
+
+        self.assertEqual(merged.ports[0], http)
+        self.assertEqual(merged.ports[1].service, "https")
+        self.assertEqual(
+            merged.ports[1].scripts,
+            (ScriptResult("ssl-cert", "certificate evidence"),),
         )
 
 
