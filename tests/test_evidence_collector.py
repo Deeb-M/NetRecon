@@ -1,6 +1,12 @@
 import unittest
 
-from evidence_collector import (\n    CollectionSpec,\n    NmapCommand,\n    build_collection_specs,\n    build_nmap_command,\n    build_nmap_commands,\n)
+from evidence_collector import (
+    CollectionSpec,
+    NmapCommand,
+    build_collection_specs,
+    build_nmap_command,
+    build_nmap_commands,
+)
 from evidence_planner import EvidenceRequest, HostEvidencePlan
 
 
