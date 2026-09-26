@@ -37,6 +37,14 @@ class CollectionResult:
     stderr: str
 
 
+@dataclass(frozen=True)
+class ParsedCollectionResult:
+    """Collection result paired with its parsed scan when available."""
+
+    result: CollectionResult
+    scan: Scan | None
+
+
 def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
     """Build Nmap argv for a collection specification without executing it."""
     target = spec.target.strip()
