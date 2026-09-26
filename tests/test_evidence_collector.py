@@ -968,5 +968,28 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_host_port_evidence_merge_rejects_undiscovered_port(self) -> None:
+        discovered = Host(
+            address="192.0.2.116",
+            status="up",
+            ports=(
+                Port(port=80, protocol="tcp", state="open", service="http"),
+            ),
+        )
+        collected = Port(
+            port=443,
+            protocol="tcp",
+            state="open",
+            service="https",
+            scripts=(ScriptResult("ssl-cert", "certificate evidence"),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot merge evidence for an undiscovered port",
+        ):
+            merge_host_port_evidence(discovered, collected)
+
+
 if __name__ == "__main__":
     unittest.main()
