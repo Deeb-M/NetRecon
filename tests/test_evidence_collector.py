@@ -1674,5 +1674,20 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(result.failed_outcomes, (failed,))
 
 
+    def test_successful_process_with_invalid_xml_is_preserved_as_failed_outcome(self) -> None:
+        command = NmapCommand(("nmap",))
+        result = CollectionResult(
+            command=command,
+            returncode=0,
+            stdout="not xml",
+            stderr="",
+        )
+
+        outcome = parse_collection_outcome(result)
+
+        self.assertEqual(outcome.result, result)
+        self.assertIsNone(outcome.scan)
+
+
 if __name__ == "__main__":
     unittest.main()
