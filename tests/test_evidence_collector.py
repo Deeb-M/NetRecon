@@ -163,5 +163,14 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_empty_host_plan_builds_no_nmap_commands(self) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.80",
+            requests=(),
+        )
+
+        self.assertEqual(build_nmap_commands(plan), ())
+
+
 if __name__ == "__main__":
     unittest.main()
