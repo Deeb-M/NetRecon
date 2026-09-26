@@ -51,6 +51,17 @@ class ParsedCollectionResult:
     scan: Scan | None
 
 
+def merge_host_evidence(
+    discovered: Host,
+    collected_ports: tuple[Port, ...],
+) -> Host:
+    """Merge collected evidence ports into a discovered host in collection order."""
+    merged = discovered
+    for collected in collected_ports:
+        merged = merge_host_port_evidence(merged, collected)
+    return merged
+
+
 def merge_host_port_evidence(
     discovered: Host,
     collected: Port,
