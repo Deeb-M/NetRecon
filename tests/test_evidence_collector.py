@@ -1329,5 +1329,34 @@ class EvidenceCollectorTests(unittest.TestCase):
         collect_mock.assert_not_called()
 
 
+    @patch("evidence_collector.analyze_correlated_host_evidence")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_correlated_host_orchestration_accepts_equivalent_ipv6_plan_target(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(
+            address="2001:db8::2",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        plan = HostEvidencePlan(
+            target="2001:0db8:0000:0000:0000:0000:0000:0002",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+        collect_mock.return_value = ()
+        analyze_mock.return_value = ()
+
+        self.assertEqual(
+            collect_correlate_and_analyze_host_evidence(discovered, plan),
+            (),
+        )
+        collect_mock.assert_called_once_with(plan, timeout=None)
+        analyze_mock.assert_called_once_with(discovered, ())
+
+
 if __name__ == "__main__":
     unittest.main()
