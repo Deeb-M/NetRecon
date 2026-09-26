@@ -120,5 +120,20 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_rejects_unsupported_collection_protocol(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.60",
+            port=9999,
+            protocol="unknown",
+            script_ids=("example-script",),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Unsupported collection protocol: unknown",
+        ):
+            build_nmap_command(spec)
+
+
 if __name__ == "__main__":
     unittest.main()
