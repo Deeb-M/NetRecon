@@ -443,3 +443,64 @@ At chat close:
 - after that, fix the HTTP GET/HEAD + `Path tested:` parsing regression;
 - then reassess the small orchestration proof of concept.
 
+## Evidence Planner checkpoint — 2026-09-26
+
+Development has moved beyond the earlier 381-test field-validation checkpoint.
+
+Current validated baseline:
+- **403/403 tests passing locally on Kali**.
+- GitHub CI is expected to remain the gate before local synchronization.
+- The public `v0.1.0` release remains immutable at `1749fcf`.
+
+### Evidence Planner architecture
+
+The current direction is:
+
+`Target -> Discovery -> Normalized Service Inventory -> Evidence Planner -> Evidence Collection -> Existing Analyzer / Intelligence -> Analyst Workflow`
+
+NetRecon still does **not** execute Nmap/NSE automatically at this checkpoint. The planner contract is being matured before an execution layer is introduced.
+
+The planner follows an evidence-first rule: request only evidence that the existing analyzer already knows how to interpret.
+
+Currently supported service-to-evidence policy:
+- SSH -> `ssh2-enum-algos`
+- HTTP -> `http-title`, `http-methods`
+- HTTPS -> HTTP evidence plus `ssl-cert`, `ssl-enum-ciphers`
+- SMB / `microsoft-ds` -> `smb-protocols`, `smb2-security-mode`
+
+### Collection contract
+
+`EvidenceRequest` represents one requested collection action and contains:
+- port;
+- normalized protocol;
+- NSE script ID.
+
+`HostEvidencePlan` binds:
+- one target address;
+- the tuple of detailed `EvidenceRequest` items still needed for that host.
+
+The target belongs to the host-level plan rather than being duplicated into every request.
+
+### Planner invariants now covered by regression tests
+
+- only open ports generate requests;
+- service/state/protocol and existing script IDs are normalized where relevant;
+- already-present evidence is not requested again;
+- partial evidence produces only the missing requests;
+- complete supported evidence produces an empty request tuple while preserving the target;
+- the same script required on different ports remains a separate request for each port;
+- evidence present on one port does not suppress the same evidence needed on another;
+- unsupported services fail closed with no evidence request;
+- explicit service identification takes precedence over port fallback;
+- port `445/tcp` with no identified service conservatively falls back to SMB evidence;
+- whitespace-only service on `445/tcp` is treated as missing and uses that fallback;
+- `445/udp` does not trigger the SMB fallback.
+
+### Next development boundary
+
+Do not jump directly to subprocess/Nmap execution.
+
+Before an Evidence Collector is implemented, continue validating the planner/collector boundary only where a concrete execution requirement exists. Avoid adding duplicate tests or speculative fields merely to grow the contract or test count.
+
+When collection is introduced, it should consume a self-contained `HostEvidencePlan`, preserve transparent Nmap command/evidence provenance, and remain separate from analysis/intelligence logic.
+
