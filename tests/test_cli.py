@@ -399,5 +399,18 @@ class CliTests(unittest.TestCase):
         collect_mock.assert_called_once_with(host, plan, timeout=12.5)
 
 
+    def test_rejects_non_positive_evidence_timeout(self) -> None:
+        parser = build_parser()
+
+        for value in ("0", "-1"):
+            with self.subTest(value=value):
+                with self.assertRaises(SystemExit) as context:
+                    parser.parse_args(
+                        ["scan.xml", "--collect-evidence", "--evidence-timeout", value]
+                    )
+
+                self.assertEqual(context.exception.code, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
