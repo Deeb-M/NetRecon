@@ -17,6 +17,7 @@ from evidence_collector import (
     collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
+    merge_host_evidence,
     merge_host_port_evidence,
     merge_port_evidence,
     parse_collection_outcome,
@@ -989,6 +990,42 @@ class EvidenceCollectorTests(unittest.TestCase):
             "Cannot merge evidence for an undiscovered port",
         ):
             merge_host_port_evidence(discovered, collected)
+
+
+    def test_host_evidence_merge_accumulates_multiple_collected_ports(self) -> None:
+        discovered = Host(
+            address="192.0.2.117",
+            status="up",
+            ports=(
+                Port(port=80, protocol="tcp", state="open", service="http"),
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        collected_ports = (
+            Port(
+                port=80,
+                protocol="tcp",
+                state="open",
+                scripts=(ScriptResult("http-title", "Example"),),
+            ),
+            Port(
+                port=443,
+                protocol="tcp",
+                state="open",
+                scripts=(ScriptResult("ssl-cert", "certificate evidence"),),
+            ),
+        )
+
+        merged = merge_host_evidence(discovered, collected_ports)
+
+        self.assertEqual(
+            merged.ports[0].scripts,
+            (ScriptResult("http-title", "Example"),),
+        )
+        self.assertEqual(
+            merged.ports[1].scripts,
+            (ScriptResult("ssl-cert", "certificate evidence"),),
+        )
 
 
 if __name__ == "__main__":
