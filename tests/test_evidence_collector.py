@@ -11,6 +11,7 @@ from evidence_collector import (
     build_nmap_commands,
     execute_host_evidence_plan,
     execute_nmap_command,
+    parse_collection_result,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
 
@@ -411,6 +412,32 @@ class EvidenceCollectorTests(unittest.TestCase):
 
         self.assertEqual(execute_host_evidence_plan(plan), ())
         execute_mock.assert_not_called()
+
+
+    def test_parses_successful_collection_result_from_stdout(self) -> None:
+        command = NmapCommand(
+            arguments=("nmap", "-p", "443", "192.0.2.100"),
+        )
+        result = CollectionResult(
+            command=command,
+            returncode=0,
+            stdout=(
+                '<nmaprun scanner="nmap">'
+                '<host><status state="up"/>'
+                '<address addr="192.0.2.100" addrtype="ipv4"/>'
+                '<ports><port protocol="tcp" portid="443">'
+                '<state state="open"/><service name="https"/>'
+                '</port></ports></host>'
+                '</nmaprun>'
+            ),
+            stderr="",
+        )
+
+        scan = parse_collection_result(result)
+
+        self.assertEqual(scan.source, "nmap stdout")
+        self.assertEqual(scan.hosts[0].address, "192.0.2.100")
+        self.assertEqual(scan.hosts[0].ports[0].service, "https")
 
 
 if __name__ == "__main__":
