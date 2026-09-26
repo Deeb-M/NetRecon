@@ -12,6 +12,7 @@ from evidence_collector import (
     build_nmap_commands,
     execute_host_evidence_plan,
     execute_nmap_command,
+    parse_collection_outcome,
     parse_collection_result,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
@@ -481,6 +482,29 @@ class EvidenceCollectorTests(unittest.TestCase):
 
         self.assertEqual(parsed.result, result)
         self.assertIsNone(parsed.scan)
+
+
+    @patch("evidence_collector.parse_collection_result")
+    def test_failed_collection_outcome_preserves_result_without_parsing(
+        self,
+        parse_mock,
+    ) -> None:
+        result = CollectionResult(
+            command=NmapCommand(
+                arguments=("nmap", "-p", "443", "192.0.2.103"),
+            ),
+            returncode=2,
+            stdout="<partial />",
+            stderr="nmap failed",
+        )
+
+        outcome = parse_collection_outcome(result)
+
+        self.assertEqual(
+            outcome,
+            ParsedCollectionResult(result=result, scan=None),
+        )
+        parse_mock.assert_not_called()
 
 
 if __name__ == "__main__":
