@@ -5,6 +5,7 @@ from unittest.mock import patch
 from evidence_collector import (
     CollectionResult,
     CollectionSpec,
+    EvidenceCollectionError,
     NmapCommand,
     ParsedCollectionResult,
     analyze_collection_outcome,
@@ -735,6 +736,23 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
         collect_mock.assert_called_once_with(plan)
         analyze_mock.assert_called_once_with(outcomes)
+
+
+    @patch("evidence_collector.subprocess.run")
+    def test_reports_missing_nmap_executable(
+        self,
+        run_mock,
+    ) -> None:
+        run_mock.side_effect = FileNotFoundError
+        command = NmapCommand(
+            ("nmap", "-p", "443", "192.0.2.111"),
+        )
+
+        with self.assertRaisesRegex(
+            EvidenceCollectionError,
+            "Nmap executable not found",
+        ):
+            execute_nmap_command(command)
 
 
 if __name__ == "__main__":
