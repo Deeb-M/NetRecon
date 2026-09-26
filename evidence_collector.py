@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import subprocess
 
 from evidence_planner import HostEvidencePlan
 
@@ -68,6 +69,23 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
         )
     )
 
+
+
+def execute_nmap_command(command: NmapCommand) -> CollectionResult:
+    """Execute one prepared Nmap command and capture its process result."""
+    completed = subprocess.run(
+        command.arguments,
+        capture_output=True,
+        text=True,
+        check=False,
+        shell=False,
+    )
+    return CollectionResult(
+        command=command,
+        returncode=completed.returncode,
+        stdout=completed.stdout,
+        stderr=completed.stderr,
+    )
 
 
 def build_nmap_commands(plan: HostEvidencePlan) -> tuple[NmapCommand, ...]:
