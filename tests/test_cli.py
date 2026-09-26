@@ -289,5 +289,40 @@ class CliTests(unittest.TestCase):
         )
 
 
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_json_failure_remains_valid_json(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+    ) -> None:
+        import json
+
+        from evidence_collector import EvidenceCollectionError
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        host = Host(address="192.0.2.70", status="up")
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(host,))
+        plan_mock.return_value = HostEvidencePlan(target=host.address, requests=())
+        collect_mock.side_effect = EvidenceCollectionError("collection timed out")
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--collect-evidence", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 2)
+
+        self.assertEqual(
+            json.loads(output.getvalue()),
+            {"error": "collection timed out"},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
