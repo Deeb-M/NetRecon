@@ -12,6 +12,7 @@ from evidence_collector import (
     build_collection_specs,
     build_nmap_command,
     build_nmap_commands,
+    collect_and_analyze_host_evidence,
     collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
@@ -690,6 +691,50 @@ class EvidenceCollectorTests(unittest.TestCase):
             [call.args[0] for call in analyze_mock.call_args_list],
             [first, second],
         )
+
+
+    @patch("evidence_collector.analyze_collection_outcomes")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_collects_and_analyzes_complete_host_plan(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.110",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+        outcomes = (
+            ParsedCollectionResult(
+                CollectionResult(
+                    NmapCommand(("nmap", "-p", "443", "192.0.2.110")),
+                    0,
+                    "<nmaprun />",
+                    "",
+                ),
+                Scan(source="nmap stdout"),
+            ),
+        )
+        finding = Finding(
+            "tls-evidence",
+            "test",
+            "192.0.2.110",
+            443,
+            "tcp",
+            "info",
+            "TLS evidence",
+            "Collected evidence",
+            "Review",
+        )
+        collect_mock.return_value = outcomes
+        analyze_mock.return_value = (finding,)
+
+        self.assertEqual(
+            collect_and_analyze_host_evidence(plan),
+            (finding,),
+        )
+        collect_mock.assert_called_once_with(plan)
+        analyze_mock.assert_called_once_with(outcomes)
 
 
 if __name__ == "__main__":
