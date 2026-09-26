@@ -243,5 +243,20 @@ class EvidenceCollectorTests(unittest.TestCase):
                     build_nmap_command(spec)
 
 
+    def test_rejects_blank_collection_script_id(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.93",
+            port=443,
+            protocol="tcp",
+            script_ids=("   ",),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Evidence collection script IDs must not be blank",
+        ):
+            build_nmap_command(spec)
+
+
 if __name__ == "__main__":
     unittest.main()
