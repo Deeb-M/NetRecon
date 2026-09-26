@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from importlib.metadata import version
 from pathlib import Path
 
@@ -87,7 +88,10 @@ def main() -> int:
                 if args.format == "text":
                     print(render_evidence_collection(result))
         except EvidenceCollectionError as exc:
-            print(f"Error: {exc}")
+            if args.format == "json":
+                print(json.dumps({"error": str(exc)}, indent=2))
+            else:
+                print(f"Error: {exc}")
             return 2
         if args.format == "json":
             print(render_evidence_collections_json(tuple(results)))
