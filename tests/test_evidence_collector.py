@@ -1,6 +1,7 @@
 import unittest
 
 from evidence_collector import (
+    CollectionResult,
     CollectionSpec,
     NmapCommand,
     build_collection_specs,
@@ -256,6 +257,24 @@ class EvidenceCollectorTests(unittest.TestCase):
             "Evidence collection script IDs must not be blank",
         ):
             build_nmap_command(spec)
+
+
+    def test_collection_result_preserves_command_and_process_output(self) -> None:
+        command = NmapCommand(
+            arguments=("nmap", "-p", "443", "192.0.2.94"),
+        )
+
+        result = CollectionResult(
+            command=command,
+            returncode=0,
+            stdout="<nmaprun></nmaprun>",
+            stderr="",
+        )
+
+        self.assertEqual(result.command, command)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "<nmaprun></nmaprun>")
+        self.assertEqual(result.stderr, "")
 
 
 if __name__ == "__main__":
