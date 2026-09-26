@@ -11,7 +11,7 @@ from evidence_collector import (
     ParsedCollectionResult,
 )
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_evidence_collection, render_evidence_collection_json, render_findings, render_text
+from reporter import render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_findings, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -427,6 +427,27 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(payload["host"], "192.0.2.136")
         self.assertEqual(payload["status"], "partial")
         self.assertEqual(payload["failures"], ["permission denied"])
+
+
+    def test_renders_multiple_evidence_collections_as_one_json_document(self) -> None:
+        first = CorrelatedEvidenceResult(
+            outcomes=(),
+            host=Host(address="192.0.2.137", status="up"),
+            findings=(),
+        )
+        second = CorrelatedEvidenceResult(
+            outcomes=(),
+            host=Host(address="192.0.2.138", status="up"),
+            findings=(),
+        )
+
+        payload = json.loads(render_evidence_collections_json((first, second)))
+
+        self.assertEqual(
+            [item["host"] for item in payload],
+            ["192.0.2.137", "192.0.2.138"],
+        )
+        self.assertEqual([item["status"] for item in payload], ["complete", "complete"])
 
 
 if __name__ == "__main__":
