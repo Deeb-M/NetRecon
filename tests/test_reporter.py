@@ -3,8 +3,14 @@
 import unittest
 
 from analyzer import Finding
+from evidence_collector import (
+    CollectionResult,
+    CorrelatedEvidenceResult,
+    NmapCommand,
+    ParsedCollectionResult,
+)
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_findings, render_text
+from reporter import render_evidence_collection, render_findings, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -363,6 +369,25 @@ class ReporterTests(unittest.TestCase):
         report = render_text(scan)
         self.assertIn("Network Summary: 1 up, 1 open ports, 1 unique services", report)
         self.assertIn("80/tcp open", report)
+
+
+    def test_renders_partial_evidence_collection_failure(self) -> None:
+        command = NmapCommand(("nmap",))
+        failed = ParsedCollectionResult(
+            result=CollectionResult(command, 1, "", "permission denied"),
+            scan=None,
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(failed,),
+            host=Host(address="192.0.2.134", status="up"),
+            findings=(),
+        )
+
+        report = render_evidence_collection(result)
+
+        self.assertIn("Host: 192.0.2.134", report)
+        self.assertIn("Status: partial", report)
+        self.assertIn("Failure: permission denied", report)
 
 
 if __name__ == "__main__":
