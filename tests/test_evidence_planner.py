@@ -1,6 +1,12 @@
 import unittest
 
-from evidence_planner import (\n    EvidenceRequest,\n    HostEvidencePlan,\n    plan_evidence,\n    plan_evidence_requests,\n    plan_host_evidence,\n)
+from evidence_planner import (
+    EvidenceRequest,
+    HostEvidencePlan,
+    plan_evidence,
+    plan_evidence_requests,
+    plan_host_evidence,
+)
 from models import Host, Port, ScriptResult
 
 
