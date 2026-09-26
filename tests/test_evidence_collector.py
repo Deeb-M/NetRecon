@@ -1448,5 +1448,45 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    @patch("evidence_collector.analyze_scan")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_correlated_result_keeps_failed_outcome_while_analyzing_discovery_host(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(
+            address="192.0.2.128",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    service="https",
+                    product="nginx",
+                ),
+            ),
+        )
+        plan = HostEvidencePlan(
+            target="192.0.2.128",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+        command = NmapCommand(("nmap",))
+        failed = ParsedCollectionResult(
+            result=CollectionResult(command, 1, "", "collection failed"),
+            scan=None,
+        )
+        collect_mock.return_value = (failed,)
+        analyze_mock.return_value = ()
+
+        result = collect_correlated_host_evidence(discovered, plan)
+
+        self.assertEqual(result.outcomes, (failed,))
+        self.assertEqual(result.host, discovered)
+        analyzed_scan = analyze_mock.call_args.args[0]
+        self.assertEqual(analyzed_scan.hosts, (discovered,))
+
+
 if __name__ == "__main__":
     unittest.main()
