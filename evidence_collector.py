@@ -127,6 +127,16 @@ def parse_collection_outcome(
     )
 
 
+def collect_host_evidence(
+    plan: HostEvidencePlan,
+) -> tuple[ParsedCollectionResult, ...]:
+    """Execute and parse every collection unit for one host evidence plan."""
+    return tuple(
+        parse_collection_outcome(result)
+        for result in execute_host_evidence_plan(plan)
+    )
+
+
 def execute_host_evidence_plan(
     plan: HostEvidencePlan,
 ) -> tuple[CollectionResult, ...]:
