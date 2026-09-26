@@ -212,7 +212,7 @@ class CliTests(unittest.TestCase):
         render_mock.assert_called_once_with(first_result)
 
 
-    @patch("netrecon.render_evidence_collection_json", return_value='{"status": "complete"}')
+    @patch("netrecon.render_evidence_collections_json", return_value='[{"status": "complete"}]')
     @patch("netrecon.collect_correlated_host_evidence")
     @patch("netrecon.plan_host_evidence")
     @patch("netrecon.parse_nmap_xml")
@@ -243,8 +243,50 @@ class CliTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
-        render_json_mock.assert_called_once_with(result)
-        self.assertEqual(output.getvalue().strip(), '{"status": "complete"}')
+        render_json_mock.assert_called_once_with((result,))
+        self.assertEqual(output.getvalue().strip(), '[{"status": "complete"}]')
+
+
+    @patch("netrecon.render_evidence_collections_json", return_value='[{"host": "first"}, {"host": "second"}]')
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_json_batches_multiple_hosts_into_one_document(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+        render_json_mock,
+    ) -> None:
+        from evidence_collector import CorrelatedEvidenceResult
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        first = Host(address="192.0.2.60", status="up")
+        second = Host(address="192.0.2.61", status="up")
+        first_result = CorrelatedEvidenceResult(outcomes=(), host=first, findings=())
+        second_result = CorrelatedEvidenceResult(outcomes=(), host=second, findings=())
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(first, second))
+        plan_mock.side_effect = (
+            HostEvidencePlan(target=first.address, requests=()),
+            HostEvidencePlan(target=second.address, requests=()),
+        )
+        collect_mock.side_effect = (first_result, second_result)
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--collect-evidence", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        render_json_mock.assert_called_once_with((first_result, second_result))
+        self.assertEqual(
+            output.getvalue().strip(),
+            '[{"host": "first"}, {"host": "second"}]',
+        )
 
 
 if __name__ == "__main__":
