@@ -871,5 +871,27 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_port_evidence_merge_rejects_different_port(self) -> None:
+        discovered = Port(
+            port=443,
+            protocol="tcp",
+            state="open",
+            service="https",
+        )
+        collected = Port(
+            port=8443,
+            protocol="tcp",
+            state="open",
+            service="https",
+            scripts=(ScriptResult("ssl-cert", "certificate evidence"),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot merge evidence from a different port",
+        ):
+            merge_port_evidence(discovered, collected)
+
+
 if __name__ == "__main__":
     unittest.main()
