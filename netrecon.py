@@ -16,6 +16,14 @@ from reporter import render_analysis_diff, render_analysis_diff_json, render_ana
 from scan_diff import compare_scans
 
 
+def positive_timeout(value: str) -> float:
+    """Parse a strictly positive evidence collection timeout."""
+    timeout = float(value)
+    if timeout <= 0:
+        raise argparse.ArgumentTypeError("evidence timeout must be greater than zero")
+    return timeout
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="netrecon",
@@ -41,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--evidence-timeout",
-        type=float,
+        type=positive_timeout,
         default=60.0,
         help="Per-command evidence collection timeout in seconds (default: 60)",
     )
