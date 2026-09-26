@@ -1,6 +1,6 @@
 import unittest
 
-from evidence_collector import CollectionSpec, build_collection_specs
+from evidence_collector import CollectionSpec, NmapCommand, build_collection_specs, build_nmap_command
 from evidence_planner import EvidenceRequest, HostEvidencePlan
 
 
@@ -58,6 +58,38 @@ class EvidenceCollectorTests(unittest.TestCase):
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
         self.assertEqual(build_collection_specs(plan), ())
+
+
+    def test_builds_transparent_nmap_argv_without_execution(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.40",
+            port=443,
+            protocol="tcp",
+            script_ids=(
+                "http-title",
+                "http-methods",
+                "ssl-cert",
+                "ssl-enum-ciphers",
+            ),
+        )
+
+        command = build_nmap_command(spec)
+
+        self.assertEqual(
+            command,
+            NmapCommand(
+                arguments=(
+                    "nmap",
+                    "-p",
+                    "443",
+                    "--script",
+                    "http-title,http-methods,ssl-cert,ssl-enum-ciphers",
+                    "-oX",
+                    "-",
+                    "192.0.2.40",
+                )
+            ),
+        )
 
 
 if __name__ == "__main__":
