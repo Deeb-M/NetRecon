@@ -8,6 +8,7 @@ from evidence_collector import (
     NmapCommand,
     ParsedCollectionResult,
     analyze_collection_outcome,
+    analyze_collection_outcomes,
     build_collection_specs,
     build_nmap_command,
     build_nmap_commands,
@@ -644,6 +645,51 @@ class EvidenceCollectorTests(unittest.TestCase):
 
         self.assertEqual(analyze_collection_outcome(outcome), findings)
         analyze_mock.assert_called_once_with(scan)
+
+
+    @patch("evidence_collector.analyze_collection_outcome")
+    def test_analyzes_collection_outcomes_in_order(
+        self,
+        analyze_mock,
+    ) -> None:
+        first = ParsedCollectionResult(
+            CollectionResult(
+                NmapCommand(("nmap", "-p", "80", "192.0.2.109")),
+                0,
+                "<nmaprun />",
+                "",
+            ),
+            Scan(source="first"),
+        )
+        second = ParsedCollectionResult(
+            CollectionResult(
+                NmapCommand(("nmap", "-p", "443", "192.0.2.109")),
+                2,
+                "",
+                "failed",
+            ),
+            None,
+        )
+        first_finding = Finding(
+            "first",
+            "test",
+            "192.0.2.109",
+            80,
+            "tcp",
+            "info",
+            "First",
+            "First evidence",
+            "Review",
+        )
+        analyze_mock.side_effect = ((first_finding,), ())
+
+        findings = analyze_collection_outcomes((first, second))
+
+        self.assertEqual(findings, (first_finding,))
+        self.assertEqual(
+            [call.args[0] for call in analyze_mock.call_args_list],
+            [first, second],
+        )
 
 
 if __name__ == "__main__":
