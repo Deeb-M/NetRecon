@@ -172,5 +172,45 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), "Error: Nmap executable not found")
 
 
+    @patch("netrecon.render_evidence_collection", return_value="First host evidence")
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_preserves_prior_host_report_when_later_host_fails(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+        render_mock,
+    ) -> None:
+        from evidence_collector import CorrelatedEvidenceResult, EvidenceCollectionError
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        first = Host(address="192.0.2.40", status="up")
+        second = Host(address="192.0.2.41", status="up")
+        first_plan = HostEvidencePlan(target=first.address, requests=())
+        second_plan = HostEvidencePlan(target=second.address, requests=())
+        first_result = CorrelatedEvidenceResult(outcomes=(), host=first, findings=())
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(first, second))
+        plan_mock.side_effect = (first_plan, second_plan)
+        collect_mock.side_effect = (
+            first_result,
+            EvidenceCollectionError("collection timed out"),
+        )
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "--collect-evidence"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 2)
+
+        self.assertEqual(
+            output.getvalue().strip().splitlines(),
+            ["First host evidence", "Error: collection timed out"],
+        )
+        render_mock.assert_called_once_with(first_result)
+
+
 if __name__ == "__main__":
     unittest.main()
