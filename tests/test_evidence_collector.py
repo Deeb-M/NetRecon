@@ -187,5 +187,29 @@ class EvidenceCollectorTests(unittest.TestCase):
             build_nmap_command(spec)
 
 
+    def test_normalizes_collection_protocol_before_building_command(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.91",
+            port=161,
+            protocol=" UDP ",
+            script_ids=("snmp-info",),
+        )
+
+        self.assertEqual(
+            build_nmap_command(spec).arguments,
+            (
+                "nmap",
+                "-sU",
+                "-p",
+                "161",
+                "--script",
+                "snmp-info",
+                "-oX",
+                "-",
+                "192.0.2.91",
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
