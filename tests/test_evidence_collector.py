@@ -1153,5 +1153,42 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_collection_outcomes_ignore_invalid_host_address(self) -> None:
+        discovered = Host(
+            address="192.0.2.121",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        command = NmapCommand(("nmap",))
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(command, 0, "<nmaprun />", ""),
+            scan=Scan(
+                source="nmap stdout",
+                hosts=(
+                    Host(
+                        address="not-an-ip",
+                        status="up",
+                        ports=(
+                            Port(
+                                port=443,
+                                protocol="tcp",
+                                state="open",
+                                scripts=(
+                                    ScriptResult("ssl-cert", "wrong host evidence"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        merged = merge_collection_outcomes_into_host(discovered, (outcome,))
+
+        self.assertEqual(merged, discovered)
+
+
 if __name__ == "__main__":
     unittest.main()
