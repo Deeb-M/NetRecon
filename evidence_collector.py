@@ -269,6 +269,11 @@ class CorrelatedEvidenceResult:
     host: Host
     findings: tuple[Finding, ...]
 
+    @property
+    def collection_complete(self) -> bool:
+        """Return True only when every requested collection outcome parsed successfully."""
+        return all(outcome.scan is not None for outcome in self.outcomes)
+
 
 def collect_correlated_host_evidence(
     discovered: Host,
