@@ -1,4 +1,4 @@
-"""Build transparent evidence collection specifications without executing Nmap."""
+"""Build, execute, parse, and analyze transparent Nmap evidence collection."""
 
 from __future__ import annotations
 
