@@ -166,29 +166,35 @@ def analyze_collection_outcomes(
 
 def collect_and_analyze_host_evidence(
     plan: HostEvidencePlan,
+    *,
+    timeout: float | None = None,
 ) -> tuple[Finding, ...]:
     """Collect, parse, and analyze all requested evidence for one host."""
     return analyze_collection_outcomes(
-        collect_host_evidence(plan)
+        collect_host_evidence(plan, timeout=timeout)
     )
 
 
 def collect_host_evidence(
     plan: HostEvidencePlan,
+    *,
+    timeout: float | None = None,
 ) -> tuple[ParsedCollectionResult, ...]:
     """Execute and parse every collection unit for one host evidence plan."""
     return tuple(
         parse_collection_outcome(result)
-        for result in execute_host_evidence_plan(plan)
+        for result in execute_host_evidence_plan(plan, timeout=timeout)
     )
 
 
 def execute_host_evidence_plan(
     plan: HostEvidencePlan,
+    *,
+    timeout: float | None = None,
 ) -> tuple[CollectionResult, ...]:
     """Execute every prepared command for one host evidence plan."""
     return tuple(
-        execute_nmap_command(command)
+        execute_nmap_command(command, timeout=timeout)
         for command in build_nmap_commands(plan)
     )
 
