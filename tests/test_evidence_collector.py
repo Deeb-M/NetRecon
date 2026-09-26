@@ -9,6 +9,7 @@ from evidence_collector import (
     build_collection_specs,
     build_nmap_command,
     build_nmap_commands,
+    execute_host_evidence_plan,
     execute_nmap_command,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
@@ -336,6 +337,39 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(result.stdout, "")
         self.assertEqual(result.stderr, "nmap failed")
+
+
+    @patch("evidence_collector.execute_nmap_command")
+    def test_executes_complete_host_evidence_plan_in_order(
+        self,
+        execute_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.97",
+            requests=(
+                EvidenceRequest(80, "tcp", "http-title"),
+                EvidenceRequest(443, "tcp", "ssl-cert"),
+            ),
+        )
+        commands = build_nmap_commands(plan)
+        execute_mock.side_effect = (
+            CollectionResult(commands[0], 0, "<http />", ""),
+            CollectionResult(commands[1], 0, "<tls />", ""),
+        )
+
+        results = execute_host_evidence_plan(plan)
+
+        self.assertEqual(
+            [call.args[0] for call in execute_mock.call_args_list],
+            list(commands),
+        )
+        self.assertEqual(
+            results,
+            (
+                CollectionResult(commands[0], 0, "<http />", ""),
+                CollectionResult(commands[1], 0, "<tls />", ""),
+            ),
+        )
 
 
 if __name__ == "__main__":
