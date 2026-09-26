@@ -9,6 +9,7 @@ from pathlib import Path
 
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
+from evidence_planner import plan_host_evidence
 from parser import NmapParseError, parse_nmap_xml
 from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_diff, render_diff_json, render_findings, render_json, render_text
 from scan_diff import compare_scans
@@ -74,6 +75,10 @@ def main() -> int:
     except NmapParseError as exc:
         print(f"Error: {exc}")
         return 2
+
+    if args.collect_evidence:
+        plans = tuple(plan_host_evidence(host) for host in scan.hosts)
+        return 0
 
     if args.diff:
         if compare_scan is None:
