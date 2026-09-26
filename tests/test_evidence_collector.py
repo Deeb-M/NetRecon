@@ -399,5 +399,19 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(results[1].stdout, "<tls />")
 
 
+    @patch("evidence_collector.execute_nmap_command")
+    def test_empty_host_plan_executes_no_commands(
+        self,
+        execute_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.99",
+            requests=(),
+        )
+
+        self.assertEqual(execute_host_evidence_plan(plan), ())
+        execute_mock.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
