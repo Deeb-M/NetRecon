@@ -31,6 +31,8 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
 
     if not target:
         raise ValueError("Evidence collection requires a target")
+    if not 1 <= spec.port <= 65535:
+        raise ValueError(f"Invalid collection port: {spec.port}")
     if protocol not in {"tcp", "udp"}:
         raise ValueError(f"Unsupported collection protocol: {spec.protocol}")
     if not spec.script_ids:
