@@ -735,7 +735,7 @@ class EvidenceCollectorTests(unittest.TestCase):
             collect_and_analyze_host_evidence(plan),
             (finding,),
         )
-        collect_mock.assert_called_once_with(plan)
+        collect_mock.assert_called_once_with(plan, timeout=None)
         analyze_mock.assert_called_once_with(outcomes)
 
 
