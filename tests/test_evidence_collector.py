@@ -16,6 +16,7 @@ from evidence_collector import (
     parse_collection_result,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
+from models import Scan
 
 
 class EvidenceCollectorTests(unittest.TestCase):
@@ -505,6 +506,31 @@ class EvidenceCollectorTests(unittest.TestCase):
             ParsedCollectionResult(result=result, scan=None),
         )
         parse_mock.assert_not_called()
+
+
+    @patch("evidence_collector.parse_collection_result")
+    def test_successful_collection_outcome_preserves_result_and_scan(
+        self,
+        parse_mock,
+    ) -> None:
+        result = CollectionResult(
+            command=NmapCommand(
+                arguments=("nmap", "-p", "443", "192.0.2.104"),
+            ),
+            returncode=0,
+            stdout="<nmaprun />",
+            stderr="",
+        )
+        scan = Scan(source="nmap stdout")
+        parse_mock.return_value = scan
+
+        outcome = parse_collection_outcome(result)
+
+        parse_mock.assert_called_once_with(result)
+        self.assertEqual(
+            outcome,
+            ParsedCollectionResult(result=result, scan=scan),
+        )
 
 
 if __name__ == "__main__":
