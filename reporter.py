@@ -49,6 +49,7 @@ def evidence_collection_payload(result: CorrelatedEvidenceResult) -> dict[str, o
             outcome.failure_message
             for outcome in result.failed_outcomes
         ],
+        "findings": [asdict(finding) for finding in prioritize_findings(result.findings)],
     }
 
 
