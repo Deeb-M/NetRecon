@@ -301,12 +301,12 @@ def collect_correlate_and_analyze_host_evidence(
     *,
     timeout: float | None = None,
 ) -> tuple[Finding, ...]:
-    """Collect requested evidence and analyze it in the original discovery context."""
-    if not _same_host_address(plan.target, discovered.address):
-        raise ValueError("Evidence plan target does not match discovery host")
-
-    outcomes = collect_host_evidence(plan, timeout=timeout)
-    return analyze_correlated_host_evidence(discovered, outcomes)
+    """Compatibility wrapper returning findings from correlated evidence collection."""
+    return collect_correlated_host_evidence(
+        discovered,
+        plan,
+        timeout=timeout,
+    ).findings
 
 
 def collect_and_analyze_host_evidence(
