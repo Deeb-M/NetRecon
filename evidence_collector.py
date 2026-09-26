@@ -10,7 +10,7 @@ from analyzer import analyze_scan
 from evidence_planner import HostEvidencePlan
 from findings import Finding
 from models import Host, Port, Scan
-from parser import parse_nmap_xml_text
+from parser import NmapParseError, parse_nmap_xml_text
 
 
 class EvidenceCollectionError(RuntimeError):
@@ -230,9 +230,17 @@ def parse_collection_outcome(
             scan=None,
         )
 
+    try:
+        scan = parse_collection_result(result)
+    except NmapParseError:
+        return ParsedCollectionResult(
+            result=result,
+            scan=None,
+        )
+
     return ParsedCollectionResult(
         result=result,
-        scan=parse_collection_result(result),
+        scan=scan,
     )
 
 
