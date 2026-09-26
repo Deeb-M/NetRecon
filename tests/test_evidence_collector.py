@@ -1592,5 +1592,27 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertTrue(result.collection_complete)
 
 
+    @patch("evidence_collector.analyze_scan")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_empty_correlated_plan_is_complete_and_preserves_discovery_host(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(address="192.0.2.132", status="up")
+        plan = HostEvidencePlan(target="192.0.2.132", requests=())
+        collect_mock.return_value = ()
+        analyze_mock.return_value = ()
+
+        result = collect_correlated_host_evidence(discovered, plan)
+
+        self.assertTrue(result.collection_complete)
+        self.assertEqual(result.outcomes, ())
+        self.assertEqual(result.host, discovered)
+        collect_mock.assert_called_once_with(plan, timeout=None)
+        analyzed_scan = analyze_mock.call_args.args[0]
+        self.assertEqual(analyzed_scan.hosts, (discovered,))
+
+
 if __name__ == "__main__":
     unittest.main()
