@@ -65,6 +65,20 @@ def render_evidence_collections_json(
     )
 
 
+def render_evidence_collection_error_json(
+    results: tuple[CorrelatedEvidenceResult, ...],
+    error: str,
+) -> str:
+    """Render completed host results plus a collection error as valid JSON."""
+    return json.dumps(
+        {
+            "results": [evidence_collection_payload(result) for result in results],
+            "error": error,
+        },
+        indent=2,
+    )
+
+
 def prioritize_findings(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
     """Return findings in deterministic analyst-attention order."""
     return tuple(
