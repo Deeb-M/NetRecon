@@ -18,6 +18,7 @@ from evidence_collector import (
     parse_collection_result,
 )
 from evidence_planner import EvidenceRequest, HostEvidencePlan
+from findings import Finding
 from models import Scan
 
 
@@ -611,6 +612,38 @@ class EvidenceCollectorTests(unittest.TestCase):
 
         self.assertEqual(analyze_collection_outcome(outcome), ())
         analyze_mock.assert_not_called()
+
+
+    @patch("evidence_collector.analyze_scan")
+    def test_successful_collection_outcome_is_analyzed(
+        self,
+        analyze_mock,
+    ) -> None:
+        result = CollectionResult(
+            NmapCommand(("nmap", "-p", "443", "192.0.2.108")),
+            0,
+            "<nmaprun />",
+            "",
+        )
+        scan = Scan(source="nmap stdout")
+        outcome = ParsedCollectionResult(result=result, scan=scan)
+        findings = (
+            Finding(
+                finding_id="test-finding",
+                category="test",
+                host="192.0.2.108",
+                port=443,
+                protocol="tcp",
+                severity="info",
+                title="Test finding",
+                evidence="Test evidence",
+                recommendation="Test recommendation",
+            ),
+        )
+        analyze_mock.return_value = findings
+
+        self.assertEqual(analyze_collection_outcome(outcome), findings)
+        analyze_mock.assert_called_once_with(scan)
 
 
 if __name__ == "__main__":
