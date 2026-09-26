@@ -111,6 +111,22 @@ def parse_collection_result(result: CollectionResult) -> Scan:
     )
 
 
+def parse_collection_outcome(
+    result: CollectionResult,
+) -> ParsedCollectionResult:
+    """Preserve every collection result and parse successful XML output."""
+    if result.returncode != 0:
+        return ParsedCollectionResult(
+            result=result,
+            scan=None,
+        )
+
+    return ParsedCollectionResult(
+        result=result,
+        scan=parse_collection_result(result),
+    )
+
+
 def execute_host_evidence_plan(
     plan: HostEvidencePlan,
 ) -> tuple[CollectionResult, ...]:
