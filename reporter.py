@@ -7,6 +7,7 @@ import json
 
 from analysis_diff import FindingChange
 from analysis_summary import summarize_analysis
+from evidence_collector import CorrelatedEvidenceResult
 from findings import Finding
 from host_summary import summarize_hosts
 from models import Host, Port, Scan, ScanScope
@@ -21,6 +22,20 @@ _SEVERITY_PRIORITY = {
     "low": 3,
     "info": 4,
 }
+
+
+def render_evidence_collection(result: CorrelatedEvidenceResult) -> str:
+    """Render host-scoped evidence collection status without subprocess details."""
+    status = "complete" if result.collection_complete else "partial"
+    lines = [
+        "Evidence Collection",
+        "-------------------",
+        f"Host: {result.host.address}",
+        f"Status: {status}",
+    ]
+    for outcome in result.failed_outcomes:
+        lines.append(f"Failure: {outcome.failure_message}")
+    return "\n".join(lines)
 
 
 def prioritize_findings(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
