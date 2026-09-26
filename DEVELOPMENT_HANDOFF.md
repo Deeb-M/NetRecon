@@ -544,3 +544,59 @@ Nmap execution exists as an isolated internal collection layer, but it is **not 
 Do not connect the collector directly to the existing analyzer by replacing the original discovery host with a partial evidence scan. Evidence collection scans may contain only one requested port and would lose discovery context. Before user-facing orchestration, define how collected evidence is merged/correlated with the original normalized host while preserving provenance.
 
 The next meaningful design boundary is therefore evidence correlation/merge, followed by a deliberately small CLI orchestration proof of concept once that contract is stable.
+
+## Stage A — Evidence Collection POC implementation complete — 2026-09-27
+
+Stage A has reached its implementation exit criteria and is ready for controlled Kali field validation.
+
+Validated development baseline:
+- **483/483 tests passing locally on Kali**.
+- GitHub CI is green for the 483-test checkpoint.
+- Public `v0.1.0` remains the immutable historical Alpha release at `1749fcf`.
+- These changes are post-release development on `main`; no new public release has been published yet.
+
+Implemented end-to-end POC flow:
+
+`Discovery XML -> normalized Host -> Evidence Planner -> targeted Nmap/NSE collection -> in-memory XML parsing -> evidence correlation -> existing Analyzer -> Findings -> text/JSON report`
+
+Stage A capabilities:
+- `netrecon <scan.xml> --collect-evidence` is wired to the real planner/collector pipeline.
+- Collection is restricted to evidence NetRecon already knows how to interpret.
+- Prepared Nmap commands use argv tuples with `shell=False` and XML stdout via `-oX -`.
+- Discovery host/service metadata remains authoritative while collected NSE evidence is merged into matching discovered ports.
+- Host and port correlation guards prevent evidence from being merged into the wrong discovery context.
+- Equivalent IPv6 representations are handled during host correlation.
+- Failed Nmap commands are preserved as failed outcomes; successful evidence from other collection units can still be correlated and analyzed.
+- Missing Nmap and subprocess timeout failures are surfaced as controlled `EvidenceCollectionError` paths.
+- CLI collection has a bounded per-command timeout: 60 seconds by default, configurable with `--evidence-timeout`; non-positive values are rejected.
+- A process that exits zero but returns invalid Nmap XML is preserved as a failed collection outcome rather than crashing the pipeline.
+- Text and JSON evidence-collection reports include collection status, failures, and correlated findings.
+- Multi-host JSON is emitted as one valid JSON document.
+- JSON collection errors preserve already completed host results.
+- CI tests mock subprocess execution; CI does not run real Nmap.
+
+### Stage A exit decision
+
+Do not continue adding unit tests merely to extend the test count before field validation.
+
+The implementation POC is complete enough for the next required activity: a controlled real-world Kali field test. The field test is now the source of evidence for Stage B hardening work.
+
+### Stage A field-test goals
+
+Validate the actual chain with authorized lab targets and real Nmap:
+1. Start from a real discovery XML file.
+2. Run `--collect-evidence` in text mode.
+3. Confirm the planner requests only justified NSE evidence for discovered services.
+4. Confirm the real Nmap commands execute and XML stdout parses correctly.
+5. Confirm collected evidence is correlated back to the correct host and port.
+6. Confirm resulting findings are visible to the analyst.
+7. Repeat in JSON mode and verify one valid machine-readable document.
+8. Exercise at least one controlled failure/partial-result path where practical.
+9. Record real-world incompatibilities as Stage B evidence; do not redesign the system during the test.
+
+### Stage B boundary
+
+Stage B is **Evidence Collection Hardening** and begins only after the Stage A field test.
+
+Stage B work should be driven by observed field behavior: real Nmap output compatibility, permissions, timing, unreachable/filtered targets, partial results, multi-host behavior, and operator UX. Do not preemptively implement speculative hardening before collecting that evidence.
+
