@@ -915,5 +915,31 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(merged.scripts, (evidence,))
 
 
+    def test_port_evidence_merge_preserves_changed_output_for_same_script(self) -> None:
+        old_evidence = ScriptResult("ssl-cert", "old certificate evidence")
+        new_evidence = ScriptResult("ssl-cert", "new certificate evidence")
+        discovered = Port(
+            port=443,
+            protocol="tcp",
+            state="open",
+            service="https",
+            scripts=(old_evidence,),
+        )
+        collected = Port(
+            port=443,
+            protocol="tcp",
+            state="open",
+            service="https",
+            scripts=(new_evidence,),
+        )
+
+        merged = merge_port_evidence(discovered, collected)
+
+        self.assertEqual(
+            merged.scripts,
+            (old_evidence, new_evidence),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
