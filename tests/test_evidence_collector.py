@@ -92,5 +92,33 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_udp_collection_command_uses_udp_scan(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.50",
+            port=161,
+            protocol="udp",
+            script_ids=("snmp-info",),
+        )
+
+        command = build_nmap_command(spec)
+
+        self.assertEqual(
+            command,
+            NmapCommand(
+                arguments=(
+                    "nmap",
+                    "-sU",
+                    "-p",
+                    "161",
+                    "--script",
+                    "snmp-info",
+                    "-oX",
+                    "-",
+                    "192.0.2.50",
+                )
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
