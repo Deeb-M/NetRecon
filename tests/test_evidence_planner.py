@@ -1,6 +1,6 @@
 import unittest
 
-from evidence_planner import EvidenceRequest, plan_evidence, plan_evidence_requests
+from evidence_planner import (\n    EvidenceRequest,\n    HostEvidencePlan,\n    plan_evidence,\n    plan_evidence_requests,\n    plan_host_evidence,\n)
 from models import Host, Port, ScriptResult
 
 
@@ -427,6 +427,68 @@ class EvidencePlannerTests(unittest.TestCase):
         plan = plan_evidence_requests(host)
 
         self.assertEqual(plan, ())
+
+
+    def test_host_plan_binds_target_to_detailed_requests(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=22,
+                    protocol="tcp",
+                    state="open",
+                    service="ssh",
+                ),
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    service="https",
+                ),
+            ),
+        )
+
+        plan = plan_host_evidence(host)
+
+        self.assertEqual(
+            plan,
+            HostEvidencePlan(
+                target="192.0.2.10",
+                requests=(
+                    EvidenceRequest(22, "tcp", "ssh2-enum-algos"),
+                    EvidenceRequest(443, "tcp", "http-title"),
+                    EvidenceRequest(443, "tcp", "http-methods"),
+                    EvidenceRequest(443, "tcp", "ssl-cert"),
+                    EvidenceRequest(443, "tcp", "ssl-enum-ciphers"),
+                ),
+            ),
+        )
+
+
+    def test_host_plan_preserves_target_when_no_evidence_is_needed(self) -> None:
+        host = Host(
+            address="192.0.2.20",
+            status="up",
+            ports=(
+                Port(
+                    port=5432,
+                    protocol="tcp",
+                    state="open",
+                    service="postgresql",
+                ),
+            ),
+        )
+
+        plan = plan_host_evidence(host)
+
+        self.assertEqual(
+            plan,
+            HostEvidencePlan(
+                target="192.0.2.20",
+                requests=(),
+            ),
+        )
 
 
 if __name__ == "__main__":
