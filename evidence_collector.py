@@ -28,6 +28,8 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
     """Build Nmap argv for a collection specification without executing it."""
     if spec.protocol not in {"tcp", "udp"}:
         raise ValueError(f"Unsupported collection protocol: {spec.protocol}")
+    if not spec.script_ids:
+        raise ValueError("Evidence collection requires at least one script")
 
     scan_type = ("-sU",) if spec.protocol == "udp" else ()
 
