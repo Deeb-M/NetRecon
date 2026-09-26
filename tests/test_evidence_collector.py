@@ -1271,7 +1271,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
-    @patch("evidence_collector.analyze_correlated_host_evidence")
+    @patch("evidence_collector.analyze_scan")
     @patch("evidence_collector.collect_host_evidence")
     def test_correlated_host_orchestration_collects_then_analyzes_discovery_context(
         self,
@@ -1302,7 +1302,8 @@ class EvidenceCollectorTests(unittest.TestCase):
             (),
         )
         collect_mock.assert_called_once_with(plan, timeout=30)
-        analyze_mock.assert_called_once_with(discovered, outcomes)
+        correlated_scan = analyze_mock.call_args.args[0]
+        self.assertEqual(correlated_scan.hosts, (discovered,))
 
 
     @patch("evidence_collector.collect_host_evidence")
@@ -1331,7 +1332,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         collect_mock.assert_not_called()
 
 
-    @patch("evidence_collector.analyze_correlated_host_evidence")
+    @patch("evidence_collector.analyze_scan")
     @patch("evidence_collector.collect_host_evidence")
     def test_correlated_host_orchestration_accepts_equivalent_ipv6_plan_target(
         self,
@@ -1357,7 +1358,8 @@ class EvidenceCollectorTests(unittest.TestCase):
             (),
         )
         collect_mock.assert_called_once_with(plan, timeout=None)
-        analyze_mock.assert_called_once_with(discovered, ())
+        correlated_scan = analyze_mock.call_args.args[0]
+        self.assertEqual(correlated_scan.hosts, (discovered,))
 
 
     @patch("evidence_collector.analyze_scan")
