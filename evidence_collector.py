@@ -5,7 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import subprocess
 
+from analyzer import analyze_scan
 from evidence_planner import HostEvidencePlan
+from findings import Finding
 from models import Scan
 from parser import parse_nmap_xml_text
 
@@ -125,6 +127,16 @@ def parse_collection_outcome(
         result=result,
         scan=parse_collection_result(result),
     )
+
+
+def analyze_collection_outcome(
+    outcome: ParsedCollectionResult,
+) -> tuple[Finding, ...]:
+    """Analyze parsed evidence while preserving failed collection outcomes."""
+    if outcome.scan is None:
+        return ()
+
+    return analyze_scan(outcome.scan)
 
 
 def collect_host_evidence(
