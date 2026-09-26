@@ -38,9 +38,9 @@ def render_evidence_collection(result: CorrelatedEvidenceResult) -> str:
     return "\n".join(lines)
 
 
-def render_evidence_collection_json(result: CorrelatedEvidenceResult) -> str:
-    """Render host-scoped evidence collection status as JSON."""
-    payload = {
+def evidence_collection_payload(result: CorrelatedEvidenceResult) -> dict[str, object]:
+    """Return the JSON-ready payload for one host evidence collection result."""
+    return {
         "host": result.host.address,
         "status": "complete" if result.collection_complete else "partial",
         "failures": [
@@ -48,7 +48,21 @@ def render_evidence_collection_json(result: CorrelatedEvidenceResult) -> str:
             for outcome in result.failed_outcomes
         ],
     }
-    return json.dumps(payload, indent=2)
+
+
+def render_evidence_collection_json(result: CorrelatedEvidenceResult) -> str:
+    """Render host-scoped evidence collection status as JSON."""
+    return json.dumps(evidence_collection_payload(result), indent=2)
+
+
+def render_evidence_collections_json(
+    results: tuple[CorrelatedEvidenceResult, ...],
+) -> str:
+    """Render multi-host evidence collection results as one valid JSON document."""
+    return json.dumps(
+        [evidence_collection_payload(result) for result in results],
+        indent=2,
+    )
 
 
 def prioritize_findings(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
