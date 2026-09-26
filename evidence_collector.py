@@ -38,6 +38,10 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
     if not spec.script_ids:
         raise ValueError("Evidence collection requires at least one script")
 
+    script_ids = tuple(script_id.strip() for script_id in spec.script_ids)
+    if any(not script_id for script_id in script_ids):
+        raise ValueError("Evidence collection script IDs must not be blank")
+
     scan_type = ("-sU",) if protocol == "udp" else ()
 
     return NmapCommand(
@@ -47,7 +51,7 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
             "-p",
             str(spec.port),
             "--script",
-            ",".join(spec.script_ids),
+            ",".join(script_ids),
             "-oX",
             "-",
             target,
