@@ -87,7 +87,11 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
 
 
 
-def execute_nmap_command(command: NmapCommand) -> CollectionResult:
+def execute_nmap_command(
+    command: NmapCommand,
+    *,
+    timeout: float | None = None,
+) -> CollectionResult:
     """Execute one prepared Nmap command and capture its process result."""
     try:
         completed = subprocess.run(
@@ -96,9 +100,12 @@ def execute_nmap_command(command: NmapCommand) -> CollectionResult:
             text=True,
             check=False,
             shell=False,
+            timeout=timeout,
         )
     except FileNotFoundError as exc:
         raise EvidenceCollectionError("Nmap executable not found") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise EvidenceCollectionError("Nmap evidence collection timed out") from exc
     return CollectionResult(
         command=command,
         returncode=completed.returncode,
