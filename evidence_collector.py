@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import subprocess
 
 from analyzer import analyze_scan
 from evidence_planner import HostEvidencePlan
 from findings import Finding
-from models import Scan
+from models import Port, Scan
 from parser import parse_nmap_xml_text
 
 
@@ -49,6 +49,23 @@ class ParsedCollectionResult:
 
     result: CollectionResult
     scan: Scan | None
+
+
+def merge_port_evidence(
+    discovered: Port,
+    collected: Port,
+) -> Port:
+    """Add collected scripts to a matching discovered port without replacing discovery metadata."""
+    if (
+        discovered.port != collected.port
+        or discovered.protocol.strip().lower() != collected.protocol.strip().lower()
+    ):
+        raise ValueError("Cannot merge evidence from a different port")
+
+    return replace(
+        discovered,
+        scripts=discovered.scripts + collected.scripts,
+    )
 
 
 def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
