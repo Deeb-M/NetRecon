@@ -16,6 +16,7 @@ from evidence_collector import (
     build_nmap_commands,
     collect_and_analyze_host_evidence,
     collect_correlate_and_analyze_host_evidence,
+    collect_correlated_host_evidence,
     collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
@@ -1356,6 +1357,53 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
         collect_mock.assert_called_once_with(plan, timeout=None)
         analyze_mock.assert_called_once_with(discovered, ())
+
+
+    @patch("evidence_collector.analyze_scan")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_correlated_evidence_result_preserves_outcomes_host_and_findings(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(
+            address="192.0.2.126",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        plan = HostEvidencePlan(
+            target="192.0.2.126",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+        command = NmapCommand(("nmap",))
+        outcomes = (
+            ParsedCollectionResult(
+                result=CollectionResult(command, 1, "", "collection failed"),
+                scan=None,
+            ),
+        )
+        finding = Finding(
+            finding_id="test-finding",
+            category="test",
+            host="192.0.2.126",
+            port=443,
+            protocol="tcp",
+            severity="info",
+            title="Test",
+            evidence="evidence",
+            recommendation="review",
+        )
+        collect_mock.return_value = outcomes
+        analyze_mock.return_value = (finding,)
+
+        result = collect_correlated_host_evidence(discovered, plan, timeout=15)
+
+        self.assertEqual(result.outcomes, outcomes)
+        self.assertEqual(result.host, discovered)
+        self.assertEqual(result.findings, (finding,))
+        collect_mock.assert_called_once_with(plan, timeout=15)
 
 
 if __name__ == "__main__":
