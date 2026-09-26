@@ -9,6 +9,7 @@ from evidence_collector import (
     NmapCommand,
     ParsedCollectionResult,
     analyze_collection_outcome,
+    analyze_correlated_host_evidence,
     analyze_collection_outcomes,
     build_collection_specs,
     build_nmap_command,
@@ -1204,6 +1205,67 @@ class EvidenceCollectorTests(unittest.TestCase):
             "Cannot correlate evidence for an invalid discovery host address",
         ):
             merge_collection_outcomes_into_host(discovered, ())
+
+
+    @patch("evidence_collector.analyze_scan")
+    def test_correlated_host_analysis_preserves_discovery_context(
+        self,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(
+            address="192.0.2.122",
+            status="up",
+            hostname="web.example",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    service="https",
+                    product="nginx",
+                ),
+            ),
+        )
+        command = NmapCommand(("nmap",))
+        outcomes = (
+            ParsedCollectionResult(
+                result=CollectionResult(command, 0, "<nmaprun />", ""),
+                scan=Scan(
+                    source="nmap stdout",
+                    hosts=(
+                        Host(
+                            address="192.0.2.122",
+                            status="up",
+                            ports=(
+                                Port(
+                                    port=443,
+                                    protocol="tcp",
+                                    state="open",
+                                    scripts=(
+                                        ScriptResult("ssl-cert", "certificate evidence"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        analyze_mock.return_value = ()
+
+        self.assertEqual(
+            analyze_correlated_host_evidence(discovered, outcomes),
+            (),
+        )
+
+        correlated_scan = analyze_mock.call_args.args[0]
+        merged = correlated_scan.hosts[0]
+        self.assertEqual(merged.hostname, "web.example")
+        self.assertEqual(merged.ports[0].product, "nginx")
+        self.assertEqual(
+            merged.ports[0].scripts,
+            (ScriptResult("ssl-cert", "certificate evidence"),),
+        )
 
 
 if __name__ == "__main__":
