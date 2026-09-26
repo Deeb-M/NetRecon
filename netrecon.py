@@ -12,7 +12,7 @@ from analyzer import analyze_scan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_planner import plan_host_evidence
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_diff, render_diff_json, render_evidence_collection, render_findings, render_json, render_text
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_json, render_findings, render_json, render_text
 from scan_diff import compare_scans
 
 
@@ -82,7 +82,11 @@ def main() -> int:
             for host in scan.hosts:
                 plan = plan_host_evidence(host)
                 result = collect_correlated_host_evidence(host, plan)
-                print(render_evidence_collection(result))
+                print(
+                    render_evidence_collection_json(result)
+                    if args.format == "json"
+                    else render_evidence_collection(result)
+                )
         except EvidenceCollectionError as exc:
             print(f"Error: {exc}")
             return 2
