@@ -53,6 +53,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Compare evidence-based findings between two Nmap XML scans",
     )
+    mode.add_argument(
+        "--collect-evidence",
+        action="store_true",
+        help="Collect targeted evidence for services already discovered in the input scan",
+    )
     return parser
 
 
