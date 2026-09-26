@@ -39,6 +39,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="text",
         help="Output format (default: text)",
     )
+    parser.add_argument(
+        "--evidence-timeout",
+        type=float,
+        default=60.0,
+        help="Per-command evidence collection timeout in seconds (default: 60)",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--analyze",
@@ -82,7 +88,11 @@ def main() -> int:
         try:
             for host in scan.hosts:
                 plan = plan_host_evidence(host)
-                result = collect_correlated_host_evidence(host, plan)
+                result = collect_correlated_host_evidence(
+                    host,
+                    plan,
+                    timeout=args.evidence_timeout,
+                )
                 results.append(result)
                 if args.format == "text":
                     print(render_evidence_collection(result))
