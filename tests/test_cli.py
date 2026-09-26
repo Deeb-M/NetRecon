@@ -35,7 +35,10 @@ class CliTests(unittest.TestCase):
             for action in parser._actions
             for option in action.option_strings
         }
-        self.assertTrue({"--analyze", "--diff", "--analysis-diff"} <= option_strings)
+        self.assertTrue(
+            {"--analyze", "--diff", "--analysis-diff", "--collect-evidence"}
+            <= option_strings
+        )
         self.assertTrue(
             any(action.dest == "compare_scan" for action in parser._actions)
         )
@@ -63,6 +66,9 @@ class CliTests(unittest.TestCase):
         self.assertTrue(parser.parse_args(["scan.xml", "compare.xml", "--diff"]).diff)
         self.assertTrue(
             parser.parse_args(["scan.xml", "compare.xml", "--analysis-diff"]).analysis_diff
+        )
+        self.assertTrue(
+            parser.parse_args(["scan.xml", "--collect-evidence"]).collect_evidence
         )
 
     def test_rejects_second_scan_without_comparison_mode(self) -> None:
