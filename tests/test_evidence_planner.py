@@ -579,5 +579,36 @@ class EvidencePlannerTests(unittest.TestCase):
         )
 
 
+    def test_host_plan_requests_nothing_when_supported_evidence_is_complete(self) -> None:
+        host = Host(
+            address="192.0.2.50",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    service="https",
+                    scripts=(
+                        ScriptResult("http-title", "Example"),
+                        ScriptResult("http-methods", "GET HEAD"),
+                        ScriptResult("ssl-cert", "Example certificate"),
+                        ScriptResult("ssl-enum-ciphers", "TLSv1.3"),
+                    ),
+                ),
+            ),
+        )
+
+        plan = plan_host_evidence(host)
+
+        self.assertEqual(
+            plan,
+            HostEvidencePlan(
+                target="192.0.2.50",
+                requests=(),
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
