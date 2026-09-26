@@ -475,5 +475,30 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("TLS evidence was collected", report)
 
 
+    def test_evidence_collection_json_includes_correlated_findings(self) -> None:
+        finding = Finding(
+            finding_id="json-evidence",
+            category="evidence",
+            host="192.0.2.140",
+            port=22,
+            protocol="tcp",
+            severity="info",
+            title="Collected SSH evidence",
+            evidence="SSH algorithms were collected",
+            recommendation="Review the collected algorithms",
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(),
+            host=Host(address="192.0.2.140", status="up"),
+            findings=(finding,),
+        )
+
+        payload = json.loads(render_evidence_collection_json(result))
+
+        self.assertEqual(len(payload["findings"]), 1)
+        self.assertEqual(payload["findings"][0]["finding_id"], "json-evidence")
+        self.assertEqual(payload["findings"][0]["title"], "Collected SSH evidence")
+
+
 if __name__ == "__main__":
     unittest.main()
