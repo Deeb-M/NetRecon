@@ -8,7 +8,7 @@ import subprocess
 from analyzer import analyze_scan
 from evidence_planner import HostEvidencePlan
 from findings import Finding
-from models import Port, Scan
+from models import Host, Port, Scan
 from parser import parse_nmap_xml_text
 
 
@@ -49,6 +49,28 @@ class ParsedCollectionResult:
 
     result: CollectionResult
     scan: Scan | None
+
+
+def merge_host_port_evidence(
+    discovered: Host,
+    collected: Port,
+) -> Host:
+    """Merge collected port evidence into the matching port of a discovered host."""
+    matching_indexes = tuple(
+        index
+        for index, port in enumerate(discovered.ports)
+        if (
+            port.port == collected.port
+            and port.protocol.strip().lower() == collected.protocol.strip().lower()
+        )
+    )
+    if not matching_indexes:
+        raise ValueError("Cannot merge evidence for an undiscovered port")
+
+    index = matching_indexes[0]
+    ports = list(discovered.ports)
+    ports[index] = merge_port_evidence(ports[index], collected)
+    return replace(discovered, ports=tuple(ports))
 
 
 def merge_port_evidence(
