@@ -22,14 +22,15 @@ class CliTests(unittest.TestCase):
 
     def test_help_describes_analysis_and_both_comparison_modes(self) -> None:
         help_text = build_parser().format_help()
+        normalized_help = " ".join(help_text.split())
 
         self.assertIn(
             "Analyze and compare Nmap XML scans with evidence-based findings and exposure summaries.",
-            help_text,
+            normalized_help,
         )
         self.assertIn(
             "Second Nmap XML file used with --diff or --analysis-diff",
-            help_text,
+            normalized_help,
         )
 
     def test_rejects_analyze_with_diff(self) -> None:
