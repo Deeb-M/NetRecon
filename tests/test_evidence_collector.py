@@ -1190,5 +1190,21 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(merged, discovered)
 
 
+    def test_collection_outcomes_reject_invalid_discovery_host_address(self) -> None:
+        discovered = Host(
+            address="not-an-ip",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot correlate evidence for an invalid discovery host address",
+        ):
+            merge_collection_outcomes_into_host(discovered, ())
+
+
 if __name__ == "__main__":
     unittest.main()
