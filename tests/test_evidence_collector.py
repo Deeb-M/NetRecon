@@ -1303,5 +1303,31 @@ class EvidenceCollectorTests(unittest.TestCase):
         analyze_mock.assert_called_once_with(discovered, outcomes)
 
 
+    @patch("evidence_collector.collect_host_evidence")
+    def test_correlated_host_orchestration_rejects_mismatched_plan_target(
+        self,
+        collect_mock,
+    ) -> None:
+        discovered = Host(
+            address="192.0.2.124",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        plan = HostEvidencePlan(
+            target="192.0.2.125",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Evidence plan target does not match discovery host",
+        ):
+            collect_correlate_and_analyze_host_evidence(discovered, plan)
+
+        collect_mock.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
