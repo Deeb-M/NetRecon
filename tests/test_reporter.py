@@ -390,5 +390,24 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Failure: permission denied", report)
 
 
+    def test_renders_complete_evidence_collection_without_failure(self) -> None:
+        command = NmapCommand(("nmap",))
+        successful = ParsedCollectionResult(
+            result=CollectionResult(command, 0, "<nmaprun />", "warning text"),
+            scan=Scan(source="nmap stdout"),
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(successful,),
+            host=Host(address="192.0.2.135", status="up"),
+            findings=(),
+        )
+
+        report = render_evidence_collection(result)
+
+        self.assertIn("Host: 192.0.2.135", report)
+        self.assertIn("Status: complete", report)
+        self.assertNotIn("Failure:", report)
+
+
 if __name__ == "__main__":
     unittest.main()
