@@ -497,5 +497,43 @@ class EvidencePlannerTests(unittest.TestCase):
         )
 
 
+    def test_host_plan_requests_only_missing_partial_evidence(self) -> None:
+        host = Host(
+            address="192.0.2.30",
+            status="up",
+            ports=(
+                Port(
+                    port=443,
+                    protocol="tcp",
+                    state="open",
+                    service="https",
+                    scripts=(
+                        ScriptResult(
+                            script_id="http-title",
+                            output="Example",
+                        ),
+                        ScriptResult(
+                            script_id="ssl-cert",
+                            output="Example certificate",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        plan = plan_host_evidence(host)
+
+        self.assertEqual(
+            plan,
+            HostEvidencePlan(
+                target="192.0.2.30",
+                requests=(
+                    EvidenceRequest(443, "tcp", "http-methods"),
+                    EvidenceRequest(443, "tcp", "ssl-enum-ciphers"),
+                ),
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
