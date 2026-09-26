@@ -263,6 +263,38 @@ def analyze_collection_outcomes(
     )
 
 
+@dataclass(frozen=True)
+class CorrelatedEvidenceResult:
+    outcomes: tuple[ParsedCollectionResult, ...]
+    host: Host
+    findings: tuple[Finding, ...]
+
+
+def collect_correlated_host_evidence(
+    discovered: Host,
+    plan: HostEvidencePlan,
+    *,
+    timeout: float | None = None,
+) -> CorrelatedEvidenceResult:
+    """Collect evidence while preserving collection outcomes and correlated context."""
+    if not _same_host_address(plan.target, discovered.address):
+        raise ValueError("Evidence plan target does not match discovery host")
+
+    outcomes = collect_host_evidence(plan, timeout=timeout)
+    host = merge_collection_outcomes_into_host(discovered, outcomes)
+    findings = analyze_scan(
+        Scan(
+            source="correlated evidence",
+            hosts=(host,),
+        )
+    )
+    return CorrelatedEvidenceResult(
+        outcomes=outcomes,
+        host=host,
+        findings=findings,
+    )
+
+
 def collect_correlate_and_analyze_host_evidence(
     discovered: Host,
     plan: HostEvidencePlan,
