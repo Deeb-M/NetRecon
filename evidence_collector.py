@@ -46,6 +46,15 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
     )
 
 
+
+def build_nmap_commands(plan: HostEvidencePlan) -> tuple[NmapCommand, ...]:
+    """Build all Nmap commands required by a host evidence plan."""
+    return tuple(
+        build_nmap_command(spec)
+        for spec in build_collection_specs(plan)
+    )
+
+
 def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]:
     """Group a host evidence plan into executable collection units."""
     grouped: dict[tuple[int, str], list[str]] = {}
