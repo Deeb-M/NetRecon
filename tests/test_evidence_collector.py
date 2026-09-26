@@ -372,5 +372,32 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    @patch("evidence_collector.execute_nmap_command")
+    def test_host_plan_preserves_results_after_command_failure(
+        self,
+        execute_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.98",
+            requests=(
+                EvidenceRequest(80, "tcp", "http-title"),
+                EvidenceRequest(443, "tcp", "ssl-cert"),
+            ),
+        )
+        commands = build_nmap_commands(plan)
+        execute_mock.side_effect = (
+            CollectionResult(commands[0], 2, "", "first command failed"),
+            CollectionResult(commands[1], 0, "<tls />", ""),
+        )
+
+        results = execute_host_evidence_plan(plan)
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0].returncode, 2)
+        self.assertEqual(results[0].stderr, "first command failed")
+        self.assertEqual(results[1].returncode, 0)
+        self.assertEqual(results[1].stdout, "<tls />")
+
+
 if __name__ == "__main__":
     unittest.main()
