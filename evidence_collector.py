@@ -51,6 +51,14 @@ class ParsedCollectionResult:
     result: CollectionResult
     scan: Scan | None
 
+    @property
+    def failure_message(self) -> str | None:
+        """Return a concise collection failure message suitable for reporting."""
+        if self.scan is not None:
+            return None
+        message = self.result.stderr.strip()
+        return message or f"Nmap exited with status {self.result.returncode}"
+
 
 def _same_host_address(left: str, right: str) -> bool:
     """Compare host addresses safely, including equivalent IPv6 representations."""
