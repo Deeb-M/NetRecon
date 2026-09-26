@@ -385,5 +385,49 @@ class EvidencePlannerTests(unittest.TestCase):
         )
 
 
+    def test_planner_normalizes_service_state_protocol_and_existing_script_id(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=22,
+                    protocol=" TCP ",
+                    state=" OPEN ",
+                    service=" SSH ",
+                    scripts=(
+                        ScriptResult(
+                            script_id=" SSH2-ENUM-ALGOS ",
+                            output="Example",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        plan = plan_evidence_requests(host)
+
+        self.assertEqual(plan, ())
+
+
+    def test_unsupported_open_service_requests_no_evidence(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=5432,
+                    protocol="tcp",
+                    state="open",
+                    service="postgresql",
+                ),
+            ),
+        )
+
+        plan = plan_evidence_requests(host)
+
+        self.assertEqual(plan, ())
+
+
 if __name__ == "__main__":
     unittest.main()
