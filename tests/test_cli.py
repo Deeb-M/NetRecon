@@ -81,12 +81,16 @@ class CliTests(unittest.TestCase):
         self.assertEqual(context.exception.code, 2)
 
 
+    @patch("netrecon.render_evidence_collection", return_value="Evidence report")
+    @patch("netrecon.collect_correlated_host_evidence")
     @patch("netrecon.plan_host_evidence")
     @patch("netrecon.parse_nmap_xml")
     def test_collect_evidence_plans_each_discovered_host(
         self,
         parse_mock,
         plan_mock,
+        collect_mock,
+        render_mock,
     ) -> None:
         from models import Host, Scan
         from netrecon import main
@@ -97,6 +101,7 @@ class CliTests(unittest.TestCase):
             source="scan.xml",
             hosts=(first, second),
         )
+        collect_mock.return_value = unittest.mock.MagicMock()
 
         with patch("sys.argv", ["netrecon", "scan.xml", "--collect-evidence"]):
             self.assertEqual(main(), 0)
