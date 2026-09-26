@@ -38,6 +38,19 @@ def render_evidence_collection(result: CorrelatedEvidenceResult) -> str:
     return "\n".join(lines)
 
 
+def render_evidence_collection_json(result: CorrelatedEvidenceResult) -> str:
+    """Render host-scoped evidence collection status as JSON."""
+    payload = {
+        "host": result.host.address,
+        "status": "complete" if result.collection_complete else "partial",
+        "failures": [
+            outcome.failure_message
+            for outcome in result.failed_outcomes
+        ],
+    }
+    return json.dumps(payload, indent=2)
+
+
 def prioritize_findings(findings: tuple[Finding, ...]) -> tuple[Finding, ...]:
     """Return findings in deterministic analyst-attention order."""
     return tuple(
