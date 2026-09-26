@@ -1639,5 +1639,20 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(outcome.failure_message, "Nmap exited with status 7")
 
 
+    def test_successful_collection_outcome_has_no_failure_message(self) -> None:
+        command = NmapCommand(("nmap",))
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(
+                command,
+                0,
+                "<nmaprun />",
+                "warning text",
+            ),
+            scan=Scan(source="nmap stdout"),
+        )
+
+        self.assertIsNone(outcome.failure_message)
+
+
 if __name__ == "__main__":
     unittest.main()
