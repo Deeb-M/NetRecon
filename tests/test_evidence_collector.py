@@ -10,6 +10,7 @@ from evidence_collector import (
     build_collection_specs,
     build_nmap_command,
     build_nmap_commands,
+    collect_host_evidence,
     execute_host_evidence_plan,
     execute_nmap_command,
     parse_collection_outcome,
@@ -531,6 +532,49 @@ class EvidenceCollectorTests(unittest.TestCase):
             outcome,
             ParsedCollectionResult(result=result, scan=scan),
         )
+
+
+    @patch("evidence_collector.parse_collection_outcome")
+    @patch("evidence_collector.execute_host_evidence_plan")
+    def test_collects_and_parses_complete_host_plan_in_order(
+        self,
+        execute_mock,
+        parse_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.105",
+            requests=(
+                EvidenceRequest(80, "tcp", "http-title"),
+                EvidenceRequest(443, "tcp", "ssl-cert"),
+            ),
+        )
+        first = CollectionResult(
+            NmapCommand(("nmap", "-p", "80", "192.0.2.105")),
+            0,
+            "<http />",
+            "",
+        )
+        second = CollectionResult(
+            NmapCommand(("nmap", "-p", "443", "192.0.2.105")),
+            2,
+            "",
+            "failed",
+        )
+        execute_mock.return_value = (first, second)
+        outcomes = (
+            ParsedCollectionResult(first, Scan(source="first")),
+            ParsedCollectionResult(second, None),
+        )
+        parse_mock.side_effect = outcomes
+
+        result = collect_host_evidence(plan)
+
+        execute_mock.assert_called_once_with(plan)
+        self.assertEqual(
+            [call.args[0] for call in parse_mock.call_args_list],
+            [first, second],
+        )
+        self.assertEqual(result, outcomes)
 
 
 if __name__ == "__main__":
