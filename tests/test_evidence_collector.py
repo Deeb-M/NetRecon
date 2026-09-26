@@ -1629,5 +1629,15 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(outcome.failure_message, "permission denied")
 
 
+    def test_failed_collection_outcome_falls_back_to_returncode_message(self) -> None:
+        command = NmapCommand(("nmap",))
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(command, 7, "", "   "),
+            scan=None,
+        )
+
+        self.assertEqual(outcome.failure_message, "Nmap exited with status 7")
+
+
 if __name__ == "__main__":
     unittest.main()
