@@ -56,11 +56,13 @@ def merge_collection_outcomes_into_host(
     outcomes: tuple[ParsedCollectionResult, ...],
 ) -> Host:
     """Merge ports from successful collection outcomes into a discovered host."""
+    target = discovered.address.strip().lower()
     collected_ports = tuple(
         port
         for outcome in outcomes
         if outcome.scan is not None
         for host in outcome.scan.hosts
+        if host.address.strip().lower() == target
         for port in host.ports
     )
     return merge_host_evidence(discovered, collected_ports)
