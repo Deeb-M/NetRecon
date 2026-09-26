@@ -893,5 +893,27 @@ class EvidenceCollectorTests(unittest.TestCase):
             merge_port_evidence(discovered, collected)
 
 
+    def test_port_evidence_merge_deduplicates_identical_script_result(self) -> None:
+        evidence = ScriptResult("ssl-cert", "certificate evidence")
+        discovered = Port(
+            port=443,
+            protocol="tcp",
+            state="open",
+            service="https",
+            scripts=(evidence,),
+        )
+        collected = Port(
+            port=443,
+            protocol="tcp",
+            state="open",
+            service="https",
+            scripts=(evidence,),
+        )
+
+        merged = merge_port_evidence(discovered, collected)
+
+        self.assertEqual(merged.scripts, (evidence,))
+
+
 if __name__ == "__main__":
     unittest.main()
