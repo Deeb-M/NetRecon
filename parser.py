@@ -24,6 +24,20 @@ def parse_nmap_xml(path: str | Path) -> Scan:
     except (ET.ParseError, OSError) as exc:
         raise NmapParseError(f"invalid Nmap XML: {exc}") from exc
 
+    return _parse_nmap_root(root, str(source))
+
+
+def parse_nmap_xml_text(xml_text: str, source: str = "<memory>") -> Scan:
+    """Parse Nmap XML already captured in memory."""
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        raise NmapParseError(f"invalid Nmap XML: {exc}") from exc
+
+    return _parse_nmap_root(root, source)
+
+
+def _parse_nmap_root(root: ET.Element, source: str) -> Scan:
     if root.tag != "nmaprun":
         raise NmapParseError("XML root is not <nmaprun>")
 
@@ -172,7 +186,7 @@ def parse_nmap_xml(path: str | Path) -> Scan:
         )
 
     return Scan(
-        source=str(source),
+        source=source,
         scanner=root.get("scanner", "").strip() or None,
         scanner_version=root.get("version", "").strip() or None,
         arguments=root.get("args", "").strip() or None,
