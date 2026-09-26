@@ -140,7 +140,7 @@ class CliTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
-        collect_mock.assert_called_once_with(host, plan)
+        collect_mock.assert_called_once_with(host, plan, timeout=60.0)
         render_mock.assert_called_once_with(result)
         self.assertEqual(output.getvalue().strip(), "Evidence report")
 
@@ -365,6 +365,38 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["error"], "second host timed out")
         self.assertEqual(payload["results"][0]["host"], first.address)
         self.assertEqual(payload["results"][0]["status"], "complete")
+
+
+    @patch("netrecon.render_evidence_collection", return_value="Evidence report")
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_passes_explicit_timeout_to_collector(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+        render_mock,
+    ) -> None:
+        from evidence_collector import CorrelatedEvidenceResult
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        host = Host(address="192.0.2.90", status="up")
+        plan = HostEvidencePlan(target=host.address, requests=())
+        result = CorrelatedEvidenceResult(outcomes=(), host=host, findings=())
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(host,))
+        plan_mock.return_value = plan
+        collect_mock.return_value = result
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--collect-evidence", "--evidence-timeout", "12.5"],
+        ):
+            self.assertEqual(main(), 0)
+
+        collect_mock.assert_called_once_with(host, plan, timeout=12.5)
 
 
 if __name__ == "__main__":
