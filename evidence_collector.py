@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import subprocess
 
 from evidence_planner import HostEvidencePlan
+from models import Scan
+from parser import parse_nmap_xml_text
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,19 @@ def execute_nmap_command(command: NmapCommand) -> CollectionResult:
         returncode=completed.returncode,
         stdout=completed.stdout,
         stderr=completed.stderr,
+    )
+
+
+def parse_collection_result(result: CollectionResult) -> Scan:
+    """Parse XML from a successful evidence collection result."""
+    if result.returncode != 0:
+        raise ValueError(
+            f"Cannot parse failed evidence collection: return code {result.returncode}"
+        )
+
+    return parse_nmap_xml_text(
+        result.stdout,
+        source="nmap stdout",
     )
 
 
