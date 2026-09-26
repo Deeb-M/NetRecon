@@ -35,6 +35,8 @@ def render_evidence_collection(result: CorrelatedEvidenceResult) -> str:
     ]
     for outcome in result.failed_outcomes:
         lines.append(f"Failure: {outcome.failure_message}")
+    if result.findings:
+        lines.extend(("", render_findings(result.findings)))
     return "\n".join(lines)
 
 
