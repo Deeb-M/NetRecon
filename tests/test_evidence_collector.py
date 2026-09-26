@@ -818,5 +818,27 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(execute_mock.call_args.kwargs, {"timeout": 45})
 
 
+    @patch("evidence_collector.analyze_collection_outcomes")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_host_analysis_pipeline_propagates_collection_timeout(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.114",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+        collect_mock.return_value = ()
+        analyze_mock.return_value = ()
+
+        self.assertEqual(
+            collect_and_analyze_host_evidence(plan, timeout=60),
+            (),
+        )
+        collect_mock.assert_called_once_with(plan, timeout=60)
+        analyze_mock.assert_called_once_with(())
+
+
 if __name__ == "__main__":
     unittest.main()
