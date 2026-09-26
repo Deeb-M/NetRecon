@@ -81,5 +81,31 @@ class CliTests(unittest.TestCase):
         self.assertEqual(context.exception.code, 2)
 
 
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_plans_each_discovered_host(
+        self,
+        parse_mock,
+        plan_mock,
+    ) -> None:
+        from models import Host, Scan
+        from netrecon import main
+
+        first = Host(address="192.0.2.10", status="up")
+        second = Host(address="192.0.2.11", status="up")
+        parse_mock.return_value = Scan(
+            source="scan.xml",
+            hosts=(first, second),
+        )
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "--collect-evidence"]):
+            self.assertEqual(main(), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in plan_mock.call_args_list],
+            [first, second],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
