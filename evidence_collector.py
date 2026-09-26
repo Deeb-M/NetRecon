@@ -12,6 +12,10 @@ from models import Scan
 from parser import parse_nmap_xml_text
 
 
+class EvidenceCollectionError(RuntimeError):
+    """Raised when an evidence collection command cannot be executed."""
+
+
 @dataclass(frozen=True)
 class CollectionSpec:
     """One collection unit for a target port and its requested NSE scripts."""
@@ -85,13 +89,16 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
 
 def execute_nmap_command(command: NmapCommand) -> CollectionResult:
     """Execute one prepared Nmap command and capture its process result."""
-    completed = subprocess.run(
-        command.arguments,
-        capture_output=True,
-        text=True,
-        check=False,
-        shell=False,
-    )
+    try:
+        completed = subprocess.run(
+            command.arguments,
+            capture_output=True,
+            text=True,
+            check=False,
+            shell=False,
+        )
+    except FileNotFoundError as exc:
+        raise EvidenceCollectionError("Nmap executable not found") from exc
     return CollectionResult(
         command=command,
         returncode=completed.returncode,
