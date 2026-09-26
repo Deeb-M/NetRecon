@@ -1488,5 +1488,67 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(analyzed_scan.hosts, (discovered,))
 
 
+    @patch("evidence_collector.analyze_scan")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_correlated_result_merges_success_while_preserving_failed_outcome(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(
+            address="192.0.2.129",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        plan = HostEvidencePlan(
+            target="192.0.2.129",
+            requests=(
+                EvidenceRequest(443, "tcp", "ssl-cert"),
+                EvidenceRequest(443, "tcp", "ssl-enum-ciphers"),
+            ),
+        )
+        command = NmapCommand(("nmap",))
+        successful = ParsedCollectionResult(
+            result=CollectionResult(command, 0, "<nmaprun />", ""),
+            scan=Scan(
+                source="nmap stdout",
+                hosts=(
+                    Host(
+                        address="192.0.2.129",
+                        status="up",
+                        ports=(
+                            Port(
+                                port=443,
+                                protocol="tcp",
+                                state="open",
+                                scripts=(
+                                    ScriptResult("ssl-cert", "certificate evidence"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        failed = ParsedCollectionResult(
+            result=CollectionResult(command, 1, "", "cipher collection failed"),
+            scan=None,
+        )
+        collect_mock.return_value = (successful, failed)
+        analyze_mock.return_value = ()
+
+        result = collect_correlated_host_evidence(discovered, plan)
+
+        self.assertEqual(result.outcomes, (successful, failed))
+        self.assertEqual(
+            result.host.ports[0].scripts,
+            (ScriptResult("ssl-cert", "certificate evidence"),),
+        )
+        analyzed_scan = analyze_mock.call_args.args[0]
+        self.assertEqual(analyzed_scan.hosts, (result.host,))
+
+
 if __name__ == "__main__":
     unittest.main()
