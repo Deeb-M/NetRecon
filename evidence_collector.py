@@ -139,6 +139,17 @@ def analyze_collection_outcome(
     return analyze_scan(outcome.scan)
 
 
+def analyze_collection_outcomes(
+    outcomes: tuple[ParsedCollectionResult, ...],
+) -> tuple[Finding, ...]:
+    """Analyze collected evidence outcomes in collection order."""
+    return tuple(
+        finding
+        for outcome in outcomes
+        for finding in analyze_collection_outcome(outcome)
+    )
+
+
 def collect_host_evidence(
     plan: HostEvidencePlan,
 ) -> tuple[ParsedCollectionResult, ...]:
