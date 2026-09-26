@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from ipaddress import ip_address
 import subprocess
 
 from analyzer import analyze_scan
@@ -56,13 +57,13 @@ def merge_collection_outcomes_into_host(
     outcomes: tuple[ParsedCollectionResult, ...],
 ) -> Host:
     """Merge ports from successful collection outcomes into a discovered host."""
-    target = discovered.address.strip().lower()
+    target = ip_address(discovered.address.strip())
     collected_ports = tuple(
         port
         for outcome in outcomes
         if outcome.scan is not None
         for host in outcome.scan.hosts
-        if host.address.strip().lower() == target
+        if ip_address(host.address.strip()) == target
         for port in host.ports
     )
     return merge_host_evidence(discovered, collected_ports)
