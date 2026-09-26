@@ -1113,5 +1113,45 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(merged, discovered)
 
 
+    def test_collection_outcomes_match_equivalent_ipv6_host_address(self) -> None:
+        discovered = Host(
+            address="2001:db8::1",
+            status="up",
+            ports=(
+                Port(port=443, protocol="tcp", state="open", service="https"),
+            ),
+        )
+        command = NmapCommand(("nmap",))
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(command, 0, "<nmaprun />", ""),
+            scan=Scan(
+                source="nmap stdout",
+                hosts=(
+                    Host(
+                        address="2001:0db8:0000:0000:0000:0000:0000:0001",
+                        status="up",
+                        ports=(
+                            Port(
+                                port=443,
+                                protocol="tcp",
+                                state="open",
+                                scripts=(
+                                    ScriptResult("ssl-cert", "certificate evidence"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        merged = merge_collection_outcomes_into_host(discovered, (outcome,))
+
+        self.assertEqual(
+            merged.ports[0].scripts,
+            (ScriptResult("ssl-cert", "certificate evidence"),),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
