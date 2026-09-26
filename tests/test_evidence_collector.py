@@ -211,5 +211,20 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_rejects_collection_spec_without_target(self) -> None:
+        spec = CollectionSpec(
+            target="   ",
+            port=443,
+            protocol="tcp",
+            script_ids=("ssl-cert",),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Evidence collection requires a target",
+        ):
+            build_nmap_command(spec)
+
+
 if __name__ == "__main__":
     unittest.main()
