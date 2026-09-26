@@ -65,6 +65,11 @@ def merge_collection_outcomes_into_host(
     outcomes: tuple[ParsedCollectionResult, ...],
 ) -> Host:
     """Merge ports from successful collection outcomes into a discovered host."""
+    try:
+        ip_address(discovered.address.strip())
+    except ValueError as exc:
+        raise ValueError("Cannot correlate evidence for an invalid discovery host address") from exc
+
     collected_ports = tuple(
         port
         for outcome in outcomes
