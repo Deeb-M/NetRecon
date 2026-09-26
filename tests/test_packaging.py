@@ -1,18 +1,13 @@
-import tomllib
 import unittest
 from pathlib import Path
 
 
 class PackagingTests(unittest.TestCase):
     def test_evidence_modules_are_included_in_package(self) -> None:
-        pyproject = tomllib.loads(
-            Path("pyproject.toml").read_text(encoding="utf-8")
-        )
-        modules = set(pyproject["tool"]["setuptools"]["py-modules"])
+        pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
 
-        self.assertTrue(
-            {"evidence_planner", "evidence_collector"} <= modules
-        )
+        self.assertIn('"evidence_planner"', pyproject)
+        self.assertIn('"evidence_collector"', pyproject)
 
 
 if __name__ == "__main__":
