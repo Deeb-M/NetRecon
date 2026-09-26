@@ -450,5 +450,30 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual([item["status"] for item in payload], ["complete", "complete"])
 
 
+    def test_evidence_collection_text_report_includes_correlated_findings(self) -> None:
+        finding = Finding(
+            finding_id="test-evidence",
+            category="evidence",
+            host="192.0.2.139",
+            port=443,
+            protocol="tcp",
+            severity="info",
+            title="Collected TLS evidence",
+            evidence="TLS evidence was collected",
+            recommendation="Review the collected evidence",
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(),
+            host=Host(address="192.0.2.139", status="up"),
+            findings=(finding,),
+        )
+
+        report = render_evidence_collection(result)
+
+        self.assertIn("Findings", report)
+        self.assertIn("Collected TLS evidence", report)
+        self.assertIn("TLS evidence was collected", report)
+
+
 if __name__ == "__main__":
     unittest.main()
