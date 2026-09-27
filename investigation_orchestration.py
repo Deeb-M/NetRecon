@@ -121,6 +121,7 @@ class InvestigationContinuationDecision:
     next_actions: tuple[EvidenceAction, ...]
     repeat_blocked_actions: tuple[EvidenceAction, ...] = ()
     stall_reason: str | None = None
+    alternative_actions: tuple[EvidenceAction, ...] = ()
 
 
 def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
@@ -130,6 +131,45 @@ def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
         gap.port,
         gap.protocol.strip().lower(),
         gap.script_id.strip().lower(),
+    )
+
+
+def _build_alternative_actions(
+    decision_gaps: tuple[EvidenceGap, ...],
+    repeat_blocked: tuple[EvidenceAction, ...],
+) -> tuple[EvidenceAction, ...]:
+    """Offer bounded evidence alternatives only after the primary action is exhausted."""
+    blocked_endpoints = {
+        (action.host.strip(), action.port, action.protocol.strip().lower())
+        for action in repeat_blocked
+    }
+    http_endpoints = {
+        (gap.host.strip(), gap.port, gap.protocol.strip().lower())
+        for gap in decision_gaps
+        if gap.script_id.strip().lower() in {"http-title", "http-methods"}
+    }
+    eligible = blocked_endpoints & http_endpoints
+
+    return tuple(
+        EvidenceAction(
+            host=host,
+            port=port,
+            protocol=protocol,
+            script_ids=("http-headers",),
+            purposes=("review HTTP response headers for service identity and context",),
+            command=(
+                "nmap",
+                *(("-sU",) if protocol == "udp" else ()),
+                "-p",
+                str(port),
+                "--script",
+                "http-headers",
+                "-oX",
+                "-",
+                host,
+            ),
+        )
+        for host, port, protocol in sorted(eligible)
     )
 
 
@@ -176,6 +216,10 @@ def assess_investigation_continuation(
         else:
             stall_reason = "no_progress"
 
+    alternative_actions = ()
+    if stall_reason == "repeated_actions_exhausted":
+        alternative_actions = _build_alternative_actions(after.gaps, repeat_blocked)
+
     return InvestigationContinuationDecision(
         status=status,
         resolved_gaps=resolved,
@@ -183,4 +227,5 @@ def assess_investigation_continuation(
         next_actions=safe_next_actions,
         repeat_blocked_actions=repeat_blocked,
         stall_reason=stall_reason,
+        alternative_actions=alternative_actions,
     )

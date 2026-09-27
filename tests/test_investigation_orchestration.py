@@ -756,6 +756,57 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.next_actions, (new_action,))
         self.assertEqual(decision.repeat_blocked_actions, (repeated,))
 
+    def test_exhausted_http_action_offers_http_headers_alternative(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        gap = EvidenceGap("192.0.2.60", 5357, "tcp", "http-title", "purpose")
+        attempted = EvidenceAction(
+            host="192.0.2.60",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-title", "http-methods"),
+            purposes=("purpose",),
+            command=("nmap", "-p", "5357", "--script", "http-title,http-methods", "-oX", "-", "192.0.2.60"),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot((gap,), (attempted,)),
+            self._snapshot((gap,), (attempted,)),
+            attempted_actions=(attempted,),
+        )
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.stall_reason, "repeated_actions_exhausted")
+        self.assertEqual(len(decision.alternative_actions), 1)
+        alternative = decision.alternative_actions[0]
+        self.assertEqual(alternative.script_ids, ("http-headers",))
+        self.assertEqual(
+            alternative.command,
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.60"),
+        )
+
+    def test_exhausted_non_http_action_offers_no_unrelated_alternative(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        gap = EvidenceGap("192.0.2.61", 445, "tcp", "smb-protocols", "purpose")
+        attempted = EvidenceAction(
+            host="192.0.2.61",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-protocols",),
+            purposes=("purpose",),
+            command=("nmap", "-p", "445", "--script", "smb-protocols"),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot((gap,), (attempted,)),
+            self._snapshot((gap,), (attempted,)),
+            attempted_actions=(attempted,),
+        )
+
+        self.assertEqual(decision.stall_reason, "repeated_actions_exhausted")
+        self.assertEqual(decision.alternative_actions, ())
+
     def test_continuation_assessment_rejects_unready_snapshot(self) -> None:
         from investigation_orchestration import (
             InvestigationSnapshot,
