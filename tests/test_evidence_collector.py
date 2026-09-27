@@ -175,6 +175,21 @@ class EvidenceCollectorTests(unittest.TestCase):
             build_collection_specs(plan)
 
 
+    def test_rejects_invalid_port_before_building_collection_specs(self) -> None:
+        for port in (0, -1, 65536):
+            with self.subTest(port=port):
+                plan = HostEvidencePlan(
+                    target="192.0.2.31",
+                    requests=(EvidenceRequest(port, "tcp", "http-title"),),
+                )
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    f"Invalid collection port: {port}",
+                ):
+                    build_collection_specs(plan)
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
