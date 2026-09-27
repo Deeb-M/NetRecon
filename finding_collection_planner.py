@@ -76,3 +76,21 @@ def evidence_action_for_finding_collection_plan(
         purposes=(requirement.purpose,),
         command=command.arguments,
     )
+
+
+
+def build_authorized_finding_evidence_actions(
+    findings: tuple[Finding, ...],
+    *,
+    explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
+) -> tuple[EvidenceAction, ...]:
+    """Return only authorized standard actions derived from evidence-backed findings."""
+    plans = build_finding_collection_plans(
+        findings,
+        explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+    )
+    return tuple(
+        action
+        for plan in plans
+        if (action := evidence_action_for_finding_collection_plan(plan)) is not None
+    )
