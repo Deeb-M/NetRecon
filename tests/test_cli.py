@@ -6,7 +6,7 @@ import json
 import unittest
 import tempfile
 from pathlib import Path
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from unittest.mock import patch
 
