@@ -1681,7 +1681,7 @@ class ReporterTests(unittest.TestCase):
                 "smb.exposure_and_signing_review",
                 "192.0.2.70",
                 "SMB exposure and signing configuration require joint review",
-                ("smb.service.exposed", "smb.signing.review"),
+                ("service.smb.exposed", "smb.signing.review"),
                 ("service:detection", "nse:smb2-security-mode"),
                 "Review SMB exposure together with its signing configuration.",
             ),
@@ -1694,7 +1694,7 @@ class ReporterTests(unittest.TestCase):
 
         self.assertIn("Correlated Review", text_report)
         self.assertIn(
-            "Findings: smb.service.exposed, smb.signing.review",
+            "Findings: service.smb.exposed, smb.signing.review",
             text_report,
         )
         self.assertIn(
@@ -1708,7 +1708,7 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(json_report["summary"], {"groups": 1})
         self.assertEqual(
             json_report["groups"][0]["finding_ids"],
-            ["smb.service.exposed", "smb.signing.review"],
+            ["service.smb.exposed", "smb.signing.review"],
         )
         self.assertEqual(
             json_report["groups"][0]["evidence_sources"],
@@ -1731,7 +1731,7 @@ class ReporterTests(unittest.TestCase):
                 "smb.exposure_and_signing_review",
                 "192.0.2.80",
                 "SMB exposure and signing configuration require joint review",
-                ("smb.service.exposed", "smb.signing.review"),
+                ("service.smb.exposed", "smb.signing.review"),
                 ("service:detection", "nse:smb2-security-mode"),
                 "Review SMB exposure together with signing configuration.",
             ),
@@ -1748,7 +1748,7 @@ class ReporterTests(unittest.TestCase):
 
         self.assertIn("Correlated Review", text_report)
         self.assertIn(
-            "Findings: smb.service.exposed, smb.signing.review",
+            "Findings: service.smb.exposed, smb.signing.review",
             text_report,
         )
         self.assertEqual(
