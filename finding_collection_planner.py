@@ -94,3 +94,48 @@ def build_authorized_finding_evidence_actions(
         for plan in plans
         if (action := evidence_action_for_finding_collection_plan(plan)) is not None
     )
+
+
+@dataclass(frozen=True)
+class FindingRequirementVerification:
+    """Observed evidence that satisfies one finding-derived collection requirement."""
+
+    requirement: FindingDerivedRequirement
+    status: str
+    observed_script_ids: tuple[str, ...]
+
+
+def verify_finding_collection_plan(
+    plan: FindingCollectionPlan,
+    scan,
+) -> FindingRequirementVerification:
+    """Verify requested non-empty NSE evidence on the requirement's exact endpoint."""
+    requirement = plan.requirement
+    requested = {script_id.strip().lower() for script_id in plan.strategy.script_ids}
+    observed: list[str] = []
+
+    if requirement.port is not None and requirement.protocol is not None:
+        for host in scan.hosts:
+            if host.address.strip() != requirement.host.strip():
+                continue
+            for port in host.ports:
+                if (
+                    port.port != requirement.port
+                    or port.protocol.strip().lower() != requirement.protocol.strip().lower()
+                ):
+                    continue
+                for script in port.scripts:
+                    script_id = script.script_id.strip().lower()
+                    if (
+                        script_id in requested
+                        and script.output.strip()
+                        and script_id not in observed
+                    ):
+                        observed.append(script_id)
+
+    status = "satisfied" if requested and requested.issubset(observed) else "unsatisfied"
+    return FindingRequirementVerification(
+        requirement=requirement,
+        status=status,
+        observed_script_ids=tuple(observed),
+    )
