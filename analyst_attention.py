@@ -53,7 +53,7 @@ def correlate_analyst_attention(
     correlations: list[AnalystAttentionCorrelation] = []
     for host, host_items in by_host.items():
         smb_exposure = next(
-            (item for item in host_items if item.finding_id == "smb.service.exposed"),
+            (item for item in host_items if item.finding_id == "service.smb.exposed"),
             None,
         )
         smb_signing = next(
