@@ -1052,3 +1052,42 @@ The public `v0.1.0` tag remains immutable; Evidence Action Plan is post-release 
 
 Next-development rule:
 Preserve the boundary: Action Plan proposes; `--collect-evidence` executes. Any future Scan Orchestration proof of concept should reuse these existing planner, command, provenance, and reporting layers rather than introducing a second scanner or hiding the exact Nmap actions from the analyst.
+
+
+### Scan Orchestration POC — Baseline Discovery Execution milestone — CLOSED
+
+The first Scan Orchestration proof of concept is now closed on `main`.
+
+Validated behavior:
+- `netrecon --discovery-plan TARGET` builds a transparent, non-executing baseline discovery plan.
+- The baseline profile is intentionally conservative: `nmap -sV -oX - TARGET`.
+- The target is normalized only for outer whitespace; CIDR input is preserved rather than silently expanded or rewritten.
+- `netrecon --discover TARGET` executes exactly the argv stored in the baseline plan with `shell=False`.
+- Plan construction, execution, interpretation, and reporting remain separate layers.
+- Exit code zero alone is not treated as success: stdout must parse as valid Nmap XML before a verified `Scan` is returned.
+- Non-zero Nmap outcomes remain explicit failures and are not parsed as successful scans.
+- Timeouts become explicit failed outcomes with return code 124.
+- Missing Nmap becomes a controlled failed outcome with return code 127 rather than an uncaught traceback.
+- Timeout stdout/stderr are normalized to text even when `TimeoutExpired` supplies bytes.
+- Non-positive and non-finite discovery timeouts are rejected before subprocess execution.
+- Text and JSON reports preserve the proposed exact command and the parsed Nmap execution provenance.
+- No NSE scripts, aggressive scan options, hidden target expansion, vulnerability inference, or automatic evidence collection were added to baseline discovery.
+
+Real field validation:
+- Installed development CLI in `~/netrecon-new-user/NetRecon` was refreshed from `main`.
+- Preview against the authorized lab target `192.168.227.138` displayed exactly:
+  `nmap -sV -oX - 192.168.227.138`.
+- Real `--discover` execution succeeded and parsed one up host with four open TCP services:
+  - `135/tcp` msrpc
+  - `139/tcp` netbios-ssn
+  - `445/tcp` microsoft-ds
+  - `5357/tcp` http
+- The text report preserved both the NetRecon-planned command and Nmap's own reported arguments.
+- A separate JSON field run returned `report_type: discovery_execution`, `status: success`, `returncode: 0`, `timed_out: false`, the exact command argv, and the same host/service inventory.
+
+Final regression baseline after execution hardening: **600/600 tests passing**. GitHub CI was independently verified green on Python 3.10, 3.11, 3.12, 3.13, and 3.14 for commit `5119c655c867584978ecf90d4760b59d01efe7a9`.
+
+The public `v0.1.0` tag remains immutable; Scan Orchestration development is post-release work on `main`.
+
+Next-development rule:
+Preserve the transparent chain `Target -> Discovery Plan -> exact Nmap argv -> Executor -> raw outcome -> validation/parsing -> verified Scan`. The next orchestration step should build on the verified discovery result and existing Evidence Planner / Evidence Gaps / Evidence Action Plan layers rather than introducing a second scanner, hiding Nmap actions, or automatically escalating scan aggressiveness.
