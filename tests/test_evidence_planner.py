@@ -609,6 +609,30 @@ class EvidencePlannerTests(unittest.TestCase):
             plan_host_evidence(host)
 
 
+    def test_host_level_smb_evidence_suppresses_matching_port_requests(self) -> None:
+        host = Host(
+            address="192.0.2.49",
+            status="up",
+            ports=(
+                Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    service="microsoft-ds",
+                ),
+            ),
+            scripts=(
+                ScriptResult("smb-protocols", "2.0.2 2.1 3.0 3.1.1"),
+                ScriptResult(
+                    "smb2-security-mode",
+                    "Message signing enabled but not required",
+                ),
+            ),
+        )
+
+        self.assertEqual(plan_evidence_requests(host), ())
+
+
     def test_host_plan_requests_nothing_when_supported_evidence_is_complete(self) -> None:
         host = Host(
             address="192.0.2.50",
