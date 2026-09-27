@@ -419,7 +419,6 @@ class EvidenceCollectorTests(unittest.TestCase):
 
 
     @patch("evidence_collector.execute_nmap_command")
-    @patch("evidence_collector.execute_nmap_command")
     def test_host_plan_continues_after_timed_out_command(
         self,
         execute_mock,
@@ -454,6 +453,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(results[1].returncode, 0)
         self.assertEqual(execute_mock.call_count, 2)
 
+    @patch("evidence_collector.execute_nmap_command")
     def test_empty_host_plan_executes_no_commands(
         self,
         execute_mock,
