@@ -3,6 +3,7 @@
 import json
 import unittest
 
+from adaptive_investigation import AdaptiveInvestigationPlan
 from analyzer import Finding
 from evidence_gaps import EvidenceGap
 from evidence_action_plan import EvidenceAction
@@ -16,7 +17,7 @@ from evidence_collector import (
 )
 from models import Host, Port, Scan, ScriptResult
 from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
-from reporter import render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json
+from reporter import render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json
 
 
 class ReporterTests(unittest.TestCase):
@@ -1902,6 +1903,33 @@ class ReporterTests(unittest.TestCase):
             json_report["resolved_requirements"][0]["requirement"]["requirement_id"],
             "http_identity_context",
         )
+
+
+    def test_adaptive_investigation_plan_reporting_preserves_decision_and_action(self) -> None:
+        action = EvidenceAction(
+            "192.0.2.200", 5357, "tcp", ("http-headers",),
+            ("review HTTP service identity and exposed content context",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.200"),
+        )
+        plan = AdaptiveInvestigationPlan(
+            "alternative", "supported_alternative_actions_available", (action,)
+        )
+
+        rendered = render_adaptive_investigation_plan(plan)
+        self.assertIn("Decision: alternative", rendered)
+        self.assertIn("Reason: supported_alternative_actions_available", rendered)
+        self.assertIn("Actions: 1", rendered)
+        self.assertIn(
+            "Action: nmap -p 5357 --script http-headers -oX - 192.0.2.200",
+            rendered,
+        )
+
+        payload = json.loads(render_adaptive_investigation_plan_json(plan))
+        self.assertEqual(payload["report_type"], "adaptive_investigation_plan")
+        self.assertEqual(payload["decision"], "alternative")
+        self.assertEqual(payload["reason"], "supported_alternative_actions_available")
+        self.assertEqual(len(payload["actions"]), 1)
+        self.assertEqual(payload["actions"][0]["script_ids"], ["http-headers"])
 
 
 if __name__ == "__main__":
