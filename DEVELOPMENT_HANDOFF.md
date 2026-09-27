@@ -1372,3 +1372,98 @@ Milestone status: **CLOSED**.
 Next-development rule:
 Build above this semantic provenance layer rather than adding more collectors by default. New alternative collectors should be introduced only when their evidence semantics are defensible and verifiable. Preserve the bounded STOP behavior and the distinction between Nmap collection provenance and NetRecon investigation knowledge.
 
+
+
+## Analyst Attention — Investigation Integration FIELD-VALIDATED
+
+NetRecon now projects evidence-backed Findings into a bounded analyst-review layer after investigation evidence has been collected and merged.
+
+Validated workflow:
+
+```text
+Nmap Discovery
+  -> Evidence Gaps / Semantic Requirements
+  -> Targeted Evidence Collection
+  -> Merge and Re-evaluate
+  -> Evidence-backed Findings
+  -> Analyst Attention
+```
+
+### Architectural boundary
+
+Analyst Attention is not a second findings engine and does not invent vulnerabilities, risk scores, severity rankings, or unsupported conclusions. It is a projection over the existing evidence-backed Findings engine.
+
+Initial review-worthy Finding categories:
+- `configuration`
+- `exposure`
+- `transport`
+- `visibility`
+
+Informational `context` and `protocol` findings remain outside Attention by design. Attention preserves Finding order and evidence provenance rather than introducing a new severity ranking.
+
+`--attention` provides a standalone projection from an existing Nmap XML. `--investigate-collect` now builds Attention from the final merged investigation snapshot: the alternative-round snapshot when one exists, otherwise the primary re-evaluated snapshot.
+
+Text continuation output includes a distinct `Analyst Attention` section. JSON includes a structured `analyst_attention` envelope.
+
+### Regression baseline
+
+- Full suite: **682/682 tests passing**.
+- GitHub Actions green.
+- Regression coverage proves that merged NSE evidence can create a new Attention item with NSE provenance.
+- CLI coverage proves Attention is built from the final alternative snapshot rather than baseline or intermediate state.
+- Reporter coverage preserves Attention provenance in both Text and JSON.
+
+### Real field validation
+
+Authorized Kali lab target: `192.168.227.138`.
+
+Command:
+
+```bash
+netrecon --investigate-collect 192.168.227.138
+```
+
+The bounded semantic investigation behaved as previously validated:
+- SMB primary evidence was observed.
+- HTTP primary evidence remained incomplete.
+- the one supported `http-headers` alternative was attempted once and remained incomplete.
+- final status: `stalled`.
+- reason: `alternative_evidence_incomplete`.
+- further supported actions: 0.
+
+The final merged evidence produced **4 Analyst Attention items**.
+
+Three were derived directly from Discovery service evidence:
+- Windows RPC endpoint mapper exposed — `service:detection`
+- NetBIOS session service exposed — `service:detection`
+- SMB service exposed — `service:detection`
+
+A fourth item was created only after targeted NSE evidence collection:
+- **SMB signing configuration requires review**
+- endpoint: `192.168.227.138:445/tcp`
+- observed evidence: `3.1.1: Message signing enabled but not required`
+- provenance: `nse:smb2-security-mode`
+
+This is the first real field proof that targeted evidence selected during a NetRecon investigation can enrich the merged investigation state, produce a new evidence-backed Finding, and surface a traceable analyst-review item that was not available from baseline service discovery alone.
+
+### Product milestone
+
+The project vision is now demonstrated end-to-end in the authorized lab:
+
+> **Nmap discovers the network. NetRecon decides what evidence to collect, turns it into intelligence, and shows the analyst what deserves attention.**
+
+Milestone status: **FIELD-VALIDATED**.
+
+### Next development direction
+
+Build above the validated Attention layer rather than expanding collectors by default. The next work should focus on making analyst attention more useful without losing evidence provenance or introducing arbitrary risk scoring. Candidate work should be evaluated against one question:
+
+> What does NetRecon do with collected evidence that an analyst should not have to correlate manually?
+
+Preserve:
+- evidence-first provenance;
+- semantic requirement separation;
+- bounded collection and explicit STOP;
+- no fabricated vulnerability conclusions;
+- no arbitrary risk score;
+- no automatic severity ranking of Attention items.
