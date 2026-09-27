@@ -13,7 +13,7 @@ from analyzer import analyze_scan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_planner import plan_host_evidence
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_findings, render_host_summaries, render_json, render_text
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_findings, render_host_summaries, render_json, render_text
 from scan_diff import compare_scans
 
 
@@ -40,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
         "compare_scan",
         nargs="?",
         type=Path,
-        help="Second Nmap XML file used with --diff or --analysis-diff",
+        help="Second Nmap XML file used with --diff, --analysis-diff, or --combined-diff",
     )
     parser.add_argument(
         "--format",
@@ -71,6 +71,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Compare evidence-based findings between two Nmap XML scans",
     )
     mode.add_argument(
+        "--combined-diff",
+        action="store_true",
+        help="Compare exposure and evidence-based finding changes together",
+    )
+    mode.add_argument(
         "--collect-evidence",
         action="store_true",
         help="Collect targeted evidence for services already discovered in the input scan",
@@ -82,8 +87,8 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.compare_scan is not None and not (args.diff or args.analysis_diff):
-        parser.error("a second scan file requires --diff or --analysis-diff")
+    if args.compare_scan is not None and not (args.diff or args.analysis_diff or args.combined_diff):
+        parser.error("a second scan file requires --diff, --analysis-diff, or --combined-diff")
 
     try:
         scan = parse_nmap_xml(args.scan)
@@ -124,6 +129,21 @@ def main() -> int:
             render_diff_json(changes, scan, compare_scan)
             if args.format == "json"
             else render_diff(changes, scan, compare_scan)
+        )
+        return 0
+
+    if args.combined_diff:
+        if compare_scan is None:
+            print("Error: --combined-diff requires a second scan file")
+            return 2
+        exposure_changes = compare_scans(scan, compare_scan)
+        before_findings = analyze_scan(scan)
+        after_findings = analyze_scan(compare_scan)
+        analysis_changes = compare_findings(before_findings, after_findings, scan, compare_scan)
+        print(
+            render_combined_diff_json(exposure_changes, analysis_changes, scan, compare_scan)
+            if args.format == "json"
+            else render_combined_diff(exposure_changes, analysis_changes, scan, compare_scan)
         )
         return 0
 
