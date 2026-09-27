@@ -1908,3 +1908,70 @@ Milestone status: **ALTERNATIVE CONTROLLER PATH FIELD-VALIDATED**.
 ### Remaining controller boundary
 
 Do not generalize this immediately into an autonomous investigation loop. Primary evidence collection still follows the established orchestration path. The next controller work should determine how a `continue` decision can authorize an already-supported next primary action without creating repeated-action loops, bypassing the repeat guard, or duplicating continuation logic.
+
+
+## Adaptive Controller Boundary — CONTINUE PATH CODE-VALIDATED
+
+The Adaptive Controller now supports one bounded `continue` round without becoming an autonomous investigation loop.
+
+Execution boundary:
+
+```text
+Primary Evidence Round
+  -> Continuation Assessment
+  -> Adaptive Plan
+  -> select_adaptive_actions()
+  -> One Existing Selected-Evidence Execution Round
+  -> Continuation Reassessment
+  -> Stop / report the newly supported decision
+```
+
+Safety constraints:
+
+- `continue` may execute only exact `EvidenceAction` objects already exposed through `continuation.next_actions`.
+- Repeat-guard filtering remains authoritative before controller selection.
+- Previously attempted commands are excluded from `next_actions`.
+- The CLI permits at most one additional adaptive Continue round; there is no `while` loop or recursive continuation.
+- A second `continue` decision is reported but does not trigger another Continue execution round.
+- Existing evidence execution remains in `execute_selected_evidence_actions()`; the Adaptive Controller does not construct Nmap commands.
+- The previously validated Alternative Controller path remains bounded and unchanged in responsibility.
+
+Validation:
+
+- GitHub CI baseline after the Continue guard: **707/707 tests passing**.
+- Regression coverage verifies that the controller selects only repeat-guard-safe next actions.
+- CLI coverage verifies one bounded Continue round and explicitly verifies that a further Continue decision cannot cause a third evidence round.
+
+### Field validation note — 192.168.227.138
+
+The authorized field run:
+
+```text
+netrecon --investigate-collect 192.168.227.138 --adaptive-plan
+```
+
+did **not** naturally produce a `continue` decision. The Primary round resolved the two SMB requirements, while the HTTP evidence request on 5357 remained incomplete. Its repeated primary action was blocked, so the investigation correctly followed the already-supported bounded Alternative path:
+
+```text
+Continuation: stalled
+Stall Reason: repeated_actions_exhausted
+Resolved Gaps: 2
+Next Actions: 0
+Repeat-Blocked Actions: 1
+Alternative Actions: 1
+
+Adaptive:
+Decision: alternative
+Action: nmap -p 5357 --script http-headers -oX - 192.168.227.138
+
+Final:
+Status: stalled
+Reason: alternative_evidence_incomplete
+Further Supported Actions: 0
+```
+
+This field run is therefore a regression/safety validation of the controller integration, **not** a claim that the Continue branch itself was field-exercised.
+
+Architectural finding: the current Primary evidence round executes all planner-supported actions already visible in the initial snapshot. A natural `continue` field case therefore requires newly collected evidence to reveal a new planner-supported evidence gap/action that was not known before the Primary round. Do not manufacture a production rule merely to force this scenario.
+
+Milestone: **CONTINUE CONTROLLER PATH CODE-VALIDATED; NATURAL FIELD CASE PENDING.**
