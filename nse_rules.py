@@ -189,6 +189,35 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                     )
                 )
 
+            legacy_kex = tuple(
+                algorithm
+                for algorithm in (
+                    "diffie-hellman-group1-sha1",
+                    "diffie-hellman-group-exchange-sha1",
+                )
+                if algorithm in normalized_output
+            )
+            if legacy_kex:
+                findings.append(
+                    _script_finding(script.script_id,
+                        finding_id="ssh.kex.legacy_review",
+                        category="configuration",
+                        host=host.address,
+                        port=script_port,
+                        protocol=script_protocol,
+                        severity="medium",
+                        title="Legacy SSH key exchange algorithms require review",
+                        evidence=(
+                            "Nmap ssh2-enum-algos reported legacy key exchange algorithm(s): "
+                            f"{', '.join(legacy_kex)}."
+                        ),
+                        recommendation=(
+                            "Review whether these legacy SSH key exchange methods are still required "
+                            "for compatibility and disable them where they are not needed."
+                        ),
+                    )
+                )
+
         if script_id == "ssl-cert":
             dns_sans = _parse_ssl_cert_dns_sans(output)
             if user_hostnames and dns_sans:
