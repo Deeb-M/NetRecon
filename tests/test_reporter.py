@@ -912,7 +912,10 @@ class ReporterTests(unittest.TestCase):
 
         self.assertEqual(payload["report_type"], "investigation_snapshot")
         self.assertEqual(payload["status"], "ready")
-        self.assertEqual(\n            payload["summary"],\n            {"evidence_gaps": 1, "proposed_actions": 1, "investigation_states": 0},\n        )
+        self.assertEqual(
+            payload["summary"],
+            {"evidence_gaps": 1, "proposed_actions": 1, "investigation_states": 0},
+        )
         self.assertEqual(payload["error"], None)
         self.assertEqual(payload["gaps"][0]["script_id"], "smb-protocols")
         self.assertEqual(
