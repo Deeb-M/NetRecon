@@ -49,6 +49,6 @@ py-modules = [
     "parser",
     "reporter",
     "scan_diff",
-    "scan_orchestration", "investigation_orchestration", "investigation_state", "investigation_synthesis",
+    "scan_orchestration", "investigation_orchestration", "investigation_state", "investigation_synthesis", "investigation_memory",
     "service_rules",
 ]
