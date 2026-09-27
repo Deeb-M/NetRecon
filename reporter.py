@@ -6,6 +6,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 import json
 
+from adaptive_investigation import AdaptiveInvestigationPlan
 from analysis_diff import FindingChange
 from analyst_attention import AnalystAttentionCorrelation, AnalystAttentionItem
 from analysis_summary import summarize_analysis
@@ -29,6 +30,35 @@ def _format_history_time(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
+
+
+
+def render_adaptive_investigation_plan(plan: AdaptiveInvestigationPlan) -> str:
+    """Render the next bounded investigation decision transparently."""
+    lines = [
+        "Adaptive Investigation Plan",
+        "---------------------------",
+        f"Decision: {plan.decision}",
+        f"Reason: {plan.reason}",
+        f"Actions: {len(plan.actions)}",
+    ]
+    for action in plan.actions:
+        lines.append(f"Action: {' '.join(action.command)}")
+    return "\n".join(lines)
+
+
+def render_adaptive_investigation_plan_json(plan: AdaptiveInvestigationPlan) -> str:
+    """Render the adaptive decision as a stable machine-readable envelope."""
+    return json.dumps(
+        {
+            "report_type": "adaptive_investigation_plan",
+            "decision": plan.decision,
+            "reason": plan.reason,
+            "actions": [asdict(action) for action in plan.actions],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
 
 
 def render_analyst_attention(items: tuple[AnalystAttentionItem, ...]) -> str:
