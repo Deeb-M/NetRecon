@@ -12,8 +12,9 @@ from analysis_diff import compare_findings
 from analyzer import analyze_scan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_planner import plan_host_evidence
+from exposure_history import summarize_exposure_history
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_findings, render_host_summaries, render_json, render_text
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_exposure_history, render_exposure_history_json, render_findings, render_host_summaries, render_json, render_text
 from scan_diff import compare_scans
 
 
@@ -35,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="version",
         version=f"%(prog)s {version('netrecon')}",
     )
-    parser.add_argument("scan", type=Path, help="Path to an Nmap XML (-oX) file")
+    parser.add_argument("scan", nargs="?", type=Path, help="Path to an Nmap XML (-oX) file")
     parser.add_argument(
         "compare_scan",
         nargs="?",
@@ -80,12 +81,40 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Collect targeted evidence for services already discovered in the input scan",
     )
+    mode.add_argument(
+        "--history",
+        nargs="+",
+        type=Path,
+        metavar="SCAN",
+        help="Summarize open-endpoint observations across multiple Nmap XML scans",
+    )
     return parser
 
 
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.history is not None:
+        if len(args.history) < 2:
+            parser.error("--history requires at least two scan files")
+        if args.scan is not None or args.compare_scan is not None:
+            parser.error("--history scan files must be supplied after --history")
+        try:
+            scans = tuple(parse_nmap_xml(path) for path in args.history)
+            history = summarize_exposure_history(scans)
+        except (NmapParseError, ValueError) as exc:
+            print(f"Error: {exc}")
+            return 2
+        print(
+            render_exposure_history_json(history)
+            if args.format == "json"
+            else render_exposure_history(history)
+        )
+        return 0
+
+    if args.scan is None:
+        parser.error("a scan file is required unless --history is used")
 
     if args.compare_scan is not None and not (args.diff or args.analysis_diff or args.combined_diff):
         parser.error("a second scan file requires --diff, --analysis-diff, or --combined-diff")
