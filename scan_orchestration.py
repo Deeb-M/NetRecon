@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import subprocess
 
+from models import Scan
+from parser import NmapParseError, parse_nmap_xml_text
+
 
 @dataclass(frozen=True)
 class DiscoveryPlan:
@@ -71,4 +74,56 @@ def execute_discovery_plan(
         stdout=completed.stdout,
         stderr=completed.stderr,
         timed_out=False,
+    )
+
+
+
+@dataclass(frozen=True)
+class DiscoveryResult:
+    """Interpreted discovery outcome with a Scan only for verified success."""
+
+    execution: DiscoveryExecutionResult
+    success: bool
+    scan: Scan | None
+    error: str | None
+
+
+def interpret_discovery_execution(
+    execution: DiscoveryExecutionResult,
+) -> DiscoveryResult:
+    """Interpret one discovery execution without treating exit zero alone as success."""
+    if execution.timed_out:
+        return DiscoveryResult(
+            execution=execution,
+            success=False,
+            scan=None,
+            error="Nmap discovery timed out",
+        )
+
+    if execution.returncode != 0:
+        return DiscoveryResult(
+            execution=execution,
+            success=False,
+            scan=None,
+            error=execution.stderr or f"Nmap discovery failed with exit code {execution.returncode}",
+        )
+
+    try:
+        scan = parse_nmap_xml_text(
+            execution.stdout,
+            source=f"<discovery:{execution.plan.target}>",
+        )
+    except NmapParseError as exc:
+        return DiscoveryResult(
+            execution=execution,
+            success=False,
+            scan=None,
+            error=str(exc),
+        )
+
+    return DiscoveryResult(
+        execution=execution,
+        success=True,
+        scan=scan,
+        error=None,
     )
