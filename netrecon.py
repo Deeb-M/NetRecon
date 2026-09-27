@@ -71,6 +71,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=60.0,
         help="Per-command evidence collection timeout in seconds (default: 60)",
     )
+    parser.add_argument(
+        "--investigation-history",
+        type=Path,
+        metavar="FILE",
+        help="Persist and compare completed --investigate-collect synthesis records in an append-only JSONL file",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--discover",
