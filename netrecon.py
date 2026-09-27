@@ -209,11 +209,17 @@ def main() -> int:
                 else render_investigation_snapshot(snapshot)
             )
             return 2
-        continuation = execute_approved_evidence_actions(
-            snapshot,
-            timeout=args.evidence_timeout,
-            explicitly_approved_requirement_ids=approved_requirement_ids,
-        )
+        if approved_requirement_ids:
+            continuation = execute_approved_evidence_actions(
+                snapshot,
+                timeout=args.evidence_timeout,
+                explicitly_approved_requirement_ids=approved_requirement_ids,
+            )
+        else:
+            continuation = execute_approved_evidence_actions(
+                snapshot,
+                timeout=args.evidence_timeout,
+            )
         updated = continuation.snapshot
         decision = assess_investigation_continuation(
             snapshot,
@@ -223,12 +229,19 @@ def main() -> int:
         adaptive_plan = build_adaptive_investigation_plan(decision)
         adaptive_actions = select_adaptive_actions(adaptive_plan)
         if adaptive_plan.decision == "continue" and adaptive_actions:
-            continued = execute_selected_evidence_actions(
-                updated,
-                adaptive_actions,
-                timeout=args.evidence_timeout,
-                explicitly_approved_requirement_ids=approved_requirement_ids,
-            )
+            if approved_requirement_ids:
+                continued = execute_selected_evidence_actions(
+                    updated,
+                    adaptive_actions,
+                    timeout=args.evidence_timeout,
+                    explicitly_approved_requirement_ids=approved_requirement_ids,
+                )
+            else:
+                continued = execute_selected_evidence_actions(
+                    updated,
+                    adaptive_actions,
+                    timeout=args.evidence_timeout,
+                )
             decision = assess_investigation_continuation(
                 updated,
                 continued.snapshot,
