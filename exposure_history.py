@@ -33,14 +33,17 @@ def summarize_exposure_history(scans: tuple[Scan, ...]) -> tuple[ExposureHistory
 
     for scan in scans:
         timestamp = _scan_timestamp(scan)
+        observed_in_scan: set[tuple[str, int, str]] = set()
         for host in scan.hosts:
             host_identity = _host_identity(host.address)
             for port in host.ports:
                 if port.state.strip().lower() != "open":
                     continue
                 protocol = port.protocol.strip().lower()
-                key = (host_identity, port.port, protocol)
-                observations.setdefault(key, []).append(timestamp)
+                observed_in_scan.add((host_identity, port.port, protocol))
+
+        for key in observed_in_scan:
+            observations.setdefault(key, []).append(timestamp)
 
     return tuple(
         ExposureHistory(
