@@ -36,7 +36,7 @@ class CliTests(unittest.TestCase):
             for option in action.option_strings
         }
         self.assertTrue(
-            {"--analyze", "--diff", "--analysis-diff", "--combined-diff", "--collect-evidence", "--history"}
+            {"--analyze", "--diff", "--analysis-diff", "--combined-diff", "--collect-evidence", "--history", "--finding-history"}
             <= option_strings
         )
         self.assertTrue(
@@ -141,6 +141,72 @@ class CliTests(unittest.TestCase):
             '{"report_type":"exposure_history"}',
         )
 
+
+    def test_accepts_finding_history_with_multiple_scan_files(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["--finding-history", "one.xml", "two.xml"])
+
+        self.assertEqual([str(path) for path in args.finding_history], ["one.xml", "two.xml"])
+
+    def test_finding_history_requires_at_least_two_scan_files(self) -> None:
+        parser = build_parser()
+
+        with self.assertRaises(SystemExit) as context:
+            parser.parse_args(["--finding-history", "one.xml"])
+
+        self.assertEqual(context.exception.code, 2)
+
+    @patch("netrecon.render_finding_history", return_value="Finding history report")
+    @patch("netrecon.summarize_finding_history", return_value=())
+    @patch("netrecon.analyze_scan")
+    @patch("netrecon.parse_nmap_xml")
+    def test_finding_history_analyzes_each_scan_and_renders_text(
+        self, parse_mock, analyze_mock, summarize_mock, render_mock
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scans = (Scan(source="one.xml"), Scan(source="two.xml"))
+        findings = ((), ())
+        parse_mock.side_effect = scans
+        analyze_mock.side_effect = findings
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "--finding-history", "one.xml", "two.xml"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        self.assertEqual(parse_mock.call_count, 2)
+        self.assertEqual([call.args[0] for call in analyze_mock.call_args_list], list(scans))
+        summarize_mock.assert_called_once_with(scans, findings)
+        render_mock.assert_called_once_with(())
+        self.assertEqual(output.getvalue().strip(), "Finding history report")
+
+    @patch("netrecon.render_finding_history_json", return_value='{"report_type":"finding_history"}')
+    @patch("netrecon.summarize_finding_history", return_value=())
+    @patch("netrecon.analyze_scan", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_finding_history_honors_json_format(
+        self, parse_mock, analyze_mock, summarize_mock, render_json_mock
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scans = (Scan(source="one.xml"), Scan(source="two.xml"))
+        parse_mock.side_effect = scans
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "--finding-history", "one.xml", "two.xml", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        summarize_mock.assert_called_once_with(scans, ((), ()))
+        render_json_mock.assert_called_once_with(())
+        self.assertEqual(output.getvalue().strip(), '{"report_type":"finding_history"}')
 
     def test_rejects_analyze_with_diff(self) -> None:
         parser = build_parser()
