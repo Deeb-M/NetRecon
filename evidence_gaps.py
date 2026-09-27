@@ -128,6 +128,34 @@ def requirement_states_for_gaps(
     return tuple(states[key] for key in sorted(states))
 
 
+def resolved_requirement_states(
+    before: tuple[EvidenceGap, ...],
+    after: tuple[EvidenceGap, ...],
+) -> tuple[EvidenceRequirementState, ...]:
+    """Return semantic endpoint requirements present before but absent after collection."""
+    before_states = requirement_states_for_gaps(before)
+    after_keys = {
+        (
+            state.host,
+            state.port,
+            state.protocol,
+            state.requirement.requirement_id,
+        )
+        for state in requirement_states_for_gaps(after)
+    }
+    return tuple(
+        state
+        for state in before_states
+        if (
+            state.host,
+            state.port,
+            state.protocol,
+            state.requirement.requirement_id,
+        )
+        not in after_keys
+    )
+
+
 def summarize_evidence_gaps(scan: Scan) -> tuple[EvidenceGap, ...]:
     """Describe evidence still requested by the existing planner."""
     gaps: list[EvidenceGap] = []

@@ -1221,6 +1221,25 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.next_actions, (new_action,))
         self.assertEqual(decision.repeat_blocked_actions, (repeated,))
 
+    def test_resolved_requirement_states_tracks_primary_semantic_progress(self) -> None:
+        from evidence_gaps import resolved_requirement_states
+
+        before = (
+            EvidenceGap("192.0.2.61", 445, "tcp", "smb-protocols", "purpose"),
+            EvidenceGap("192.0.2.61", 445, "tcp", "smb2-security-mode", "purpose"),
+            EvidenceGap("192.0.2.61", 5357, "tcp", "http-title", "purpose"),
+        )
+        after = (
+            EvidenceGap("192.0.2.61", 5357, "tcp", "http-title", "purpose"),
+        )
+
+        resolved = resolved_requirement_states(before, after)
+
+        self.assertEqual(
+            [state.requirement.requirement_id for state in resolved],
+            ["smb_protocol_support", "smb_signing_configuration"],
+        )
+
     def test_requirement_states_for_gaps_deduplicates_per_endpoint_and_requirement(self) -> None:
         from evidence_gaps import requirement_states_for_gaps
 
