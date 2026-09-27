@@ -10,6 +10,7 @@ from analysis_diff import FindingChange
 from analysis_summary import summarize_analysis
 from evidence_collector import CorrelatedEvidenceResult
 from exposure_history import ExposureHistory
+from evidence_action_plan import EvidenceAction
 from evidence_gaps import EvidenceGap
 from finding_history import FindingHistory
 from findings import Finding
@@ -697,3 +698,32 @@ def render_analysis_diff(changes: tuple[FindingChange, ...], before_scan: Scan |
             lines.append(f"  Evidence: {finding.evidence}")
 
     return "\n".join(lines)
+
+
+
+def render_evidence_action_plan(actions: tuple[EvidenceAction, ...]) -> str:
+    """Render transparent evidence collection actions for analyst review."""
+    lines = [
+        "Evidence Action Plan",
+        "--------------------",
+        f"Actions: {len(actions)}",
+    ]
+    for action in actions:
+        lines.append(f"{action.host}:{action.port}/{action.protocol}")
+        for purpose in action.purposes:
+            lines.append(f"  Purpose: {purpose}")
+        lines.append(f"  Suggested collection: {' '.join(action.command)}")
+    return "\n".join(lines)
+
+
+def render_evidence_action_plan_json(actions: tuple[EvidenceAction, ...]) -> str:
+    """Render evidence collection actions as structured JSON."""
+    return json.dumps(
+        {
+            "report_type": "evidence_action_plan",
+            "summary": {"actions": len(actions)},
+            "actions": [asdict(action) for action in actions],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
