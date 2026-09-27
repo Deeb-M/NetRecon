@@ -15,10 +15,11 @@ from investigation_orchestration import build_investigation_snapshot
 
 
 class InvestigationOrchestrationTests(unittest.TestCase):
+    @patch("investigation_orchestration.summarize_investigation_state")
     @patch("investigation_orchestration.build_evidence_action_plan")
     @patch("investigation_orchestration.summarize_evidence_gaps")
     def test_verified_discovery_composes_existing_intelligence_layers(
-        self, gaps_mock, actions_mock
+        self, gaps_mock, actions_mock, states_mock
     ) -> None:
         plan = build_baseline_discovery_plan("192.0.2.10")
         execution = DiscoveryExecutionResult(
@@ -61,6 +62,8 @@ class InvestigationOrchestrationTests(unittest.TestCase):
         )
         gaps_mock.return_value = (gap,)
         actions_mock.return_value = (action,)
+        state = object()
+        states_mock.return_value = (state,)
 
         snapshot = build_investigation_snapshot(discovery)
 
@@ -68,14 +71,17 @@ class InvestigationOrchestrationTests(unittest.TestCase):
         self.assertIs(snapshot.scan, scan)
         self.assertEqual(snapshot.gaps, (gap,))
         self.assertEqual(snapshot.actions, (action,))
+        self.assertEqual(snapshot.states, (state,))
         self.assertIsNone(snapshot.error)
         gaps_mock.assert_called_once_with(scan)
         actions_mock.assert_called_once_with(scan)
+        states_mock.assert_called_once_with(scan)
 
+    @patch("investigation_orchestration.summarize_investigation_state")
     @patch("investigation_orchestration.build_evidence_action_plan")
     @patch("investigation_orchestration.summarize_evidence_gaps")
     def test_failed_discovery_stops_without_planning_evidence(
-        self, gaps_mock, actions_mock
+        self, gaps_mock, actions_mock, states_mock
     ) -> None:
         plan = build_baseline_discovery_plan("192.0.2.10")
         execution = DiscoveryExecutionResult(
@@ -98,9 +104,11 @@ class InvestigationOrchestrationTests(unittest.TestCase):
         self.assertIsNone(snapshot.scan)
         self.assertEqual(snapshot.gaps, ())
         self.assertEqual(snapshot.actions, ())
+        self.assertEqual(snapshot.states, ())
         self.assertEqual(snapshot.error, "nmap failed")
         gaps_mock.assert_not_called()
         actions_mock.assert_not_called()
+        states_mock.assert_not_called()
 
     def test_inconsistent_success_without_verified_scan_fails_closed(self) -> None:
         plan = build_baseline_discovery_plan("192.0.2.10")
