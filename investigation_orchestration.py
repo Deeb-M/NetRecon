@@ -158,6 +158,7 @@ def execute_approved_evidence_actions(
     snapshot: InvestigationSnapshot,
     *,
     timeout: float | None = None,
+    explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
 ) -> InvestigationContinuationResult:
     """Execute exactly the planner-approved actions and re-evaluate once."""
     if not snapshot.ready or snapshot.scan is None:
@@ -166,6 +167,7 @@ def execute_approved_evidence_actions(
         snapshot,
         snapshot.actions,
         timeout=timeout,
+        explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
     )
 
 
