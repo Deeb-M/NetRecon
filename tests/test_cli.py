@@ -1742,5 +1742,20 @@ class CliTests(unittest.TestCase):
 
 
 
+
+    def test_investigation_history_path_is_not_a_standalone_mode(self) -> None:
+        from netrecon import build_parser
+
+        parser = build_parser()
+        args = parser.parse_args(
+            ["--investigate-collect", "192.0.2.170", "--investigation-history", "history.jsonl"]
+        )
+
+        self.assertEqual(args.investigate_collect, "192.0.2.170")
+        self.assertEqual(str(args.investigation_history), "history.jsonl")
+        self.assertIsNone(args.history)
+        self.assertIsNone(args.finding_history)
+
+
 if __name__ == "__main__":
     unittest.main()
