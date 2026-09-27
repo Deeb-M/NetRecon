@@ -837,7 +837,7 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
 
 
 
-def render_investigation_continuation(result, decision=None, alternative_round=None, final_decision=None) -> str:
+def render_investigation_continuation(result, decision=None, alternative_round=None, final_decision=None, attention=None) -> str:
     """Render collection execution separately from requested-evidence completeness."""
     lines = [
         "Investigation Continuation",
@@ -949,6 +949,9 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
     lines.append(render_investigation_snapshot(
         alternative_round.snapshot if alternative_round is not None else result.snapshot
     ))
+    if attention is not None:
+        lines.append("")
+        lines.append(render_analyst_attention(attention))
     return "\n".join(lines)
 
 
@@ -988,7 +991,7 @@ def _investigation_continuation_outcomes(result):
     return rendered
 
 
-def render_investigation_continuation_json(result, decision=None, alternative_round=None, final_decision=None) -> str:
+def render_investigation_continuation_json(result, decision=None, alternative_round=None, final_decision=None, attention=None) -> str:
     """Render continuation provenance and updated investigation as JSON."""
     final_snapshot = alternative_round.snapshot if alternative_round is not None else result.snapshot
     updated = json.loads(render_investigation_snapshot_json(final_snapshot))
@@ -1043,6 +1046,8 @@ def render_investigation_continuation_json(result, decision=None, alternative_ro
             "satisfied_by_alternative": len(final_decision.satisfied_requirements),
             "remaining": len(final_decision.remaining_requirements),
         }
+    if attention is not None:
+        payload["analyst_attention"] = json.loads(render_analyst_attention_json(attention))
     if decision is not None:
         payload["continuation_decision"] = {
             "status": decision.status,
