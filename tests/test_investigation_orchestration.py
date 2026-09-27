@@ -1394,5 +1394,53 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         )
 
 
+
+    def test_investigation_attention_uses_merged_nse_evidence(self) -> None:
+        from investigation_orchestration import InvestigationSnapshot, build_investigation_attention
+        from models import Host, Port, Scan, Script
+
+        scan = Scan(
+            source="merged investigation",
+            hosts=(
+                Host(
+                    address="192.0.2.50",
+                    status="up",
+                    ports=(
+                        Port(
+                            445,
+                            "tcp",
+                            "open",
+                            "microsoft-ds",
+                            scripts=(
+                                Script("smb-protocols", "2:1:0, 3:0:2, 3:1:1"),
+                                Script(
+                                    "smb2-security-mode",
+                                    "Message signing enabled but not required",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=scan,
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+        )
+
+        attention = build_investigation_attention(snapshot)
+
+        self.assertEqual(
+            [item.finding_id for item in attention],
+            ["service.smb.exposed", "smb.signing.review"],
+        )
+        self.assertEqual(attention[1].evidence_source, "nse:smb2-security-mode")
+        self.assertNotIn("smb.protocol.modern_only", [item.finding_id for item in attention])
+
+
 if __name__ == "__main__":
     unittest.main()
