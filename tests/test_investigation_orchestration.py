@@ -2182,13 +2182,14 @@ class FindingCollectionEvidenceActionTests(unittest.TestCase):
 class DynamicEvidenceActionDerivationTests(unittest.TestCase):
     def test_dynamic_actions_remain_blocked_without_required_approval(self) -> None:
         from investigation_orchestration import build_dynamic_evidence_actions
-        from models import Host, NseScript, Port, Scan
+        from models import Host, Port, Scan, ScriptResult
 
         scan = Scan(
             source="merged evidence",
             hosts=(
                 Host(
                     address="192.0.2.80",
+                    status="up",
                     ports=(
                         Port(
                             port=445,
@@ -2196,7 +2197,7 @@ class DynamicEvidenceActionDerivationTests(unittest.TestCase):
                             state="open",
                             service="microsoft-ds",
                             scripts=(
-                                NseScript(
+                                ScriptResult(
                                     script_id="smb2-security-mode",
                                     output="Message signing enabled but not required",
                                 ),
@@ -2211,13 +2212,14 @@ class DynamicEvidenceActionDerivationTests(unittest.TestCase):
 
     def test_dynamic_actions_emerge_after_explicit_requirement_approval(self) -> None:
         from investigation_orchestration import build_dynamic_evidence_actions
-        from models import Host, NseScript, Port, Scan
+        from models import Host, Port, Scan, ScriptResult
 
         scan = Scan(
             source="merged evidence",
             hosts=(
                 Host(
                     address="192.0.2.81",
+                    status="up",
                     ports=(
                         Port(
                             port=445,
@@ -2225,7 +2227,7 @@ class DynamicEvidenceActionDerivationTests(unittest.TestCase):
                             state="open",
                             service="microsoft-ds",
                             scripts=(
-                                NseScript(
+                                ScriptResult(
                                     script_id="smb2-security-mode",
                                     output="Message signing enabled but not required",
                                 ),
