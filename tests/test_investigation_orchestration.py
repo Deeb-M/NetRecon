@@ -693,6 +693,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         )
 
         self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.stall_reason, "no_progress")
         self.assertEqual(decision.resolved_gaps, ())
         self.assertEqual(decision.remaining_gaps, (gap,))
         self.assertEqual(decision.next_actions, (action,))
@@ -721,6 +722,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.resolved_gaps, (resolved,))
         self.assertEqual(decision.next_actions, ())
         self.assertEqual(decision.repeat_blocked_actions, (attempted_http,))
+        self.assertEqual(decision.stall_reason, "repeated_actions_exhausted")
 
     def test_continuation_keeps_new_action_when_another_action_is_repeat_blocked(self) -> None:
         from investigation_orchestration import assess_investigation_continuation

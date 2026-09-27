@@ -120,6 +120,7 @@ class InvestigationContinuationDecision:
     remaining_gaps: tuple[EvidenceGap, ...]
     next_actions: tuple[EvidenceAction, ...]
     repeat_blocked_actions: tuple[EvidenceAction, ...] = ()
+    stall_reason: str | None = None
 
 
 def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
@@ -161,12 +162,19 @@ def assess_investigation_continuation(
         action for action in after.actions if action.command not in attempted_commands
     )
 
+    stall_reason = None
     if not after.gaps:
         status = "complete"
     elif resolved and safe_next_actions:
         status = "progressed"
     else:
         status = "stalled"
+        if repeat_blocked and not safe_next_actions:
+            stall_reason = "repeated_actions_exhausted"
+        elif not after.actions:
+            stall_reason = "no_supported_actions"
+        else:
+            stall_reason = "no_progress"
 
     return InvestigationContinuationDecision(
         status=status,
@@ -174,4 +182,5 @@ def assess_investigation_continuation(
         remaining_gaps=after.gaps,
         next_actions=safe_next_actions,
         repeat_blocked_actions=repeat_blocked,
+        stall_reason=stall_reason,
     )

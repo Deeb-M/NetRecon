@@ -851,6 +851,8 @@ def render_investigation_continuation(result, decision=None) -> str:
         lines.append("Continuation Decision")
         lines.append("---------------------")
         lines.append(f"Status: {decision.status}")
+        if decision.stall_reason is not None:
+            lines.append(f"Stall Reason: {decision.stall_reason}")
         lines.append(f"Resolved Gaps: {len(decision.resolved_gaps)}")
         lines.append(f"Remaining Gaps: {len(decision.remaining_gaps)}")
         lines.append(f"Next Actions: {len(decision.next_actions)}")
@@ -908,6 +910,7 @@ def render_investigation_continuation_json(result, decision=None) -> str:
     if decision is not None:
         payload["continuation_decision"] = {
             "status": decision.status,
+            "stall_reason": decision.stall_reason,
             "resolved_gaps": len(decision.resolved_gaps),
             "remaining_gaps": len(decision.remaining_gaps),
             "next_actions": len(decision.next_actions),
