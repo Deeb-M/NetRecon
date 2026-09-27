@@ -1739,5 +1739,33 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         )
 
 
+    def test_adaptive_controller_selects_only_non_terminal_plan_actions(self) -> None:
+        from adaptive_investigation import AdaptiveInvestigationPlan, select_adaptive_actions
+
+        action = EvidenceAction(
+            "192.0.2.201", 5357, "tcp", ("http-headers",), ("review HTTP identity",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.201"),
+        )
+
+        self.assertEqual(
+            select_adaptive_actions(
+                AdaptiveInvestigationPlan("continue", "new_supported_actions_available", (action,))
+            ),
+            (action,),
+        )
+        self.assertEqual(
+            select_adaptive_actions(
+                AdaptiveInvestigationPlan("alternative", "supported_alternative_actions_available", (action,))
+            ),
+            (action,),
+        )
+        self.assertEqual(
+            select_adaptive_actions(
+                AdaptiveInvestigationPlan("stop", "no_supported_next_step", (action,))
+            ),
+            (),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
