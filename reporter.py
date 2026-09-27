@@ -31,8 +31,8 @@ def render_exposure_history(history: tuple[ExposureHistory, ...]) -> str:
     for item in history:
         lines.append(
             f"{item.host}:{item.port}/{item.protocol}  "
-            f"first_seen={_format_history_time(item.first_seen)}  "
-            f"last_seen={_format_history_time(item.last_seen)}  "
+            f"first_observed={_format_history_time(item.first_seen)}  "
+            f"last_observed={_format_history_time(item.last_seen)}  "
             f"observations={item.observations}  "
             f"opportunities={item.opportunities}"
         )
