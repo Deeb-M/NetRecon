@@ -1248,7 +1248,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(args.investigate_collect, "192.0.2.10")
 
-    @patch("netrecon.render_investigation_snapshot", return_value="Updated investigation")
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
     @patch("netrecon.execute_approved_evidence_actions")
     @patch("netrecon.build_investigation_snapshot")
     @patch("netrecon.interpret_discovery_execution")
@@ -1299,8 +1299,8 @@ class CliTests(unittest.TestCase):
 
         snapshot_mock.assert_called_once_with(discovery)
         execute_evidence_mock.assert_called_once_with(initial, timeout=60.0)
-        render_mock.assert_called_once_with(updated)
-        self.assertEqual(output.getvalue().strip(), "Updated investigation")
+        render_mock.assert_called_once_with(continuation)
+        self.assertEqual(output.getvalue().strip(), "Investigation continuation")
 
 
 if __name__ == "__main__":
