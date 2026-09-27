@@ -109,3 +109,58 @@ def execute_approved_evidence_actions(
         outcomes=outcomes,
         snapshot=re_evaluate_investigation(snapshot.scan, outcomes),
     )
+
+
+@dataclass(frozen=True)
+class InvestigationContinuationDecision:
+    """Describe whether a re-evaluated investigation can safely continue."""
+
+    status: str
+    resolved_gaps: tuple[EvidenceGap, ...]
+    remaining_gaps: tuple[EvidenceGap, ...]
+    next_actions: tuple[EvidenceAction, ...]
+
+
+def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
+    """Return the endpoint-scoped identity of one planner-supported evidence gap."""
+    return (
+        gap.host.strip(),
+        gap.port,
+        gap.protocol.strip().lower(),
+        gap.script_id.strip().lower(),
+    )
+
+
+def assess_investigation_continuation(
+    before: InvestigationSnapshot,
+    after: InvestigationSnapshot,
+) -> InvestigationContinuationDecision:
+    """Classify re-evaluation without executing another collection round.
+
+    A continuation is complete when no planner-supported gaps remain. It is
+    progressed only when at least one previous gap was resolved and further
+    planner-supported actions remain. If gaps remain but none were resolved,
+    the investigation is stalled so callers do not blindly repeat identical
+    evidence collection.
+    """
+    if not before.ready or not after.ready:
+        raise ValueError("Continuation assessment requires ready investigations")
+
+    after_ids = {_gap_identity(gap) for gap in after.gaps}
+    resolved = tuple(
+        gap for gap in before.gaps if _gap_identity(gap) not in after_ids
+    )
+
+    if not after.gaps:
+        status = "complete"
+    elif resolved and after.actions:
+        status = "progressed"
+    else:
+        status = "stalled"
+
+    return InvestigationContinuationDecision(
+        status=status,
+        resolved_gaps=resolved,
+        remaining_gaps=after.gaps,
+        next_actions=after.actions,
+    )

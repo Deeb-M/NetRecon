@@ -622,5 +622,102 @@ class InvestigationContinuationContractTests(unittest.TestCase):
         self.assertEqual(len(result.snapshot.states), 1)
 
 
+class InvestigationContinuationDecisionTests(unittest.TestCase):
+    def _snapshot(self, gaps, actions=()):
+        from investigation_orchestration import InvestigationSnapshot
+        from models import Scan
+
+        return InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=gaps,
+            actions=actions,
+            states=(),
+            error=None,
+        )
+
+    def test_continuation_is_complete_when_no_gaps_remain(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        gap = EvidenceGap("192.0.2.10", 445, "tcp", "smb-protocols", "purpose")
+        decision = assess_investigation_continuation(
+            self._snapshot((gap,)),
+            self._snapshot(()),
+        )
+
+        self.assertEqual(decision.status, "complete")
+        self.assertEqual(decision.resolved_gaps, (gap,))
+        self.assertEqual(decision.remaining_gaps, ())
+        self.assertEqual(decision.next_actions, ())
+
+    def test_continuation_is_progressed_when_some_gaps_resolve_and_actions_remain(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        resolved = EvidenceGap("192.0.2.20", 445, "tcp", "smb-protocols", "purpose")
+        remaining = EvidenceGap("192.0.2.20", 445, "tcp", "smb2-security-mode", "purpose")
+        action = EvidenceAction(
+            host="192.0.2.20",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb2-security-mode",),
+            purposes=("purpose",),
+            command=("nmap",),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot((resolved, remaining)),
+            self._snapshot((remaining,), (action,)),
+        )
+
+        self.assertEqual(decision.status, "progressed")
+        self.assertEqual(decision.resolved_gaps, (resolved,))
+        self.assertEqual(decision.remaining_gaps, (remaining,))
+        self.assertEqual(decision.next_actions, (action,))
+
+    def test_continuation_stalls_when_same_unknowns_remain(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        gap = EvidenceGap("192.0.2.30", 5357, "tcp", "http-title", "purpose")
+        action = EvidenceAction(
+            host="192.0.2.30",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-title",),
+            purposes=("purpose",),
+            command=("nmap",),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot((gap,), (action,)),
+            self._snapshot((gap,), (action,)),
+        )
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.resolved_gaps, ())
+        self.assertEqual(decision.remaining_gaps, (gap,))
+        self.assertEqual(decision.next_actions, (action,))
+
+    def test_continuation_assessment_rejects_unready_snapshot(self) -> None:
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            assess_investigation_continuation,
+        )
+
+        blocked = InvestigationSnapshot(
+            ready=False,
+            scan=None,
+            gaps=(),
+            actions=(),
+            states=(),
+            error="discovery failed",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Continuation assessment requires ready investigations",
+        ):
+            assess_investigation_continuation(blocked, self._snapshot(()))
+
+
 if __name__ == "__main__":
     unittest.main()
