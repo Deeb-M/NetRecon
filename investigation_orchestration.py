@@ -263,7 +263,11 @@ def assess_final_investigation_decision(
     elif "incomplete" in statuses:
         reason = "alternative_evidence_incomplete"
     elif statuses and statuses == {"observed"}:
-        reason = "alternative_evidence_observed_gaps_remain"
+        reason = (
+            "alternative_evidence_partially_satisfied_requirements"
+            if remaining_requirements
+            else "alternative_evidence_observed_gaps_remain"
+        )
     else:
         reason = "no_verified_alternative_evidence"
 

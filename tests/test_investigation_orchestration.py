@@ -910,7 +910,10 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             ("http_supported_methods",),
         )
         self.assertEqual(decision.remaining_gaps, gaps)
-        self.assertEqual(decision.reason, "alternative_evidence_observed_gaps_remain")
+        self.assertEqual(
+            decision.reason,
+            "alternative_evidence_partially_satisfied_requirements",
+        )
 
     def test_final_decision_exposes_distinct_remaining_semantic_requirements(self) -> None:
         from investigation_orchestration import (
