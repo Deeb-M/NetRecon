@@ -338,5 +338,72 @@ class InvestigationStateContractTests(unittest.TestCase):
         self.assertEqual(failed.failure_message, "Nmap evidence collection timed out")
 
 
+class InvestigationContinuationContractTests(unittest.TestCase):
+    def test_re_evaluation_merges_valid_evidence_and_rebuilds_snapshot(self) -> None:
+        from evidence_collector import (
+            CollectionResult,
+            NmapCommand,
+            ParsedCollectionResult,
+        )
+        from investigation_orchestration import re_evaluate_investigation
+        from models import Host, Port, Scan, ScriptResult
+
+        discovery_scan = Scan(
+            source="discovery.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.80",
+                    status="up",
+                    ports=(Port(445, "tcp", "open", "microsoft-ds"),),
+                ),
+            ),
+        )
+        evidence_scan = Scan(
+            source="evidence.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.80",
+                    status="up",
+                    ports=(
+                        Port(
+                            445,
+                            "tcp",
+                            "open",
+                            "microsoft-ds",
+                            scripts=(ScriptResult("smb-protocols", "3.1.1"),),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(
+                command=NmapCommand(arguments=("nmap",)),
+                returncode=0,
+                stdout="<nmaprun />",
+                stderr="",
+            ),
+            scan=evidence_scan,
+        )
+
+        snapshot = re_evaluate_investigation(discovery_scan, (outcome,))
+
+        self.assertTrue(snapshot.ready)
+        self.assertIsNone(snapshot.error)
+        self.assertEqual(
+            tuple(gap.script_id for gap in snapshot.gaps),
+            ("smb2-security-mode",),
+        )
+        self.assertEqual(
+            tuple(gap.script_id for gap in snapshot.states[0].unknown),
+            ("smb2-security-mode",),
+        )
+        self.assertEqual(snapshot.actions[0].script_ids, ("smb2-security-mode",))
+        self.assertEqual(
+            tuple(script.script_id for script in snapshot.scan.hosts[0].ports[0].scripts),
+            ("smb-protocols",),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
