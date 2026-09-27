@@ -105,6 +105,28 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_deduplicates_equivalent_script_ids_within_collection_unit(self) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.26",
+            requests=(
+                EvidenceRequest(443, "tcp", "ssl-cert"),
+                EvidenceRequest(443, "tcp", "ssl-cert"),
+            ),
+        )
+
+        self.assertEqual(
+            build_collection_specs(plan),
+            (
+                CollectionSpec(
+                    "192.0.2.26",
+                    443,
+                    "tcp",
+                    ("ssl-cert",),
+                ),
+            ),
+        )
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
