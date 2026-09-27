@@ -1207,6 +1207,7 @@ class ReporterTests(unittest.TestCase):
             data["continuation_decision"],
             {
                 "status": "complete",
+                "stall_reason": None,
                 "resolved_gaps": 0,
                 "remaining_gaps": 0,
                 "next_actions": 0,
