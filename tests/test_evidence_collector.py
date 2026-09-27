@@ -1837,6 +1837,23 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(result.failed_outcomes, (failed,))
 
 
+    def test_timeout_outcome_with_partial_xml_is_not_treated_as_success(self) -> None:
+        command = NmapCommand(("nmap",))
+        result = CollectionResult(
+            command=command,
+            returncode=124,
+            stdout="<nmaprun></nmaprun>",
+            stderr="Nmap evidence collection timed out",
+        )
+
+        outcome = parse_collection_outcome(result)
+
+        self.assertIsNone(outcome.scan)
+        self.assertEqual(
+            outcome.failure_message,
+            "Nmap evidence collection timed out",
+        )
+
     def test_successful_process_with_invalid_xml_is_preserved_as_failed_outcome(self) -> None:
         command = NmapCommand(("nmap",))
         result = CollectionResult(
