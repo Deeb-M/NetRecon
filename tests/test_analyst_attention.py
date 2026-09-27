@@ -35,7 +35,7 @@ class AnalystAttentionTests(unittest.TestCase):
 
         items = (
             AnalystAttentionItem(
-                "smb.service.exposed", "exposure", "192.0.2.60", 445, "tcp",
+                "service.smb.exposed", "exposure", "192.0.2.60", 445, "tcp",
                 "SMB service exposed", "445/tcp is open.", "Review SMB exposure.",
                 "service:detection",
             ),
@@ -56,7 +56,7 @@ class AnalystAttentionTests(unittest.TestCase):
         )
         self.assertEqual(
             correlations[0].finding_ids,
-            ("smb.service.exposed", "smb.signing.review"),
+            ("service.smb.exposed", "smb.signing.review"),
         )
         self.assertEqual(
             correlations[0].evidence_sources,
@@ -68,7 +68,7 @@ class AnalystAttentionTests(unittest.TestCase):
 
         items = (
             AnalystAttentionItem(
-                "smb.service.exposed", "exposure", "192.0.2.61", 445, "tcp",
+                "service.smb.exposed", "exposure", "192.0.2.61", 445, "tcp",
                 "SMB service exposed", "445/tcp is open.", "Review SMB exposure.",
                 "service:detection",
             ),
