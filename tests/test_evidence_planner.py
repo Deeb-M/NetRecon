@@ -579,6 +579,22 @@ class EvidencePlannerTests(unittest.TestCase):
         )
 
 
+    def test_host_plan_normalizes_target_address(self) -> None:
+        host = Host(
+            address=" 192.0.2.42 ",
+            status="up",
+            ports=(),
+        )
+
+        self.assertEqual(
+            plan_host_evidence(host),
+            HostEvidencePlan(
+                target="192.0.2.42",
+                requests=(),
+            ),
+        )
+
+
     def test_host_plan_requests_nothing_when_supported_evidence_is_complete(self) -> None:
         host = Host(
             address="192.0.2.50",
