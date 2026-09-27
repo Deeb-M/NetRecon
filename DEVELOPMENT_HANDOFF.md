@@ -1155,3 +1155,26 @@ Target
 
 Preserved architectural boundary:
 > Discovery executes; follow-up evidence actions are proposed, transparent, and remain under analyst control.
+
+
+## Investigation State / Known–Unknown Model — CLOSED
+
+NetRecon now exposes an evidence-traceable investigation state as part of `--investigate`.
+
+- `known` contains only observed Discovery facts for open endpoints: state, normalized service, and product/version when actually observed.
+- `unknown` contains only planner-supported `EvidenceGap` objects; NetRecon does not invent security conclusions from service identity alone.
+- Unsupported endpoints remain visible as known Discovery state with no fabricated unknowns.
+- `InvestigationSnapshot` composes state from the same verified Scan used by Evidence Gaps and Evidence Actions.
+- Text and JSON reporters expose the same state. JSON includes `summary.investigation_states` and structured `states[]`.
+- The execution boundary is unchanged: `--investigate` executes baseline Discovery only. Evidence Actions remain transparent proposals and are not executed automatically.
+- Regression baseline: 616/616 tests passing.
+- Field validation on `192.168.227.138` passed in both text and JSON:
+  - 4 endpoint states: 135/tcp, 139/tcp, 445/tcp, 5357/tcp
+  - 4 evidence gaps
+  - 2 proposed evidence actions
+  - 135/139 expose observed facts only
+  - 445 exposes SMB dialect/signing unknowns
+  - 5357 exposes HTTP title/method unknowns
+  - exact proposed Nmap argv remains visible and unexecuted.
+
+This milestone establishes the explicit state question: **what is known, what is unknown, and what evidence would reduce the unknowns?**
