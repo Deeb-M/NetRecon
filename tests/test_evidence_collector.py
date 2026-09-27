@@ -1639,6 +1639,68 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(analyzed_scan.hosts, (result.host,))
 
 
+    @patch("evidence_collector.analyze_scan")
+    @patch("evidence_collector.collect_host_evidence")
+    def test_correlated_result_preserves_success_and_timeout_as_partial(
+        self,
+        collect_mock,
+        analyze_mock,
+    ) -> None:
+        discovered = Host(
+            address="192.0.2.142",
+            status="up",
+            ports=(Port(port=80, protocol="tcp", state="open", service="http"),),
+        )
+        plan = HostEvidencePlan(
+            target="192.0.2.142",
+            requests=(
+                EvidenceRequest(445, "tcp", "smb-protocols"),
+                EvidenceRequest(80, "tcp", "http-title"),
+            ),
+        )
+        commands = build_nmap_commands(plan)
+        timed_out = ParsedCollectionResult(
+            result=CollectionResult(
+                commands[0],
+                124,
+                "",
+                "Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+        successful = ParsedCollectionResult(
+            result=CollectionResult(commands[1], 0, "<nmaprun />", ""),
+            scan=Scan(
+                source="nmap stdout",
+                hosts=(
+                    Host(
+                        address="192.0.2.142",
+                        status="up",
+                        ports=(
+                            Port(
+                                port=80,
+                                protocol="tcp",
+                                state="open",
+                                service="http",
+                                scripts=(ScriptResult("http-title", "Test page"),),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        collect_mock.return_value = (timed_out, successful)
+        analyze_mock.return_value = ()
+
+        result = collect_correlated_host_evidence(discovered, plan)
+
+        self.assertFalse(result.collection_complete)
+        self.assertEqual(result.failed_outcomes, (timed_out,))
+        self.assertEqual(
+            result.host.ports[0].scripts,
+            (ScriptResult("http-title", "Test page"),),
+        )
+
     def test_correlated_result_reports_incomplete_collection(self) -> None:
         host = Host(address="192.0.2.130", status="up")
         command = NmapCommand(("nmap",))
