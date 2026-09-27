@@ -847,6 +847,7 @@ class ReporterTests(unittest.TestCase):
             scan=scan,
             gaps=(gap,),
             actions=(action,),
+            states=(),
             error=None,
         )
 
@@ -869,6 +870,7 @@ class ReporterTests(unittest.TestCase):
             scan=None,
             gaps=(),
             actions=(),
+            states=(),
             error="nmap failed",
         )
 
@@ -901,6 +903,7 @@ class ReporterTests(unittest.TestCase):
             scan=scan,
             gaps=(gap,),
             actions=(action,),
+            states=(),
             error=None,
         )
 
