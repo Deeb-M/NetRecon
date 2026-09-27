@@ -18,6 +18,15 @@ from reporter import render_analysis_diff, render_analysis_diff_json, render_ana
 from scan_diff import compare_scans
 
 
+class AtLeastTwoPaths(argparse.Action):
+    """Collect a history scan list while enforcing the CLI minimum."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if len(values) < 2:
+            parser.error("--history requires at least two scan files")
+        setattr(namespace, self.dest, values)
+
+
 def positive_timeout(value: str) -> float:
     """Parse a strictly positive evidence collection timeout."""
     timeout = float(value)
@@ -85,6 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--history",
         nargs="+",
         type=Path,
+        action=AtLeastTwoPaths,
         metavar="SCAN",
         help="Summarize open-endpoint observations across multiple Nmap XML scans",
     )
@@ -96,8 +106,6 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.history is not None:
-        if len(args.history) < 2:
-            parser.error("--history requires at least two scan files")
         if args.scan is not None or args.compare_scan is not None:
             parser.error("--history scan files must be supplied after --history")
         try:
