@@ -2048,5 +2048,62 @@ class CollectionAuthorizationGateTests(unittest.TestCase):
         )
 
 
+class FindingCollectionPlannerTests(unittest.TestCase):
+    def test_finding_pipeline_preserves_requirement_strategy_and_approval_boundary(self) -> None:
+        from finding_collection_planner import build_finding_collection_plans
+        from findings import Finding
+
+        finding = Finding(
+            finding_id="smb.signing.review",
+            category="configuration",
+            host="192.0.2.60",
+            port=445,
+            protocol="tcp",
+            severity="medium",
+            title="SMB signing configuration requires review",
+            evidence="Message signing enabled but not required",
+            recommendation="Review SMB signing configuration",
+            evidence_source="nse:smb2-security-mode",
+        )
+
+        plans = build_finding_collection_plans((finding,))
+
+        self.assertEqual(len(plans), 1)
+        plan = plans[0]
+        self.assertEqual(plan.requirement.requirement_id, "smb_access_control_context")
+        self.assertEqual(plan.requirement.finding_id, "smb.signing.review")
+        self.assertEqual(plan.requirement.evidence_source, "nse:smb2-security-mode")
+        self.assertEqual(plan.strategy.script_ids, ("smb-enum-shares",))
+        self.assertEqual(plan.strategy.risk_class, "intrusive")
+        self.assertEqual(plan.strategy.authorization, "requires_approval")
+        self.assertFalse(plan.authorization.allowed)
+        self.assertEqual(plan.authorization.reason, "explicit_approval_required")
+
+    def test_finding_pipeline_can_record_explicit_requirement_approval(self) -> None:
+        from finding_collection_planner import build_finding_collection_plans
+        from findings import Finding
+
+        finding = Finding(
+            finding_id="smb.signing.review",
+            category="configuration",
+            host="192.0.2.61",
+            port=445,
+            protocol="tcp",
+            severity="medium",
+            title="SMB signing configuration requires review",
+            evidence="Message signing enabled but not required",
+            recommendation="Review SMB signing configuration",
+            evidence_source="nse:smb2-security-mode",
+        )
+
+        plans = build_finding_collection_plans(
+            (finding,),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )
+
+        self.assertTrue(plans[0].authorization.allowed)
+        self.assertEqual(plans[0].authorization.reason, "explicitly_approved")
+
+
 if __name__ == "__main__":
     unittest.main()
