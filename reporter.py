@@ -18,6 +18,7 @@ from host_summary import summarize_hosts
 from models import Host, Port, Scan, ScanScope
 from network_summary import summarize_network, summarize_shared_services
 from scan_diff import ExposureChange
+from scan_orchestration import DiscoveryPlan
 
 
 def _format_history_time(timestamp: int) -> str:
@@ -723,6 +724,36 @@ def render_evidence_action_plan_json(actions: tuple[EvidenceAction, ...]) -> str
             "report_type": "evidence_action_plan",
             "summary": {"actions": len(actions)},
             "actions": [asdict(action) for action in actions],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
+
+def render_discovery_plan(plan: DiscoveryPlan) -> str:
+    """Render one transparent discovery plan for analyst review."""
+    return "\n".join(
+        (
+            "Discovery Plan",
+            "--------------",
+            f"Target: {plan.target}",
+            f"Profile: {plan.profile}",
+            f"Purpose: {plan.purpose}",
+            f"Suggested discovery: {' '.join(plan.command)}",
+        )
+    )
+
+
+def render_discovery_plan_json(plan: DiscoveryPlan) -> str:
+    """Render one discovery plan as structured JSON with exact argv."""
+    return json.dumps(
+        {
+            "report_type": "discovery_plan",
+            "target": plan.target,
+            "profile": plan.profile,
+            "purpose": plan.purpose,
+            "command": plan.command,
         },
         indent=2,
         ensure_ascii=False,
