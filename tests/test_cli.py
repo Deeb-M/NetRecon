@@ -1163,7 +1163,8 @@ class CliTests(unittest.TestCase):
         )
         execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
         discovery = DiscoveryResult(execution, True, object(), None)
-        snapshot = object()
+        from investigation_orchestration import InvestigationSnapshot
+        snapshot = InvestigationSnapshot(True, discovery.scan, (), (), None)
         build_plan_mock.return_value = plan
         execute_mock.return_value = execution
         interpret_mock.return_value = discovery
