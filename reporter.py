@@ -1123,6 +1123,29 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
     return "\n".join(lines)
 
 
+
+def render_dynamic_evidence_round(result) -> str:
+    """Render provenance for one bounded adaptive Continue evidence round."""
+    lines = [
+        "Dynamic Evidence Round",
+        "----------------------",
+    ]
+    if not result.outcomes:
+        lines.append("None")
+        return "\n".join(lines)
+
+    for outcome in result.outcomes:
+        collection = outcome.result
+        lines.append("Command: " + " ".join(collection.command.arguments))
+        lines.append(
+            "Collection Status: " + ("success" if outcome.scan is not None else "failed")
+        )
+        lines.append(f"Return Code: {collection.returncode}")
+        if outcome.failure_message is not None:
+            lines.append(f"Failure: {outcome.failure_message}")
+    return "\n".join(lines)
+
+
 def _investigation_continuation_outcomes(result):
     remaining = {
         (gap.host, gap.port, gap.protocol, gap.script_id)
