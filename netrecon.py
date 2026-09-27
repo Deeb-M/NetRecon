@@ -13,7 +13,7 @@ from analyzer import analyze_scan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_planner import plan_host_evidence
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_findings, render_json, render_text
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_findings, render_host_summaries, render_json, render_text
 from scan_diff import compare_scans
 
 
@@ -154,6 +154,8 @@ def main() -> int:
 
     print(render_text(scan))
     if args.analyze:
+        print()
+        print(render_host_summaries(scan, findings))
         print()
         print(render_findings(findings))
 
