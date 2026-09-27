@@ -854,6 +854,13 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
         if decision.stall_reason is not None:
             lines.append(f"Stall Reason: {decision.stall_reason}")
         lines.append(f"Resolved Gaps: {len(decision.resolved_gaps)}")
+        lines.append(f"Resolved Requirements: {len(decision.resolved_requirements)}")
+        for state in decision.resolved_requirements:
+            requirement = state.requirement
+            lines.append(
+                f"Resolved: {state.host}:{state.port}/{state.protocol}  "
+                f"{requirement.requirement_id} — {requirement.purpose}"
+            )
         lines.append(f"Remaining Gaps: {len(decision.remaining_gaps)}")
         lines.append(f"Next Actions: {len(decision.next_actions)}")
         lines.append(f"Repeat-Blocked Actions: {len(decision.repeat_blocked_actions)}")
@@ -991,6 +998,18 @@ def render_investigation_continuation_json(result, decision=None, alternative_ro
             "status": decision.status,
             "stall_reason": decision.stall_reason,
             "resolved_gaps": len(decision.resolved_gaps),
+            "resolved_requirements": [
+                {
+                    "host": state.host,
+                    "port": state.port,
+                    "protocol": state.protocol,
+                    "requirement_id": state.requirement.requirement_id,
+                    "purpose": state.requirement.purpose,
+                    "primary_script_ids": list(state.requirement.primary_script_ids),
+                    "alternative_script_ids": list(state.requirement.alternative_script_ids),
+                }
+                for state in decision.resolved_requirements
+            ],
             "remaining_gaps": len(decision.remaining_gaps),
             "next_actions": len(decision.next_actions),
             "repeat_blocked_actions": len(decision.repeat_blocked_actions),
