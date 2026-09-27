@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from analyst_attention import AnalystAttentionItem, build_analyst_attention
+from analyzer import analyze_scan
+
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
 from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_state_for_gap, requirement_states_for_gaps, resolved_requirement_states, summarize_evidence_gaps
 from evidence_collector import (
@@ -76,6 +79,15 @@ def re_evaluate_investigation(
         states=summarize_investigation_state(scan),
         error=None,
     )
+
+
+def build_investigation_attention(
+    snapshot: InvestigationSnapshot,
+) -> tuple[AnalystAttentionItem, ...]:
+    """Project analyst attention from the investigation's current merged evidence."""
+    if not snapshot.ready or snapshot.scan is None:
+        return ()
+    return build_analyst_attention(analyze_scan(snapshot.scan))
 
 
 @dataclass(frozen=True)
