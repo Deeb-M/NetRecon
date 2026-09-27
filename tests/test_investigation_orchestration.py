@@ -2451,5 +2451,35 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(decision.next_actions, (dynamic,))
 
 
+    def test_attempted_dynamic_action_does_not_prevent_completion_without_primary_gaps(self) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            assess_investigation_continuation,
+        )
+        from models import Scan
+
+        dynamic = EvidenceAction(
+            host="192.0.2.94",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-enum-shares",),
+            purposes=("review SMB access controls in the context of the observed signing configuration",),
+            command=("nmap", "-p", "445", "--script", "smb-enum-shares", "-oX", "-", "192.0.2.94"),
+        )
+        before = InvestigationSnapshot(True, Scan(source="before.xml"), (), (), (), None)
+        after = InvestigationSnapshot(True, Scan(source="after.xml"), (), (dynamic,), (), None)
+
+        decision = assess_investigation_continuation(
+            before,
+            after,
+            attempted_actions=(dynamic,),
+        )
+
+        self.assertEqual(decision.status, "complete")
+        self.assertEqual(decision.next_actions, ())
+        self.assertEqual(decision.repeat_blocked_actions, (dynamic,))
+
+
 if __name__ == "__main__":
     unittest.main()
