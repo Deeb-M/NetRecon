@@ -196,6 +196,38 @@ def execute_alternative_evidence_round(
     )
 
 @dataclass(frozen=True)
+class FinalInvestigationDecision:
+    """Terminal decision after a bounded alternative evidence round."""
+
+    status: str
+    reason: str
+    remaining_gaps: tuple[EvidenceGap, ...]
+    further_actions: tuple[EvidenceAction, ...] = ()
+
+
+def assess_final_investigation_decision(
+    alternative_round: AlternativeEvidenceRoundResult,
+) -> FinalInvestigationDecision:
+    """Stop after the bounded alternative round and explain why."""
+    remaining = alternative_round.snapshot.gaps
+    statuses = {verification.status for verification in alternative_round.verifications}
+
+    if not remaining:
+        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), ())
+
+    if "collection_failed" in statuses:
+        reason = "alternative_collection_failed"
+    elif "incomplete" in statuses:
+        reason = "alternative_evidence_incomplete"
+    elif statuses and statuses == {"observed"}:
+        reason = "alternative_evidence_observed_gaps_remain"
+    else:
+        reason = "no_verified_alternative_evidence"
+
+    return FinalInvestigationDecision("stalled", reason, remaining, ())
+
+
+@dataclass(frozen=True)
 class InvestigationContinuationDecision:
     """Describe whether a re-evaluated investigation can safely continue."""
 

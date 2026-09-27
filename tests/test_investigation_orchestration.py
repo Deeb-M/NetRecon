@@ -852,6 +852,83 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         self.assertEqual(result.verifications[0].status, "incomplete")
 
+    def test_final_decision_stops_when_alternative_evidence_is_incomplete(self) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            AlternativeEvidenceVerification,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+
+        action = EvidenceAction("192.0.2.100", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        gap = EvidenceGap("192.0.2.100", 5357, "tcp", "http-title", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        round_result = AlternativeEvidenceRoundResult(
+            (),
+            (AlternativeEvidenceVerification("incomplete", action, ()),),
+            snapshot,
+        )
+
+        decision = assess_final_investigation_decision(round_result)
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.reason, "alternative_evidence_incomplete")
+        self.assertEqual(decision.remaining_gaps, (gap,))
+        self.assertEqual(decision.further_actions, ())
+
+    def test_final_decision_distinguishes_alternative_collection_failure(self) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            AlternativeEvidenceVerification,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+
+        action = EvidenceAction("192.0.2.101", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        gap = EvidenceGap("192.0.2.101", 5357, "tcp", "http-methods", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        round_result = AlternativeEvidenceRoundResult(
+            (),
+            (AlternativeEvidenceVerification("collection_failed", action, ()),),
+            snapshot,
+        )
+
+        decision = assess_final_investigation_decision(round_result)
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.reason, "alternative_collection_failed")
+        self.assertEqual(decision.further_actions, ())
+
+    def test_final_decision_preserves_observed_alternative_without_falsely_closing_gaps(self) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            AlternativeEvidenceVerification,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+
+        action = EvidenceAction("192.0.2.102", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        gap = EvidenceGap("192.0.2.102", 5357, "tcp", "http-title", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        round_result = AlternativeEvidenceRoundResult(
+            (),
+            (AlternativeEvidenceVerification("observed", action, ("http-headers",)),),
+            snapshot,
+        )
+
+        decision = assess_final_investigation_decision(round_result)
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.reason, "alternative_evidence_observed_gaps_remain")
+        self.assertEqual(decision.remaining_gaps, (gap,))
+        self.assertEqual(decision.further_actions, ())
+
     def test_continuation_is_complete_when_no_gaps_remain(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 
