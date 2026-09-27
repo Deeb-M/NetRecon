@@ -47,3 +47,28 @@ def collection_strategy_for_requirement(
         risk_class=risk_class,
         authorization=authorization,
     )
+
+
+@dataclass(frozen=True)
+class CollectionAuthorizationDecision:
+    """Whether a supported strategy may proceed without additional human approval."""
+
+    allowed: bool
+    reason: str
+
+
+def authorize_collection_strategy(
+    strategy: RequirementCollectionStrategy,
+    *,
+    explicitly_approved: bool = False,
+) -> CollectionAuthorizationDecision:
+    """Apply the human-authorization boundary independently of execution."""
+    if strategy.status != "supported":
+        return CollectionAuthorizationDecision(False, "unsupported_strategy")
+    if strategy.authorization == "requires_approval" and not explicitly_approved:
+        return CollectionAuthorizationDecision(False, "explicit_approval_required")
+    if strategy.authorization == "requires_approval" and explicitly_approved:
+        return CollectionAuthorizationDecision(True, "explicitly_approved")
+    if strategy.authorization == "automatic":
+        return CollectionAuthorizationDecision(True, "automatic_policy")
+    return CollectionAuthorizationDecision(False, "authorization_policy_missing")
