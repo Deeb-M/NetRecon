@@ -1557,3 +1557,95 @@ Milestone status: **FIELD-VALIDATED**.
 ### Next-development rule
 
 Do not expand correlation by accumulating convenient same-host rules. The next intelligence layer should solve a clear analyst problem while preserving canonical Finding identities and provenance. Correlation should remain an explicit semantic relationship over existing Attention items, not become an implicit scoring or vulnerability engine.
+
+
+## Investigation Synthesis — FIELD-VALIDATED
+
+NetRecon now has a factual synthesis layer above the final investigation decision, Analyst Attention, and explicit Attention Correlation. Synthesis is a consumer of existing investigation truth; it does not collect evidence, create Findings, rank risk, or alter investigation decisions.
+
+Validated flow:
+
+```text
+Nmap Discovery
+  -> Semantic Evidence Planning
+  -> Targeted Evidence Collection
+  -> Re-evaluation
+  -> Final Investigation Decision
+  -> Evidence-backed Findings
+  -> Analyst Attention
+  -> Explicit Attention Correlation
+  -> Investigation Synthesis
+```
+
+### Current synthesis contract
+
+The first bounded synthesis reports only:
+- final investigation status;
+- final decision reason;
+- number of Analyst Attention items;
+- number of Correlated Review groups;
+- remaining semantic evidence requirements.
+
+Text and JSON have dedicated deterministic reporting contracts. CLI integration currently builds Synthesis only when an explicit `FinalInvestigationDecision` exists; it does not fabricate a terminal decision for investigation paths that do not yet produce one.
+
+### Regression and packaging
+
+The new `investigation_synthesis.py` module is included in the installed package. A field-independent regression covers the factual model, Text/JSON reporting, and the terminal CLI chain:
+
+```text
+Final Decision -> Attention -> Correlation -> Synthesis -> CLI output
+```
+
+GitHub Actions was green before field validation.
+
+### Real field validation
+
+Authorized Kali lab target: `192.168.227.138`.
+
+Command:
+
+```bash
+netrecon --investigate-collect 192.168.227.138
+```
+
+Observed terminal state:
+- final status: `stalled`;
+- reason: `alternative_evidence_incomplete`;
+- Analyst Attention items: 4;
+- Correlated Review groups: 1;
+- remaining semantic requirements: 2.
+
+The remaining requirements were:
+- `http_identity_context` on `192.168.227.138:5357/tcp`;
+- `http_supported_methods` on `192.168.227.138:5357/tcp`.
+
+The integrated terminal report ended with:
+
+```text
+Investigation Synthesis
+-----------------------
+Status: stalled
+Reason: alternative_evidence_incomplete
+Attention Items: 4
+Correlated Review Groups: 1
+Remaining Requirements: 2
+Requirement: 192.168.227.138:5357/tcp  http_identity_context — review HTTP service identity and exposed content context
+Requirement: 192.168.227.138:5357/tcp  http_supported_methods — review supported HTTP methods
+```
+
+The synthesis matched the underlying investigation layers exactly. It preserved the unresolved HTTP knowledge needs rather than converting missing evidence into a Finding, and it preserved the SMB Attention/Correlation results without allowing them to hide unresolved requirements.
+
+This is the first field proof that NetRecon can close a bounded investigation run with one coherent factual view of:
+- what state the investigation reached;
+- why it stopped;
+- what evidence-backed observations deserve analyst review;
+- what related evidence should be reviewed together;
+- what remains unknown.
+
+Milestone status: **FIELD-VALIDATED**.
+
+### Next development direction
+
+Investigation Synthesis is now a validated layer. Before expanding its prose or adding interpretation, preserve its role as a factual projection over existing truth.
+
+The next major vision layer is **Investigation Memory / History**: enable NetRecon to compare investigation knowledge over time while preserving endpoint identity, evidence provenance, and the distinction between observed change and analyst interpretation.
