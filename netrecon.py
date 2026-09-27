@@ -91,6 +91,13 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show the factual adaptive next-step decision during --investigate-collect without changing execution",
     )
+    parser.add_argument(
+        "--approve-requirement",
+        action="append",
+        default=[],
+        metavar="REQUIREMENT_ID",
+        help="Explicitly approve a finding-derived collection requirement during --investigate-collect; repeat for multiple approvals",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--discover",
@@ -179,6 +186,10 @@ def main() -> int:
         parser.error("--investigation-history requires --investigate-collect")
     if args.adaptive_plan and args.investigate_collect is None:
         parser.error("--adaptive-plan requires --investigate-collect")
+    if args.approve_requirement and args.investigate_collect is None:
+        parser.error("--approve-requirement requires --investigate-collect")
+
+    approved_requirement_ids = frozenset(args.approve_requirement)
 
     if args.investigate_collect is not None:
         if args.scan is not None or args.compare_scan is not None:
@@ -201,6 +212,7 @@ def main() -> int:
         continuation = execute_approved_evidence_actions(
             snapshot,
             timeout=args.evidence_timeout,
+            explicitly_approved_requirement_ids=approved_requirement_ids,
         )
         updated = continuation.snapshot
         decision = assess_investigation_continuation(
@@ -215,6 +227,7 @@ def main() -> int:
                 updated,
                 adaptive_actions,
                 timeout=args.evidence_timeout,
+                explicitly_approved_requirement_ids=approved_requirement_ids,
             )
             decision = assess_investigation_continuation(
                 updated,
