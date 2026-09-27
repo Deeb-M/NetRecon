@@ -2403,7 +2403,11 @@ class DynamicContinuationEmergenceTests(unittest.TestCase):
         self.assertEqual(decision.status, "progressed")
         self.assertEqual(
             tuple(action.script_ids for action in decision.next_actions),
-            (("smb-enum-shares",),),
+            (("smb-protocols",), ("smb-enum-shares",)),
+        )
+        self.assertIn(
+            ("smb-enum-shares",),
+            tuple(action.script_ids for action in decision.next_actions),
         )
 
 
