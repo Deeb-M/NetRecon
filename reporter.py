@@ -22,6 +22,7 @@ from scan_diff import ExposureChange
 from scan_orchestration import DiscoveryPlan, DiscoveryResult
 from investigation_orchestration import InvestigationSnapshot
 from investigation_synthesis import InvestigationSynthesis
+from investigation_memory import InvestigationMemory
 
 
 def _format_history_time(timestamp: int) -> str:
@@ -93,6 +94,63 @@ def render_analyst_attention_correlations_json(
             "report_type": "analyst_attention_correlations",
             "summary": {"groups": len(correlations)},
             "groups": [asdict(correlation) for correlation in correlations],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
+
+def render_investigation_memory(memory: InvestigationMemory) -> str:
+    """Render factual changes between two investigation syntheses."""
+    lines = [
+        "Investigation Memory",
+        "--------------------",
+        f"Status: {memory.previous_status} -> {memory.current_status}",
+        f"Status Changed: {'yes' if memory.status_changed else 'no'}",
+        f"Reason: {memory.previous_reason} -> {memory.current_reason}",
+        f"Reason Changed: {'yes' if memory.reason_changed else 'no'}",
+        f"Attention Item Change: {memory.attention_item_change:+d}",
+        f"Correlated Review Group Change: {memory.correlated_review_group_change:+d}",
+        f"Added Requirements: {len(memory.added_requirements)}",
+    ]
+    for state in memory.added_requirements:
+        lines.append(
+            f"Added: {state.host}:{state.port}/{state.protocol}  "
+            f"{state.requirement.requirement_id} — {state.requirement.purpose}"
+        )
+    lines.append(f"Resolved Requirements: {len(memory.resolved_requirements)}")
+    for state in memory.resolved_requirements:
+        lines.append(
+            f"Resolved: {state.host}:{state.port}/{state.protocol}  "
+            f"{state.requirement.requirement_id} — {state.requirement.purpose}"
+        )
+    return "\n".join(lines)
+
+
+def render_investigation_memory_json(memory: InvestigationMemory) -> str:
+    """Render factual investigation-memory changes as a stable JSON envelope."""
+    return json.dumps(
+        {
+            "report_type": "investigation_memory",
+            "status": {
+                "previous": memory.previous_status,
+                "current": memory.current_status,
+                "changed": memory.status_changed,
+            },
+            "reason": {
+                "previous": memory.previous_reason,
+                "current": memory.current_reason,
+                "changed": memory.reason_changed,
+            },
+            "summary": {
+                "attention_item_change": memory.attention_item_change,
+                "correlated_review_group_change": memory.correlated_review_group_change,
+                "added_requirements": len(memory.added_requirements),
+                "resolved_requirements": len(memory.resolved_requirements),
+            },
+            "added_requirements": [asdict(state) for state in memory.added_requirements],
+            "resolved_requirements": [asdict(state) for state in memory.resolved_requirements],
         },
         indent=2,
         ensure_ascii=False,
