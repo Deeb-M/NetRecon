@@ -802,6 +802,30 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
     )
 
 
+
+def render_investigation_continuation(result) -> str:
+    """Render evidence collection provenance followed by the updated investigation."""
+    lines = [
+        "Investigation Continuation",
+        "--------------------------",
+        "Evidence Collection Outcomes",
+    ]
+    if not result.outcomes:
+        lines.append("None")
+
+    for outcome in result.outcomes:
+        collection = outcome.result
+        lines.append(f"Command: {' '.join(collection.command.arguments)}")
+        lines.append(f"Status: {'success' if outcome.scan is not None else 'failed'}")
+        lines.append(f"Return Code: {collection.returncode}")
+        if outcome.failure_message is not None:
+            lines.append(f"Failure: {outcome.failure_message}")
+
+    lines.append("")
+    lines.append(render_investigation_snapshot(result.snapshot))
+    return "\n".join(lines)
+
+
 def render_investigation_snapshot(snapshot: InvestigationSnapshot) -> str:
     """Render the current evidence-aware investigation state for analyst review."""
     lines = [
