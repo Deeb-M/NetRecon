@@ -19,7 +19,7 @@ from evidence_gaps import summarize_evidence_gaps
 from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
-from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_attention, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions
+from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_attention, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions, execute_selected_evidence_actions
 from investigation_synthesis import build_investigation_synthesis
 from investigation_memory import compare_investigation_syntheses
 from investigation_history import (
@@ -210,6 +210,20 @@ def main() -> int:
         )
         adaptive_plan = build_adaptive_investigation_plan(decision)
         adaptive_actions = select_adaptive_actions(adaptive_plan)
+        if adaptive_plan.decision == "continue" and adaptive_actions:
+            continued = execute_selected_evidence_actions(
+                updated,
+                adaptive_actions,
+                timeout=args.evidence_timeout,
+            )
+            decision = assess_investigation_continuation(
+                updated,
+                continued.snapshot,
+                attempted_actions=snapshot.actions + adaptive_actions,
+            )
+            updated = continued.snapshot
+            adaptive_plan = build_adaptive_investigation_plan(decision)
+            adaptive_actions = select_adaptive_actions(adaptive_plan)
         alternative_round = None
         final_decision = None
         if adaptive_plan.decision == "alternative" and adaptive_actions:
