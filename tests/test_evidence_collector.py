@@ -83,6 +83,28 @@ class EvidenceCollectorTests(unittest.TestCase):
             ),
         )
 
+    def test_groups_protocol_variants_into_one_collection_unit(self) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.25",
+            requests=(
+                EvidenceRequest(161, " UDP ", "snmp-info"),
+                EvidenceRequest(161, "udp", "snmp-interfaces"),
+            ),
+        )
+
+        self.assertEqual(
+            build_collection_specs(plan),
+            (
+                CollectionSpec(
+                    "192.0.2.25",
+                    161,
+                    "udp",
+                    ("snmp-info", "snmp-interfaces"),
+                ),
+            ),
+        )
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
