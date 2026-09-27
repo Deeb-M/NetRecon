@@ -55,3 +55,24 @@ def parse_investigation_history_record_json(payload: str) -> InvestigationHistor
         target=data["target"],
         synthesis=synthesis,
     )
+
+
+def append_investigation_history_record(
+    path: str,
+    record: InvestigationHistoryRecord,
+) -> None:
+    """Append one complete investigation record to a JSONL history file."""
+    with open(path, "a", encoding="utf-8") as history_file:
+        history_file.write(render_investigation_history_record_json(record))
+        history_file.write("\n")
+
+
+def load_investigation_history(path: str) -> tuple[InvestigationHistoryRecord, ...]:
+    """Load complete non-empty JSONL investigation records in stored order."""
+    records: list[InvestigationHistoryRecord] = []
+    with open(path, "r", encoding="utf-8") as history_file:
+        for line in history_file:
+            payload = line.strip()
+            if payload:
+                records.append(parse_investigation_history_record_json(payload))
+    return tuple(records)
