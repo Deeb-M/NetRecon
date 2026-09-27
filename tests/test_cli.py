@@ -38,7 +38,7 @@ class CliTests(unittest.TestCase):
             for option in action.option_strings
         }
         self.assertTrue(
-            {"--analyze", "--diff", "--analysis-diff", "--combined-diff", "--collect-evidence", "--history", "--finding-history"}
+            {"--analyze", "--diff", "--analysis-diff", "--combined-diff", "--collect-evidence", "--history", "--finding-history", "--evidence-gaps"}
             <= option_strings
         )
         self.assertTrue(
@@ -757,6 +757,59 @@ class CliTests(unittest.TestCase):
             output.getvalue().strip().splitlines(),
             ["Scan report", "", "Host summary report", "", "Findings report"],
         )
+
+
+    def test_accepts_evidence_gaps_mode(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["scan.xml", "--evidence-gaps"])
+
+        self.assertTrue(args.evidence_gaps)
+
+    @patch("netrecon.render_evidence_gaps", return_value="Evidence gaps report")
+    @patch("netrecon.summarize_evidence_gaps", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_evidence_gaps_renders_text(
+        self, parse_mock, summarize_mock, render_mock
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scan = Scan(source="scan.xml")
+        parse_mock.return_value = scan
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "--evidence-gaps"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        summarize_mock.assert_called_once_with(scan)
+        render_mock.assert_called_once_with(())
+        self.assertEqual(output.getvalue().strip(), "Evidence gaps report")
+
+    @patch("netrecon.render_evidence_gaps_json", return_value='{"report_type":"evidence_gaps"}')
+    @patch("netrecon.summarize_evidence_gaps", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_evidence_gaps_honors_json_format(
+        self, parse_mock, summarize_mock, render_json_mock
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scan = Scan(source="scan.xml")
+        parse_mock.return_value = scan
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--evidence-gaps", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        summarize_mock.assert_called_once_with(scan)
+        render_json_mock.assert_called_once_with(())
+        self.assertEqual(output.getvalue().strip(), '{"report_type":"evidence_gaps"}')
 
 
 if __name__ == "__main__":
