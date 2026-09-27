@@ -86,14 +86,15 @@ class InvestigationContinuationResult:
     snapshot: InvestigationSnapshot
 
 
-def execute_approved_evidence_actions(
+def execute_selected_evidence_actions(
     snapshot: InvestigationSnapshot,
+    actions: tuple[EvidenceAction, ...],
     *,
     timeout: float | None = None,
 ) -> InvestigationContinuationResult:
-    """Execute exactly the proposed action argv and re-evaluate the investigation."""
+    """Execute exactly the supplied bounded actions and re-evaluate once."""
     if not snapshot.ready or snapshot.scan is None:
-        raise ValueError("Approved evidence execution requires a ready investigation")
+        raise ValueError("Selected evidence execution requires a ready investigation")
 
     outcomes = tuple(
         parse_collection_outcome(
@@ -102,12 +103,27 @@ def execute_approved_evidence_actions(
                 timeout=timeout,
             )
         )
-        for action in snapshot.actions
+        for action in actions
     )
 
     return InvestigationContinuationResult(
         outcomes=outcomes,
         snapshot=re_evaluate_investigation(snapshot.scan, outcomes),
+    )
+
+
+def execute_approved_evidence_actions(
+    snapshot: InvestigationSnapshot,
+    *,
+    timeout: float | None = None,
+) -> InvestigationContinuationResult:
+    """Execute exactly the planner-approved actions and re-evaluate once."""
+    if not snapshot.ready or snapshot.scan is None:
+        raise ValueError("Approved evidence execution requires a ready investigation")
+    return execute_selected_evidence_actions(
+        snapshot,
+        snapshot.actions,
+        timeout=timeout,
     )
 
 

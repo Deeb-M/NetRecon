@@ -636,6 +636,43 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             error=None,
         )
 
+    @patch("investigation_orchestration.execute_nmap_command")
+    def test_selected_evidence_actions_execute_only_supplied_actions_once(self, execute_mock) -> None:
+        from evidence_collector import CollectionResult, NmapCommand
+        from investigation_orchestration import execute_selected_evidence_actions
+        from models import Scan
+
+        selected = EvidenceAction(
+            host="192.0.2.70",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-headers",),
+            purposes=("purpose",),
+            command=("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.70"),
+        )
+        ignored = EvidenceAction(
+            host="192.0.2.70",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-title",),
+            purposes=("purpose",),
+            command=("nmap", "-p", "5357", "--script", "http-title"),
+        )
+        scan = Scan(source="discovery.xml")
+        snapshot = InvestigationSnapshot(True, scan, (), (ignored,), (), None)
+        execute_mock.return_value = CollectionResult(
+            NmapCommand(selected.command),
+            0,
+            "<nmaprun></nmaprun>",
+            "",
+        )
+
+        result = execute_selected_evidence_actions(snapshot, (selected,), timeout=7)
+
+        execute_mock.assert_called_once_with(NmapCommand(arguments=selected.command), timeout=7)
+        self.assertEqual(len(result.outcomes), 1)
+        self.assertTrue(result.snapshot.ready)
+
     def test_continuation_is_complete_when_no_gaps_remain(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 
