@@ -2352,5 +2352,84 @@ class CliTests(unittest.TestCase):
         execute_alternative_mock.assert_not_called()
 
 
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_passes_explicit_requirement_approval(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        render_mock,
+    ) -> None:
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+        from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
+        scan = Scan(source="discovery.xml")
+        discovery = DiscoveryResult(execution, True, scan, None)
+        initial = InvestigationSnapshot(True, scan, (), (), (), None)
+        updated = InvestigationSnapshot(True, scan, (), (), (), None)
+        continuation = InvestigationContinuationResult((), updated)
+        decision = InvestigationContinuationDecision("complete", (), (), ())
+        build_plan_mock.return_value = plan
+        execute_discovery_mock.return_value = execution
+        interpret_mock.return_value = discovery
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = continuation
+        decision_mock.return_value = decision
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            [
+                "netrecon",
+                "--investigate-collect",
+                "192.0.2.10",
+                "--approve-requirement",
+                "smb_access_control_context",
+            ],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        execute_evidence_mock.assert_called_once_with(
+            initial,
+            timeout=60.0,
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )
+
+    def test_approve_requirement_requires_investigate_collect(self) -> None:
+        from netrecon import main
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "--approve-requirement", "smb_access_control_context"],
+        ):
+            with self.assertRaises(SystemExit) as raised:
+                main()
+
+        self.assertEqual(raised.exception.code, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
