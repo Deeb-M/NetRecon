@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import math
 import argparse
+import time
 from importlib.metadata import version
 from pathlib import Path
 
@@ -19,6 +20,13 @@ from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
 from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_attention, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions
 from investigation_synthesis import build_investigation_synthesis
+from investigation_memory import compare_investigation_syntheses
+from investigation_history import (
+    InvestigationHistoryRecord,
+    append_investigation_history_record,
+    latest_investigation_for_target,
+    load_investigation_history,
+)
 from parser import NmapParseError, parse_nmap_xml
 from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json, render_investigation_synthesis, render_investigation_synthesis_json
 from scan_diff import compare_scans
@@ -206,6 +214,31 @@ def main() -> int:
             if final_decision is not None
             else None
         )
+        investigation_memory = None
+        if synthesis is not None and args.investigation_history is not None:
+            history_path = args.investigation_history
+            records = (
+                load_investigation_history(str(history_path))
+                if history_path.exists()
+                else ()
+            )
+            previous = latest_investigation_for_target(
+                records,
+                args.investigate_collect,
+            )
+            if previous is not None:
+                investigation_memory = compare_investigation_syntheses(
+                    previous.synthesis,
+                    synthesis,
+                )
+            append_investigation_history_record(
+                str(history_path),
+                InvestigationHistoryRecord(
+                    observed_at=int(time.time()),
+                    target=args.investigate_collect,
+                    synthesis=synthesis,
+                ),
+            )
         if args.format == "json":
             report = render_investigation_continuation_json(
                 continuation, decision, alternative_round, final_decision, attention, correlations
