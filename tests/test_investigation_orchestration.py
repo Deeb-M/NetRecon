@@ -1607,5 +1607,48 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(restored, record)
 
 
+
+    def test_investigation_history_store_appends_and_loads_in_order(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from investigation_history import (
+            InvestigationHistoryRecord,
+            append_investigation_history_record,
+            load_investigation_history,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+
+        first = InvestigationHistoryRecord(
+            observed_at=1770000000,
+            target="192.0.2.150",
+            synthesis=InvestigationSynthesis(
+                "stalled",
+                "alternative_evidence_incomplete",
+                4,
+                1,
+                (),
+            ),
+        )
+        second = InvestigationHistoryRecord(
+            observed_at=1770003600,
+            target="192.0.2.150",
+            synthesis=InvestigationSynthesis(
+                "complete",
+                "all_semantic_requirements_satisfied",
+                5,
+                1,
+                (),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "history.jsonl")
+            append_investigation_history_record(path, first)
+            append_investigation_history_record(path, second)
+
+            self.assertEqual(load_investigation_history(path), (first, second))
+
+
 if __name__ == "__main__":
     unittest.main()
