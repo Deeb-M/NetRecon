@@ -557,5 +557,70 @@ class InvestigationContinuationContractTests(unittest.TestCase):
         )
 
 
+    @patch("investigation_orchestration.execute_nmap_command")
+    def test_approved_execution_rejects_blocked_snapshot_without_running_nmap(
+        self, execute_mock
+    ) -> None:
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            execute_approved_evidence_actions,
+        )
+
+        snapshot = InvestigationSnapshot(
+            ready=False,
+            scan=None,
+            gaps=(),
+            actions=(),
+            states=(),
+            error="discovery failed",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Approved evidence execution requires a ready investigation",
+        ):
+            execute_approved_evidence_actions(snapshot)
+
+        execute_mock.assert_not_called()
+
+    @patch("investigation_orchestration.execute_nmap_command")
+    def test_approved_execution_with_no_actions_runs_nothing_and_re_evaluates(
+        self, execute_mock
+    ) -> None:
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            execute_approved_evidence_actions,
+        )
+        from models import Host, Port, Scan
+
+        scan = Scan(
+            source="discovery.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.110",
+                    status="up",
+                    ports=(Port(5432, "tcp", "open", "postgresql"),),
+                ),
+            ),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=scan,
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+        )
+
+        result = execute_approved_evidence_actions(snapshot)
+
+        execute_mock.assert_not_called()
+        self.assertEqual(result.outcomes, ())
+        self.assertTrue(result.snapshot.ready)
+        self.assertEqual(result.snapshot.gaps, ())
+        self.assertEqual(result.snapshot.actions, ())
+        self.assertEqual(len(result.snapshot.states), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
