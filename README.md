@@ -42,6 +42,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Summarize scan-to-scan changes by type before listing individual changes
 - Produce machine-readable JSON for Exposure Changes and Analysis Changes, including change summaries
 - Combine both comparison views in one analyst workflow with `--combined-diff` while keeping exposure and finding changes explicitly separate
+- Summarize open-endpoint history across multiple timestamped scans with first/last observation times, open-observation counts, and evidence-aware observation opportunities via `--history`
 - Run automated tests with GitHub Actions
 
 ## Installation
@@ -133,6 +134,20 @@ Return the combined workflow as JSON with separate `exposure` and `analysis` obj
 netrecon before.xml after.xml --combined-diff --format json
 ```
 
+Summarize repeated open-endpoint observations across two or more timestamped Nmap XML scans:
+
+```bash
+netrecon --history scan1.xml scan2.xml scan3.xml
+```
+
+Return the same history as machine-readable JSON:
+
+```bash
+netrecon --history scan1.xml scan2.xml scan3.xml --format json
+```
+
+History is deliberately observational. `observations` counts scans where an endpoint was actually observed open; `opportunities` counts scans where that host was observed up and the port/protocol was in Nmap's scan scope. NetRecon does not turn this into an uptime percentage or assume continuous exposure between scans.
+
 Try the included safe sample:
 
 ```bash
@@ -176,6 +191,7 @@ python -m unittest discover -s tests -v
 - `analysis_summary.py` — finding counts and severity distribution
 - `scan_diff.py` — evidence-aware open-port exposure comparison
 - `analysis_diff.py` — evidence-aware finding comparison across scans
+- `exposure_history.py` — descriptive open-endpoint history across timestamped scans
 - `reporter.py` — text and JSON rendering
 - `tests/` — automated tests
 - `examples/` — safe example input
