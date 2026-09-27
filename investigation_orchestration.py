@@ -264,11 +264,12 @@ def assess_final_investigation_decision(
 
     if not remaining_requirements:
         return FinalInvestigationDecision(
-            "complete",
-            "all_semantic_requirements_satisfied",
-            remaining,
-            (),
-            satisfied_requirements_tuple,
+            status="complete",
+            reason="all_semantic_requirements_satisfied",
+            remaining_gaps=remaining,
+            further_actions=(),
+            remaining_requirements=(),
+            satisfied_requirements=satisfied_requirements_tuple,
         )
 
     if "collection_failed" in statuses:

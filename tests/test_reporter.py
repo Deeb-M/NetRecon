@@ -1286,6 +1286,7 @@ class ReporterTests(unittest.TestCase):
                 "reason": "alternative_collection_failed",
                 "remaining_gaps": 1,
                 "further_supported_actions": 0,
+                "satisfied_requirements": [],
                 "remaining_requirements": [],
             },
         )
