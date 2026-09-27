@@ -1650,5 +1650,44 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             self.assertEqual(load_investigation_history(path), (first, second))
 
 
+
+    def test_latest_investigation_for_target_uses_target_and_timestamp(self) -> None:
+        from investigation_history import (
+            InvestigationHistoryRecord,
+            latest_investigation_for_target,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+
+        def record(observed_at: int, target: str) -> InvestigationHistoryRecord:
+            return InvestigationHistoryRecord(
+                observed_at=observed_at,
+                target=target,
+                synthesis=InvestigationSynthesis(
+                    "stalled",
+                    "no_supported_actions",
+                    0,
+                    0,
+                    (),
+                ),
+            )
+
+        older_a = record(100, "192.0.2.160")
+        other_target = record(300, "192.0.2.161")
+        newer_a = record(200, "192.0.2.160")
+
+        selected = latest_investigation_for_target(
+            (newer_a, other_target, older_a),
+            " 192.0.2.160 ",
+        )
+
+        self.assertEqual(selected, newer_a)
+        self.assertIsNone(
+            latest_investigation_for_target(
+                (newer_a, other_target, older_a),
+                "192.0.2.162",
+            )
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
