@@ -757,6 +757,101 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(verification.status, "collection_failed")
         self.assertEqual(verification.observed_script_ids, ())
 
+    @patch("investigation_orchestration.execute_selected_evidence_actions")
+    def test_alternative_round_verifies_each_selected_action_once(self, execute_selected_mock) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import (
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+            execute_alternative_evidence_round,
+        )
+        from models import Host, Port, Scan, ScriptResult
+
+        action = EvidenceAction(
+            "192.0.2.90", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",)
+        )
+        scan = Scan(
+            source="alternative.xml",
+            hosts=(
+                Host(
+                    "192.0.2.90",
+                    "up",
+                    ports=(
+                        Port(
+                            5357,
+                            "tcp",
+                            "open",
+                            "http",
+                            scripts=(ScriptResult("http-headers", "Server: example"),),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        outcome = ParsedCollectionResult(
+            CollectionResult(NmapCommand(("nmap",)), 0, "<xml/>", ""),
+            scan,
+        )
+        updated = InvestigationSnapshot(True, scan, (), (), (), None)
+        execute_selected_mock.return_value = InvestigationContinuationResult((outcome,), updated)
+
+        result = execute_alternative_evidence_round(
+            InvestigationSnapshot(True, Scan("discovery.xml"), (), (), (), None),
+            (action,),
+            timeout=9,
+        )
+
+        execute_selected_mock.assert_called_once()
+        self.assertEqual(result.snapshot, updated)
+        self.assertEqual(len(result.outcomes), 1)
+        self.assertEqual(len(result.verifications), 1)
+        self.assertEqual(result.verifications[0].status, "observed")
+
+    @patch("investigation_orchestration.execute_selected_evidence_actions")
+    def test_alternative_round_preserves_incomplete_verification(self, execute_selected_mock) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import (
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+            execute_alternative_evidence_round,
+        )
+        from models import Host, Port, Scan, ScriptResult
+
+        action = EvidenceAction(
+            "192.0.2.91", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",)
+        )
+        scan = Scan(
+            source="alternative.xml",
+            hosts=(
+                Host(
+                    "192.0.2.91",
+                    "up",
+                    ports=(
+                        Port(
+                            5357,
+                            "tcp",
+                            "open",
+                            "http",
+                            scripts=(ScriptResult("http-headers", ""),),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        outcome = ParsedCollectionResult(
+            CollectionResult(NmapCommand(("nmap",)), 0, "<xml/>", ""),
+            scan,
+        )
+        updated = InvestigationSnapshot(True, scan, (), (), (), None)
+        execute_selected_mock.return_value = InvestigationContinuationResult((outcome,), updated)
+
+        result = execute_alternative_evidence_round(
+            InvestigationSnapshot(True, Scan("discovery.xml"), (), (), (), None),
+            (action,),
+        )
+
+        self.assertEqual(result.verifications[0].status, "incomplete")
+
     def test_continuation_is_complete_when_no_gaps_remain(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 

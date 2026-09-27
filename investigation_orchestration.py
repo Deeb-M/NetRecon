@@ -162,6 +162,39 @@ def verify_alternative_evidence(
     status = "observed" if requested and requested.issubset(observed) else "incomplete"
     return AlternativeEvidenceVerification(status, action, tuple(observed))
 
+
+
+@dataclass(frozen=True)
+class AlternativeEvidenceRoundResult:
+    """One bounded alternative collection round with explicit verification."""
+
+    outcomes: tuple[ParsedCollectionResult, ...]
+    verifications: tuple[AlternativeEvidenceVerification, ...]
+    snapshot: InvestigationSnapshot
+
+
+def execute_alternative_evidence_round(
+    snapshot: InvestigationSnapshot,
+    actions: tuple[EvidenceAction, ...],
+    *,
+    timeout: float | None = None,
+) -> AlternativeEvidenceRoundResult:
+    """Execute selected alternatives once, verify them, and re-evaluate once."""
+    continuation = execute_selected_evidence_actions(
+        snapshot,
+        actions,
+        timeout=timeout,
+    )
+    verifications = tuple(
+        verify_alternative_evidence(action, outcome)
+        for action, outcome in zip(actions, continuation.outcomes, strict=True)
+    )
+    return AlternativeEvidenceRoundResult(
+        outcomes=continuation.outcomes,
+        verifications=verifications,
+        snapshot=continuation.snapshot,
+    )
+
 @dataclass(frozen=True)
 class InvestigationContinuationDecision:
     """Describe whether a re-evaluated investigation can safely continue."""
