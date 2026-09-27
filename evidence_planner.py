@@ -43,6 +43,10 @@ class HostEvidencePlan:
 def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
     """Return detailed NSE evidence requests for discovered open services."""
     requests: list[EvidenceRequest] = []
+    host_scripts = {
+        script.script_id.strip().lower()
+        for script in host.scripts
+    }
 
     for port in host.ports:
         if port.state.strip().lower() != "open":
@@ -70,7 +74,7 @@ def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
                 script_id=script_id,
             )
             for script_id in requested
-            if script_id not in existing_scripts
+            if script_id not in existing_scripts and script_id not in host_scripts
         )
 
     return tuple(requests)
