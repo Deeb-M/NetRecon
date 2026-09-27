@@ -868,6 +868,16 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
         for action in decision.alternative_actions:
             lines.append("Alternative: " + " ".join(action.command))
 
+    if decision is not None and final_decision is not None:
+        lines.append("")
+        lines.append("Semantic Requirement Progress")
+        lines.append("-----------------------------")
+        lines.append(f"Resolved by Primary: {len(decision.resolved_requirements)}")
+        lines.append(
+            f"Satisfied by Alternative: {len(final_decision.satisfied_requirements)}"
+        )
+        lines.append(f"Remaining: {len(final_decision.remaining_requirements)}")
+
     if alternative_round is not None:
         lines.append("")
         lines.append("Alternative Evidence Round")
@@ -992,6 +1002,12 @@ def render_investigation_continuation_json(result, decision=None, alternative_ro
                 }
                 for state in final_decision.remaining_requirements
             ],
+        }
+    if decision is not None and final_decision is not None:
+        payload["semantic_requirement_progress"] = {
+            "resolved_by_primary": len(decision.resolved_requirements),
+            "satisfied_by_alternative": len(final_decision.satisfied_requirements),
+            "remaining": len(final_decision.remaining_requirements),
         }
     if decision is not None:
         payload["continuation_decision"] = {
