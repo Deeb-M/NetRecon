@@ -333,6 +333,59 @@ class CliTests(unittest.TestCase):
         render_mock.assert_called_once_with(result)
         self.assertEqual(output.getvalue().strip(), "Partial evidence report")
 
+    @patch("netrecon.render_evidence_collections_json")
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_json_preserves_reportable_partial_result(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+        render_json_mock,
+    ) -> None:
+        from evidence_collector import CollectionResult, CorrelatedEvidenceResult, NmapCommand, ParsedCollectionResult
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        host = Host(address="192.0.2.146", status="up")
+        timed_out = ParsedCollectionResult(
+            result=CollectionResult(
+                NmapCommand(("nmap",)),
+                124,
+                "",
+                "Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(timed_out,),
+            host=host,
+            findings=(),
+        )
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(host,))
+        plan_mock.return_value = HostEvidencePlan(target=host.address, requests=())
+        collect_mock.return_value = result
+        render_json_mock.return_value = (
+            '[{"host":"192.0.2.146","status":"partial",'
+            '"failures":["Nmap evidence collection timed out"],"findings":[]}]'
+        )
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--collect-evidence", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        render_json_mock.assert_called_once_with((result,))
+        self.assertEqual(
+            json.loads(output.getvalue())[0]["status"],
+            "partial",
+        )
+
     @patch("netrecon.collect_correlated_host_evidence")
     @patch("netrecon.plan_host_evidence")
     @patch("netrecon.parse_nmap_xml")
