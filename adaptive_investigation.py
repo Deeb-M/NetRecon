@@ -40,3 +40,10 @@ def build_adaptive_investigation_plan(
 
     reason = continuation.stall_reason or "no_supported_next_step"
     return AdaptiveInvestigationPlan("stop", reason)
+
+
+def select_adaptive_actions(plan: AdaptiveInvestigationPlan) -> tuple[EvidenceAction, ...]:
+    """Return only actions explicitly authorized by a non-terminal adaptive plan."""
+    if plan.decision in {"continue", "alternative"}:
+        return plan.actions
+    return ()
