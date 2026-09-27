@@ -410,7 +410,9 @@ def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]
     for request in plan.requests:
         protocol = request.protocol.strip().lower()
         key = (request.port, protocol)
-        grouped.setdefault(key, []).append(request.script_id)
+        script_ids = grouped.setdefault(key, [])
+        if request.script_id not in script_ids:
+            script_ids.append(request.script_id)
 
     return tuple(
         CollectionSpec(
