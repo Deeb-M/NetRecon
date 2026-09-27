@@ -286,5 +286,57 @@ class InvestigationStateContractTests(unittest.TestCase):
         self.assertEqual(after_state.known, before_state.known)
 
 
+    def test_failed_collection_does_not_reduce_unknowns(self) -> None:
+        from evidence_collector import (
+            CollectionResult,
+            NmapCommand,
+            ParsedCollectionResult,
+            merge_collection_outcomes_into_host,
+        )
+        from investigation_state import summarize_investigation_state
+        from models import Host, Port, Scan
+
+        discovered = Host(
+            address="192.0.2.70",
+            status="up",
+            ports=(Port(445, "tcp", "open", "microsoft-ds"),),
+        )
+        failed = ParsedCollectionResult(
+            result=CollectionResult(
+                command=NmapCommand(
+                    arguments=(
+                        "nmap",
+                        "-p",
+                        "445",
+                        "--script",
+                        "smb-protocols,smb2-security-mode",
+                        "-oX",
+                        "-",
+                        "192.0.2.70",
+                    )
+                ),
+                returncode=124,
+                stdout="",
+                stderr="Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+
+        merged = merge_collection_outcomes_into_host(discovered, (failed,))
+        state = summarize_investigation_state(
+            Scan(source="after-timeout", hosts=(merged,))
+        )[0]
+
+        self.assertEqual(
+            tuple(gap.script_id for gap in state.unknown),
+            ("smb-protocols", "smb2-security-mode"),
+        )
+        self.assertEqual(
+            state.known,
+            ("state=open", "service=microsoft-ds"),
+        )
+        self.assertEqual(failed.failure_message, "Nmap evidence collection timed out")
+
+
 if __name__ == "__main__":
     unittest.main()
