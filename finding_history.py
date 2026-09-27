@@ -31,6 +31,14 @@ def _scan_timestamp(scan: Scan) -> int:
 
 def _finding_evidence_opportunity(scan: Scan, finding: Finding) -> bool:
     """Return whether this scan contains the finding's required evidence source."""
+    finding_host = _host_identity(finding.host)
+    host = next(
+        (host for host in scan.hosts if _host_identity(host.address) == finding_host),
+        None,
+    )
+    if host is None or host.status.strip().lower() != "up":
+        return False
+
     if _evidence_source_observed(scan, finding):
         return True
 
@@ -40,14 +48,6 @@ def _finding_evidence_opportunity(scan: Scan, finding: Finding) -> bool:
 
     script_id = source.removeprefix("nse:").strip().lower()
     if not script_id:
-        return False
-
-    finding_host = _host_identity(finding.host)
-    host = next(
-        (host for host in scan.hosts if _host_identity(host.address) == finding_host),
-        None,
-    )
-    if host is None or host.status.strip().lower() != "up":
         return False
 
     return any(
