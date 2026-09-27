@@ -31,7 +31,7 @@ def _scan_timestamp(scan: Scan) -> int:
 
 def _finding_evidence_opportunity(scan: Scan, finding: Finding) -> bool:
     """Return whether this scan contains the finding's required evidence source."""
-    if _finding_evidence_opportunity(scan, finding):
+    if _evidence_source_observed(scan, finding):
         return True
 
     source = finding.evidence_source.strip().lower() if finding.evidence_source is not None else None
@@ -80,7 +80,7 @@ def summarize_finding_history(
     opportunities = {key: 0 for key in observed}
     for scan in scans:
         for key, finding in examples.items():
-            if key in opportunities and _evidence_source_observed(scan, finding):
+            if key in opportunities and _finding_evidence_opportunity(scan, finding):
                 opportunities[key] += 1
 
     return tuple(
