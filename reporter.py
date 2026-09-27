@@ -873,7 +873,7 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
 
 
 
-def render_investigation_continuation(result, decision=None, alternative_round=None, final_decision=None, attention=None) -> str:
+def render_investigation_continuation(result, decision=None, alternative_round=None, final_decision=None, attention=None, correlations=None) -> str:
     """Render collection execution separately from requested-evidence completeness."""
     lines = [
         "Investigation Continuation",
@@ -988,6 +988,9 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
     if attention is not None:
         lines.append("")
         lines.append(render_analyst_attention(attention))
+    if correlations is not None:
+        lines.append("")
+        lines.append(render_analyst_attention_correlations(correlations))
     return "\n".join(lines)
 
 
@@ -1027,7 +1030,7 @@ def _investigation_continuation_outcomes(result):
     return rendered
 
 
-def render_investigation_continuation_json(result, decision=None, alternative_round=None, final_decision=None, attention=None) -> str:
+def render_investigation_continuation_json(result, decision=None, alternative_round=None, final_decision=None, attention=None, correlations=None) -> str:
     """Render continuation provenance and updated investigation as JSON."""
     final_snapshot = alternative_round.snapshot if alternative_round is not None else result.snapshot
     updated = json.loads(render_investigation_snapshot_json(final_snapshot))
@@ -1084,6 +1087,10 @@ def render_investigation_continuation_json(result, decision=None, alternative_ro
         }
     if attention is not None:
         payload["analyst_attention"] = json.loads(render_analyst_attention_json(attention))
+    if correlations is not None:
+        payload["correlated_review"] = json.loads(
+            render_analyst_attention_correlations_json(correlations)
+        )
     if decision is not None:
         payload["continuation_decision"] = {
             "status": decision.status,
