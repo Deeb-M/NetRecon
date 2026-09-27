@@ -1604,6 +1604,7 @@ class CliTests(unittest.TestCase):
         attention_mock,
         render_mock,
     ) -> None:
+        from evidence_action_plan import EvidenceAction
         from investigation_orchestration import (
             AlternativeEvidenceRoundResult,
             FinalInvestigationDecision,
