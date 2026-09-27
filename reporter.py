@@ -803,7 +803,7 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
 
 
 
-def render_investigation_continuation(result, decision=None) -> str:
+def render_investigation_continuation(result, decision=None, alternative_round=None) -> str:
     """Render collection execution separately from requested-evidence completeness."""
     lines = [
         "Investigation Continuation",
@@ -861,8 +861,20 @@ def render_investigation_continuation(result, decision=None) -> str:
         for action in decision.alternative_actions:
             lines.append("Alternative: " + " ".join(action.command))
 
+    if alternative_round is not None:
+        lines.append("")
+        lines.append("Alternative Evidence Round")
+        lines.append("--------------------------")
+        for verification in alternative_round.verifications:
+            lines.append("Command: " + " ".join(verification.action.command))
+            lines.append(f"Verification: {verification.status}")
+            if verification.observed_script_ids:
+                lines.append("Observed Evidence: " + ", ".join(verification.observed_script_ids))
+
     lines.append("")
-    lines.append(render_investigation_snapshot(result.snapshot))
+    lines.append(render_investigation_snapshot(
+        alternative_round.snapshot if alternative_round is not None else result.snapshot
+    ))
     return "\n".join(lines)
 
 
@@ -902,14 +914,24 @@ def _investigation_continuation_outcomes(result):
     return rendered
 
 
-def render_investigation_continuation_json(result, decision=None) -> str:
+def render_investigation_continuation_json(result, decision=None, alternative_round=None) -> str:
     """Render continuation provenance and updated investigation as JSON."""
-    updated = json.loads(render_investigation_snapshot_json(result.snapshot))
+    final_snapshot = alternative_round.snapshot if alternative_round is not None else result.snapshot
+    updated = json.loads(render_investigation_snapshot_json(final_snapshot))
     payload = {
         "report_type": "investigation_continuation",
         "collection_outcomes": _investigation_continuation_outcomes(result),
         "updated_investigation": updated,
     }
+    if alternative_round is not None:
+        payload["alternative_evidence_round"] = [
+            {
+                "status": verification.status,
+                "observed_script_ids": list(verification.observed_script_ids),
+                "command": list(verification.action.command),
+            }
+            for verification in alternative_round.verifications
+        ]
     if decision is not None:
         payload["continuation_decision"] = {
             "status": decision.status,
