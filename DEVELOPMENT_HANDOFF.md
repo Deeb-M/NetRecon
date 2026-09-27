@@ -840,3 +840,31 @@ The same field pair was validated with `--combined-diff --format json`. The JSON
 
 This closes the first real field-validation checkpoint for the Combined Analyst Diff workflow.
 
+
+
+### Stage C Exposure History field-validation checkpoint
+
+The first stateless Exposure History workflow is now field-validated through the installed CLI.
+
+Validated CLI:
+`netrecon --history <scan1.xml> <scan2.xml> [scan3.xml ...]`
+
+Real field validation used the existing multi-host scans:
+- `lab-multi.xml`
+- `lab-multi-after.xml`
+- `lab-multi-restored.xml`
+
+Observed history:
+- 5 unique open endpoint identities.
+- `192.168.227.128:80/tcp` was observed open in the first and third scans only, producing `observations=2`, with first/last observation timestamps taken from the original Nmap XML.
+- The middle scan reported that endpoint as `filtered`; History correctly did not count it as an open observation.
+- `192.168.227.140:135/tcp`, `:139/tcp`, `:445/tcp`, and `:5357/tcp` were open in all three scans and each produced `observations=3`.
+- Text output rendered the observation timestamps in UTC.
+- JSON preserved the same five endpoint records and kept `first_seen` / `last_seen` as integer Unix timestamps for machine consumers.
+
+Evidence-first semantic decision:
+- History reports only when an endpoint was **observed open** and how many supplied scan documents observed it.
+- A missing, filtered, unscanned, or otherwise non-open observation does not justify claims such as “closed”, “reopened”, continuous exposure, or exposure duration.
+- History therefore complements Diff rather than replacing it: Diff describes supported state changes between selected scans; History summarizes repeated open observations across multiple scans.
+
+Regression baseline before field validation: **529/529 tests passing**, GitHub CI green through commit `73ad41e`.
