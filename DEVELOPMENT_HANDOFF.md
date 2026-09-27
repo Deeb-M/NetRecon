@@ -1117,3 +1117,41 @@ Target -> Baseline Discovery -> Verified Scan -> Evidence Gaps -> Evidence Actio
 ```
 
 The orchestration remains deliberately bounded: discovery executes, while follow-up evidence collection is proposed only.
+
+
+## Investigation Orchestration POC — CLOSED
+
+JSON field parity was validated on the authorized Kali lab target `192.168.227.138`:
+
+```bash
+netrecon --investigate 192.168.227.138 --format json
+```
+
+Observed machine-readable result:
+- `report_type: investigation_snapshot`
+- `status: ready`
+- summary: 4 evidence gaps and 2 proposed actions
+- the four gaps matched the text report exactly:
+  - 445/tcp: `smb-protocols`
+  - 445/tcp: `smb2-security-mode`
+  - 5357/tcp: `http-title`
+  - 5357/tcp: `http-methods`
+- the two proposed actions matched the text report exactly.
+- each action preserved its exact Nmap command as an argv array.
+- no evidence action was executed automatically.
+
+The first Investigation Orchestration POC is therefore closed with both human-readable and machine-readable field validation.
+
+Closed workflow:
+
+```text
+Target
+  -> Baseline Discovery (executes)
+  -> Verified Scan
+  -> Evidence Gaps
+  -> Evidence Action Plan
+  -> Analyst Review (stops here)
+```
+
+Preserved architectural boundary:
+> Discovery executes; follow-up evidence actions are proposed, transparent, and remain under analyst control.
