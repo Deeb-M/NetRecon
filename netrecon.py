@@ -9,7 +9,7 @@ import time
 from importlib.metadata import version
 from pathlib import Path
 
-from adaptive_investigation import build_adaptive_investigation_plan
+from adaptive_investigation import build_adaptive_investigation_plan, select_adaptive_actions
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
 from analyst_attention import build_analyst_attention, correlate_analyst_attention
@@ -209,12 +209,13 @@ def main() -> int:
             attempted_actions=snapshot.actions,
         )
         adaptive_plan = build_adaptive_investigation_plan(decision)
+        adaptive_actions = select_adaptive_actions(adaptive_plan)
         alternative_round = None
         final_decision = None
-        if decision.alternative_actions:
+        if adaptive_plan.decision == "alternative" and adaptive_actions:
             alternative_round = execute_alternative_evidence_round(
                 updated,
-                decision.alternative_actions,
+                adaptive_actions,
                 timeout=args.evidence_timeout,
             )
             final_decision = assess_final_investigation_decision(alternative_round)
