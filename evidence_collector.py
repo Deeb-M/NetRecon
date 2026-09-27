@@ -411,6 +411,8 @@ def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]
         protocol = request.protocol.strip().lower()
         key = (request.port, protocol)
         script_id = request.script_id.strip().lower()
+        if not script_id:
+            raise ValueError("Evidence collection script IDs must not be blank")
         script_ids = grouped.setdefault(key, [])
         if script_id not in script_ids:
             script_ids.append(script_id)
