@@ -850,6 +850,57 @@ def render_investigation_continuation(result) -> str:
     lines.append(render_investigation_snapshot(result.snapshot))
     return "\n".join(lines)
 
+
+def _investigation_continuation_outcomes(result):
+    remaining = {
+        (gap.host, gap.port, gap.protocol, gap.script_id)
+        for gap in result.snapshot.gaps
+    }
+    rendered = []
+    for outcome in result.outcomes:
+        collection = outcome.result
+        arguments = collection.command.arguments
+        missing_scripts = []
+        for action in result.snapshot.actions:
+            if action.command == arguments:
+                missing_scripts.extend(
+                    script_id
+                    for script_id in action.script_ids
+                    if (action.host, action.port, action.protocol, script_id) in remaining
+                )
+        if missing_scripts:
+            requested_evidence = "incomplete"
+        elif outcome.scan is not None:
+            requested_evidence = "observed"
+        else:
+            requested_evidence = "not observed"
+        rendered.append(
+            {
+                "argv": list(arguments),
+                "collection_status": "success" if outcome.scan is not None else "failed",
+                "requested_evidence": requested_evidence,
+                "missing_evidence": missing_scripts,
+                "returncode": collection.returncode,
+                "failure": outcome.failure_message,
+            }
+        )
+    return rendered
+
+
+def render_investigation_continuation_json(result) -> str:
+    """Render continuation provenance and updated investigation as JSON."""
+    updated = json.loads(render_investigation_snapshot_json(result.snapshot))
+    return json.dumps(
+        {
+            "report_type": "investigation_continuation",
+            "collection_outcomes": _investigation_continuation_outcomes(result),
+            "updated_investigation": updated,
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
 def render_investigation_snapshot(snapshot: InvestigationSnapshot) -> str:
     """Render the current evidence-aware investigation state for analyst review."""
     lines = [
