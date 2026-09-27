@@ -1540,5 +1540,43 @@ class CliTests(unittest.TestCase):
         execute_evidence_mock.assert_not_called()
 
 
+
+    def test_attention_cli_integrates_parser_analyzer_and_reporter_without_collection(self) -> None:
+        from netrecon import main
+
+        xml = """<?xml version="1.0"?>
+<nmaprun>
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.40" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="445">
+        <state state="open"/>
+        <service name="microsoft-ds"/>
+      </port>
+    </ports>
+  </host>
+  <runstats><finished time="100"/></runstats>
+</nmaprun>
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            scan = Path(directory) / "scan.xml"
+            scan.write_text(xml, encoding="utf-8")
+            output = StringIO()
+
+            with patch("netrecon.collect_correlated_host_evidence") as collect_mock:
+                with patch("sys.argv", ["netrecon", str(scan), "--attention"]):
+                    with redirect_stdout(output):
+                        self.assertEqual(main(), 0)
+
+            collect_mock.assert_not_called()
+
+        report = output.getvalue()
+        self.assertIn("Analyst Attention", report)
+        self.assertIn("SMB service exposed", report)
+        self.assertIn("Evidence Source: service:detection", report)
+        self.assertIn("Location: 192.0.2.40:445/tcp", report)
+
+
 if __name__ == "__main__":
     unittest.main()
