@@ -10,13 +10,14 @@ from pathlib import Path
 
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
+from evidence_action_plan import build_evidence_action_plan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_gaps import summarize_evidence_gaps
 from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text
 from scan_diff import compare_scans
 
 
@@ -98,6 +99,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show planner-supported evidence that is still missing from the input scan",
     )
     mode.add_argument(
+        "--evidence-actions",
+        action="store_true",
+        help="Show transparent collection actions for planner-supported missing evidence",
+    )
+    mode.add_argument(
         "--history",
         nargs="+",
         type=Path,
@@ -172,6 +178,15 @@ def main() -> int:
             render_evidence_gaps_json(gaps)
             if args.format == "json"
             else render_evidence_gaps(gaps)
+        )
+        return 0
+
+    if args.evidence_actions:
+        actions = build_evidence_action_plan(scan)
+        print(
+            render_evidence_action_plan_json(actions)
+            if args.format == "json"
+            else render_evidence_action_plan(actions)
         )
         return 0
 
