@@ -1814,5 +1814,76 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertNotIn(attempted, selected)
 
 
+class EvidenceDerivedKnowledgeTests(unittest.TestCase):
+    def test_derives_nonempty_nse_observation_with_explicit_provenance(self) -> None:
+        from evidence_knowledge import derive_evidence_knowledge
+        from models import Host, Port, Scan, ScriptResult
+
+        scan = Scan(
+            source="collected evidence",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(
+                            port=445,
+                            protocol="TCP",
+                            state="open",
+                            service="microsoft-ds",
+                            scripts=(
+                                ScriptResult(
+                                    " SMB2-SECURITY-MODE ",
+                                    "3.1.1: Message signing enabled but not required",
+                                ),
+                                ScriptResult("empty-script", "   "),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        self.assertEqual(
+            derive_evidence_knowledge(scan),
+            (
+                EvidenceDerivedKnowledge(
+                    host="192.0.2.10",
+                    port=445,
+                    protocol="tcp",
+                    fact_type="nse_observation",
+                    value="3.1.1: Message signing enabled but not required",
+                    evidence_source="nse:smb2-security-mode",
+                ),
+            ),
+        )
+
+    def test_evidence_knowledge_does_not_promote_collected_service_metadata(self) -> None:
+        from evidence_knowledge import derive_evidence_knowledge
+        from models import Host, Port, Scan
+
+        scan = Scan(
+            source="collected evidence",
+            hosts=(
+                Host(
+                    address="192.0.2.20",
+                    status="up",
+                    ports=(
+                        Port(
+                            port=443,
+                            protocol="tcp",
+                            state="open",
+                            service="https",
+                            product="Example TLS Service",
+                            version="1.0",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        self.assertEqual(derive_evidence_knowledge(scan), ())
+
+
 if __name__ == "__main__":
     unittest.main()
