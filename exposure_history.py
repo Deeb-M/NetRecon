@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from models import Scan
-from scan_diff import _host_identity
+from scan_diff import _host_identity, _port_was_scanned
 
 
 @dataclass(frozen=True)
@@ -16,6 +16,7 @@ class ExposureHistory:
     first_seen: int
     last_seen: int
     observations: int
+    opportunities: int
 
 
 def _scan_timestamp(scan: Scan) -> int:
@@ -45,6 +46,18 @@ def summarize_exposure_history(scans: tuple[Scan, ...]) -> tuple[ExposureHistory
         for key in observed_in_scan:
             observations.setdefault(key, []).append(timestamp)
 
+    opportunities = {key: 0 for key in observations}
+    for scan in scans:
+        up_hosts = {
+            _host_identity(host.address)
+            for host in scan.hosts
+            if host.status.strip().lower() == "up"
+        }
+        for key in opportunities:
+            host, port, protocol = key
+            if host in up_hosts and _port_was_scanned(scan, port, protocol):
+                opportunities[key] += 1
+
     return tuple(
         ExposureHistory(
             host=host,
@@ -53,6 +66,7 @@ def summarize_exposure_history(scans: tuple[Scan, ...]) -> tuple[ExposureHistory
             first_seen=min(timestamps),
             last_seen=max(timestamps),
             observations=len(timestamps),
+            opportunities=opportunities[(host, port, protocol)],
         )
         for (host, port, protocol), timestamps in sorted(observations.items())
     )
