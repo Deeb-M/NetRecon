@@ -33,6 +33,7 @@ py-modules = [
     "analysis_diff",
     "analysis_summary",
     "analyzer",
+    "evidence_action_plan",
     "evidence_collector",
     "evidence_gaps",
     "evidence_planner",
