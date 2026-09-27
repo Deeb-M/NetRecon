@@ -1885,5 +1885,58 @@ class EvidenceDerivedKnowledgeTests(unittest.TestCase):
         self.assertEqual(derive_evidence_knowledge(scan), ())
 
 
+class FindingDerivedRequirementTests(unittest.TestCase):
+    def test_known_finding_derives_requirement_with_provenance(self) -> None:
+        from finding_requirements import FindingDerivedRequirement, derive_finding_requirements
+        from findings import Finding
+
+        finding = Finding(
+            finding_id="smb.signing.review",
+            category="configuration",
+            host="192.0.2.30",
+            port=445,
+            protocol="TCP",
+            severity="medium",
+            title="SMB signing configuration requires review",
+            evidence="Observed signing configuration",
+            recommendation="Review SMB signing policy",
+            evidence_source="nse:smb2-security-mode",
+        )
+
+        self.assertEqual(
+            derive_finding_requirements((finding,)),
+            (
+                FindingDerivedRequirement(
+                    requirement_id="smb_access_control_context",
+                    host="192.0.2.30",
+                    port=445,
+                    protocol="tcp",
+                    purpose="review SMB access controls in the context of the observed signing configuration",
+                    finding_id="smb.signing.review",
+                    evidence_source="nse:smb2-security-mode",
+                ),
+            ),
+        )
+
+    def test_unmapped_finding_does_not_invent_requirement(self) -> None:
+        from finding_requirements import derive_finding_requirements
+        from findings import Finding
+
+        finding = Finding(
+            finding_id="example.unmapped",
+            category="context",
+            host="192.0.2.40",
+            port=80,
+            protocol="tcp",
+            severity="info",
+            title="Unmapped observation",
+            evidence="Observed",
+            recommendation="Review",
+            evidence_source="nse:example",
+        )
+
+        self.assertEqual(derive_finding_requirements((finding,)), ())
+
+
 if __name__ == "__main__":
     unittest.main()
