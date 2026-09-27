@@ -409,6 +409,8 @@ def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]
 
     for request in plan.requests:
         protocol = request.protocol.strip().lower()
+        if protocol not in {"tcp", "udp"}:
+            raise ValueError(f"Unsupported collection protocol: {protocol or 'blank'}")
         key = (request.port, protocol)
         script_id = request.script_id.strip().lower()
         if not script_id:
