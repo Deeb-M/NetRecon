@@ -1236,6 +1236,7 @@ class CliTests(unittest.TestCase):
         )
 
         self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("--investigate TARGET", completed.stdout)
         self.assertIn("--discover TARGET", completed.stdout)
         self.assertIn("--discovery-plan TARGET", completed.stdout)
 
