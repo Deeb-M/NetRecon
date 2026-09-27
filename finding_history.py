@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from analysis_diff import _evidence_source_observed, _identity
+from analysis_diff import _evidence_source_observed, _host_identity, _identity
 from findings import Finding
 from models import Scan
 
@@ -27,6 +27,33 @@ def _scan_timestamp(scan: Scan) -> int:
     if scan.finished_at is not None:
         return scan.finished_at
     raise ValueError(f"scan timestamp unavailable: {scan.source}")
+
+
+def _finding_evidence_opportunity(scan: Scan, finding: Finding) -> bool:
+    """Return whether this scan contains the finding's required evidence source."""
+    if _finding_evidence_opportunity(scan, finding):
+        return True
+
+    source = finding.evidence_source.strip().lower() if finding.evidence_source is not None else None
+    if not source or not source.startswith("nse:") or finding.port is None:
+        return False
+
+    script_id = source.removeprefix("nse:").strip().lower()
+    if not script_id:
+        return False
+
+    finding_host = _host_identity(finding.host)
+    host = next(
+        (host for host in scan.hosts if _host_identity(host.address) == finding_host),
+        None,
+    )
+    if host is None or host.status.strip().lower() != "up":
+        return False
+
+    return any(
+        script.script_id.strip().lower() == script_id
+        for script in host.scripts
+    )
 
 
 def summarize_finding_history(
