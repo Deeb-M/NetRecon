@@ -57,7 +57,7 @@ class ExposureHistoryReporterTests(unittest.TestCase):
         self.assertIn("Endpoints: 0", render_exposure_history(()))
         payload = json.loads(render_exposure_history_json(()))
         self.assertEqual(payload["summary"]["endpoints"], 0)
-        self.assertEqual(payload["history"], ())
+        self.assertEqual(payload["history"], [])
 
 
 if __name__ == "__main__":
