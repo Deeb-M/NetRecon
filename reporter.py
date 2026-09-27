@@ -3,16 +3,52 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from datetime import datetime, timezone
 import json
 
 from analysis_diff import FindingChange
 from analysis_summary import summarize_analysis
 from evidence_collector import CorrelatedEvidenceResult
+from exposure_history import ExposureHistory
 from findings import Finding
 from host_summary import summarize_hosts
 from models import Host, Port, Scan, ScanScope
 from network_summary import summarize_network, summarize_shared_services
 from scan_diff import ExposureChange
+
+
+def _format_history_time(timestamp: int) -> str:
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def render_exposure_history(history: tuple[ExposureHistory, ...]) -> str:
+    """Render descriptive open-endpoint observation history."""
+    lines = [
+        "Exposure History",
+        "----------------",
+        f"Endpoints: {len(history)}",
+    ]
+    for item in history:
+        lines.append(
+            f"{item.host}:{item.port}/{item.protocol}  "
+            f"first_seen={_format_history_time(item.first_seen)}  "
+            f"last_seen={_format_history_time(item.last_seen)}  "
+            f"observations={item.observations}"
+        )
+    return "\n".join(lines)
+
+
+def render_exposure_history_json(history: tuple[ExposureHistory, ...]) -> str:
+    """Render exposure history with exact numeric Nmap timestamps."""
+    return json.dumps(
+        {
+            "report_type": "exposure_history",
+            "summary": {"endpoints": len(history)},
+            "history": [asdict(item) for item in history],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
 
 
 _SEVERITY_PRIORITY = {
