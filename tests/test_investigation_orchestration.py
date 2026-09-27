@@ -1512,5 +1512,61 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(synthesis.remaining_requirements, (remaining,))
 
 
+
+    def test_investigation_memory_compares_factual_synthesis_changes(self) -> None:
+        from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
+        from investigation_memory import compare_investigation_syntheses
+        from investigation_synthesis import InvestigationSynthesis
+
+        resolved = EvidenceRequirementState(
+            "192.0.2.130",
+            5357,
+            "tcp",
+            EvidenceRequirement(
+                "http_identity_context",
+                "review HTTP service identity and exposed content context",
+                ("http-title",),
+                ("http-headers",),
+            ),
+        )
+        added = EvidenceRequirementState(
+            "192.0.2.130",
+            443,
+            "tcp",
+            EvidenceRequirement(
+                "tls_certificate_identity",
+                "review TLS certificate identity",
+                ("ssl-cert",),
+            ),
+        )
+        previous = InvestigationSynthesis(
+            "stalled",
+            "alternative_evidence_incomplete",
+            4,
+            1,
+            (resolved,),
+        )
+        current = InvestigationSynthesis(
+            "stalled",
+            "no_supported_actions",
+            5,
+            2,
+            (added,),
+        )
+
+        memory = compare_investigation_syntheses(previous, current)
+
+        self.assertFalse(memory.status_changed)
+        self.assertEqual(memory.previous_status, "stalled")
+        self.assertEqual(memory.current_status, "stalled")
+        self.assertTrue(memory.reason_changed)
+        self.assertEqual(memory.previous_reason, "alternative_evidence_incomplete")
+        self.assertEqual(memory.current_reason, "no_supported_actions")
+        self.assertEqual(memory.attention_item_change, 1)
+        self.assertEqual(memory.correlated_review_group_change, 1)
+        self.assertEqual(memory.resolved_requirements, (resolved,))
+        self.assertEqual(memory.added_requirements, (added,))
+
+
 if __name__ == "__main__":
     unittest.main()
