@@ -948,5 +948,69 @@ class CliTests(unittest.TestCase):
         )
 
 
+    def test_accepts_discovery_plan_target(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["--discovery-plan", "192.0.2.10"])
+
+        self.assertEqual(args.discovery_plan, "192.0.2.10")
+
+    @patch("netrecon.render_discovery_plan", return_value="Discovery plan report")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_discovery_plan_renders_text_without_execution(
+        self, build_mock, render_mock
+    ) -> None:
+        from netrecon import main
+        from scan_orchestration import DiscoveryPlan
+
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        build_mock.return_value = plan
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "--discovery-plan", "192.0.2.10"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        build_mock.assert_called_once_with("192.0.2.10")
+        render_mock.assert_called_once_with(plan)
+        self.assertEqual(output.getvalue().strip(), "Discovery plan report")
+
+    @patch(
+        "netrecon.render_discovery_plan_json",
+        return_value='{"report_type":"discovery_plan"}',
+    )
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_discovery_plan_honors_json_format(
+        self, build_mock, render_json_mock
+    ) -> None:
+        from netrecon import main
+        from scan_orchestration import DiscoveryPlan
+
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        build_mock.return_value = plan
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "--discovery-plan", "192.0.2.10", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        build_mock.assert_called_once_with("192.0.2.10")
+        render_json_mock.assert_called_once_with(plan)
+        self.assertEqual(output.getvalue().strip(), '{"report_type":"discovery_plan"}')
+
+
 if __name__ == "__main__":
     unittest.main()
