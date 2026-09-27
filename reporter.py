@@ -854,6 +854,7 @@ def render_investigation_continuation(result, decision=None) -> str:
         lines.append(f"Resolved Gaps: {len(decision.resolved_gaps)}")
         lines.append(f"Remaining Gaps: {len(decision.remaining_gaps)}")
         lines.append(f"Next Actions: {len(decision.next_actions)}")
+        lines.append(f"Repeat-Blocked Actions: {len(decision.repeat_blocked_actions)}")
 
     lines.append("")
     lines.append(render_investigation_snapshot(result.snapshot))
@@ -910,6 +911,7 @@ def render_investigation_continuation_json(result, decision=None) -> str:
             "resolved_gaps": len(decision.resolved_gaps),
             "remaining_gaps": len(decision.remaining_gaps),
             "next_actions": len(decision.next_actions),
+            "repeat_blocked_actions": len(decision.repeat_blocked_actions),
         }
     return json.dumps(
         payload,

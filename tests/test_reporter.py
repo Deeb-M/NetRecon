@@ -1210,6 +1210,7 @@ class ReporterTests(unittest.TestCase):
                 "resolved_gaps": 0,
                 "remaining_gaps": 0,
                 "next_actions": 0,
+                "repeat_blocked_actions": 0,
             },
         )
 

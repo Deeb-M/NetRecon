@@ -1303,7 +1303,11 @@ class CliTests(unittest.TestCase):
 
         snapshot_mock.assert_called_once_with(discovery)
         execute_evidence_mock.assert_called_once_with(initial, timeout=60.0)
-        decision_mock.assert_called_once_with(initial, updated)
+        decision_mock.assert_called_once_with(
+            initial,
+            updated,
+            attempted_actions=initial.actions,
+        )
         render_mock.assert_called_once_with(continuation, decision)
         self.assertEqual(output.getvalue().strip(), "Investigation continuation")
 
@@ -1358,7 +1362,11 @@ class CliTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
-        decision_mock.assert_called_once_with(initial, updated)
+        decision_mock.assert_called_once_with(
+            initial,
+            updated,
+            attempted_actions=initial.actions,
+        )
         render_json_mock.assert_called_once_with(continuation, decision)
         self.assertEqual(output.getvalue().strip(), '{"report_type":"investigation_continuation"}')
 

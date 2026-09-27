@@ -171,7 +171,11 @@ def main() -> int:
             timeout=args.evidence_timeout,
         )
         updated = continuation.snapshot
-        decision = assess_investigation_continuation(snapshot, updated)
+        decision = assess_investigation_continuation(
+            snapshot,
+            updated,
+            attempted_actions=snapshot.actions,
+        )
         print(
             render_investigation_continuation_json(continuation, decision)
             if args.format == "json"
