@@ -86,7 +86,11 @@ def plan_evidence(host: Host) -> tuple[str, ...]:
 
 def plan_host_evidence(host: Host) -> HostEvidencePlan:
     """Return a complete evidence collection plan for one host."""
+    target = host.address.strip()
+    if not target:
+        raise ValueError("Evidence collection requires a target")
+
     return HostEvidencePlan(
-        target=host.address.strip(),
+        target=target,
         requests=plan_evidence_requests(host),
     )
