@@ -1262,6 +1262,7 @@ class CliTests(unittest.TestCase):
         interpret_mock,
         snapshot_mock,
         execute_evidence_mock,
+        decision_mock,
         render_mock,
     ) -> None:
         from investigation_orchestration import (
@@ -1289,6 +1290,8 @@ class CliTests(unittest.TestCase):
         interpret_mock.return_value = discovery
         snapshot_mock.return_value = initial
         execute_evidence_mock.return_value = continuation
+        decision = object()
+        decision_mock.return_value = decision
         output = StringIO()
 
         with patch(
@@ -1319,6 +1322,7 @@ class CliTests(unittest.TestCase):
         interpret_mock,
         snapshot_mock,
         execute_evidence_mock,
+        decision_mock,
         render_json_mock,
     ) -> None:
         from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
@@ -1343,6 +1347,8 @@ class CliTests(unittest.TestCase):
         interpret_mock.return_value = discovery
         snapshot_mock.return_value = initial
         execute_evidence_mock.return_value = continuation
+        decision = object()
+        decision_mock.return_value = decision
         output = StringIO()
 
         with patch(
