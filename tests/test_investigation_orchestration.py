@@ -1369,6 +1369,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
     def test_continuation_decision_reports_resolved_semantic_requirements(self) -> None:
         from investigation_orchestration import InvestigationSnapshot
+        from models import Scan
 
         before_gap = EvidenceGap(
             "192.0.2.62", 445, "tcp", "smb-protocols", "review SMB protocol dialect support"
