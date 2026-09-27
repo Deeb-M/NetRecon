@@ -13,7 +13,8 @@ from evidence_collector import (
     ParsedCollectionResult,
 )
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
+from scan_orchestration import DiscoveryPlan
+from reporter import render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -721,6 +722,45 @@ class ReporterTests(unittest.TestCase):
         payload = json.loads(render_evidence_action_plan_json(()))
         self.assertEqual(payload["summary"], {"actions": 0})
         self.assertEqual(payload["actions"], [])
+
+
+    def test_renders_discovery_plan_as_text(self) -> None:
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+
+        report = render_discovery_plan(plan)
+
+        self.assertIn("Discovery Plan", report)
+        self.assertIn("Target: 192.0.2.10", report)
+        self.assertIn("Profile: baseline", report)
+        self.assertIn("Purpose: discover open TCP services with version detection", report)
+        self.assertIn("Suggested discovery: nmap -sV -oX - 192.0.2.10", report)
+
+    def test_renders_discovery_plan_as_json_with_argv_command(self) -> None:
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+
+        payload = json.loads(render_discovery_plan_json(plan))
+
+        self.assertEqual(payload["report_type"], "discovery_plan")
+        self.assertEqual(payload["target"], "192.0.2.10")
+        self.assertEqual(payload["profile"], "baseline")
+        self.assertEqual(
+            payload["purpose"],
+            "discover open TCP services with version detection",
+        )
+        self.assertEqual(
+            payload["command"],
+            ["nmap", "-sV", "-oX", "-", "192.0.2.10"],
+        )
 
 
 if __name__ == "__main__":
