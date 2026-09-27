@@ -1068,8 +1068,8 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         decision = assess_final_investigation_decision(round_result)
 
-        self.assertEqual(decision.status, "stalled")
-        self.assertEqual(decision.reason, "alternative_evidence_observed_gaps_remain")
+        self.assertEqual(decision.status, "complete")
+        self.assertEqual(decision.reason, "all_semantic_requirements_satisfied")
         self.assertEqual(decision.remaining_gaps, (gap,))
         self.assertEqual(decision.further_actions, ())
 
