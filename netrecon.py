@@ -86,6 +86,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="FILE",
         help="Persist and compare completed --investigate-collect synthesis records in an append-only JSONL file",
     )
+    parser.add_argument(
+        "--adaptive-plan",
+        action="store_true",
+        help="Show the factual adaptive next-step decision during --investigate-collect without changing execution",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--discover",
@@ -172,6 +177,8 @@ def main() -> int:
 
     if args.investigation_history is not None and args.investigate_collect is None:
         parser.error("--investigation-history requires --investigate-collect")
+    if args.adaptive_plan and args.investigate_collect is None:
+        parser.error("--adaptive-plan requires --investigate-collect")
 
     if args.investigate_collect is not None:
         if args.scan is not None or args.compare_scan is not None:
@@ -258,9 +265,10 @@ def main() -> int:
             )
             import json
             payload = json.loads(report)
-            payload["adaptive_investigation_plan"] = json.loads(
-                render_adaptive_investigation_plan_json(adaptive_plan)
-            )
+            if args.adaptive_plan:
+                payload["adaptive_investigation_plan"] = json.loads(
+                    render_adaptive_investigation_plan_json(adaptive_plan)
+                )
             report = json.dumps(payload, indent=2, ensure_ascii=False)
             if synthesis is not None:
                 payload = json.loads(report)
@@ -276,7 +284,8 @@ def main() -> int:
             report = render_investigation_continuation(
                 continuation, decision, alternative_round, final_decision, attention, correlations
             )
-            report += "\n\n" + render_adaptive_investigation_plan(adaptive_plan)
+            if args.adaptive_plan:
+                report += "\n\n" + render_adaptive_investigation_plan(adaptive_plan)
             if synthesis is not None:
                 report += "\n\n" + render_investigation_synthesis(synthesis)
             if investigation_memory is not None:
