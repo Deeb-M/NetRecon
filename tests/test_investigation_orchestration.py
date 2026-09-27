@@ -485,5 +485,77 @@ class InvestigationContinuationContractTests(unittest.TestCase):
         )
 
 
+    @patch("investigation_orchestration.execute_nmap_command")
+    def test_execute_approved_actions_runs_exact_displayed_argv_and_re_evaluates(
+        self, execute_mock
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from evidence_collector import CollectionResult, NmapCommand
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            execute_approved_evidence_actions,
+        )
+        from models import Host, Port, Scan
+
+        scan = Scan(
+            source="discovery.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.100",
+                    status="up",
+                    ports=(Port(445, "tcp", "open", "microsoft-ds"),),
+                ),
+            ),
+        )
+        command = (
+            "nmap",
+            "-p",
+            "445",
+            "--script",
+            "smb-protocols,smb2-security-mode",
+            "-oX",
+            "-",
+            "192.0.2.100",
+        )
+        action = EvidenceAction(
+            host="192.0.2.100",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-protocols", "smb2-security-mode"),
+            purposes=(
+                "review SMB protocol dialect support",
+                "review SMB signing configuration",
+            ),
+            command=command,
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=scan,
+            gaps=(),
+            actions=(action,),
+            states=(),
+            error=None,
+        )
+        execute_mock.return_value = CollectionResult(
+            command=NmapCommand(arguments=command),
+            returncode=124,
+            stdout="",
+            stderr="Nmap evidence collection timed out",
+        )
+
+        result = execute_approved_evidence_actions(snapshot, timeout=7)
+
+        execute_mock.assert_called_once_with(
+            NmapCommand(arguments=command),
+            timeout=7,
+        )
+        self.assertEqual(len(result.outcomes), 1)
+        self.assertEqual(result.outcomes[0].result.returncode, 124)
+        self.assertEqual(
+            tuple(gap.script_id for gap in result.snapshot.gaps),
+            ("smb-protocols", "smb2-security-mode"),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
