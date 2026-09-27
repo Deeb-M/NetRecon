@@ -1846,3 +1846,65 @@ Milestone status: **FIELD-VALIDATED (REPORT-ONLY)**.
 Do not automatically promote Adaptive Planning into the execution controller. The report-only phase first establishes agreement between adaptive reasoning and the existing proven orchestration path.
 
 The next development step is to define the controller boundary carefully: determine whether Adaptive should become the single authority that selects among already-supported actions, while evidence execution remains a separate bounded mechanism. Avoid creating a circular dependency between `adaptive_investigation.py` and `investigation_orchestration.py`.
+
+
+## Adaptive Controller Boundary — ALTERNATIVE PATH FIELD-VALIDATED
+
+Adaptive Planning has now moved beyond report-only operation for the bounded alternative-evidence path.
+
+The execution boundary is:
+
+```text
+Continuation Decision
+  -> Adaptive Plan
+  -> select_adaptive_actions()
+  -> Existing Alternative Evidence Executor
+  -> Verification
+  -> Final Investigation Decision
+```
+
+Adaptive still does not construct Nmap commands or execute collection directly. It may select only the exact `EvidenceAction` objects already justified by the existing continuation/planning layers. The existing executor remains responsible for collection and the existing alternative verifier remains responsible for deciding whether requested evidence was actually observed.
+
+A controller guard is regression-tested: an Adaptive `stop` decision yields no executable actions and blocks the alternative executor even if an inconsistent upstream decision object contains alternative actions.
+
+### Field validation
+
+Authorized Kali lab target: `192.168.227.138`.
+
+Command:
+
+```bash
+netrecon --investigate-collect 192.168.227.138 --adaptive-plan
+```
+
+Observed agreement across the control path:
+
+```text
+Continuation:
+Alternative: nmap -p 5357 --script http-headers -oX - 192.168.227.138
+
+Adaptive:
+Decision: alternative
+Reason: supported_alternative_actions_available
+Action: nmap -p 5357 --script http-headers -oX - 192.168.227.138
+
+Alternative Evidence Round:
+Command: nmap -p 5357 --script http-headers -oX - 192.168.227.138
+Verification: incomplete
+```
+
+The final decision remained:
+
+```text
+Status: stalled
+Reason: alternative_evidence_incomplete
+Further Supported Actions: 0
+```
+
+This proves in the field that the alternative action executed only after passing through the Adaptive Controller, while execution/verification remained bounded and unchanged. Incomplete alternative evidence did not trigger invented follow-up scanning.
+
+Milestone status: **ALTERNATIVE CONTROLLER PATH FIELD-VALIDATED**.
+
+### Remaining controller boundary
+
+Do not generalize this immediately into an autonomous investigation loop. Primary evidence collection still follows the established orchestration path. The next controller work should determine how a `continue` decision can authorize an already-supported next primary action without creating repeated-action loops, bypassing the repeat guard, or duplicating continuation logic.
