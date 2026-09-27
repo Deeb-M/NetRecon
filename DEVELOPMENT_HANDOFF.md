@@ -1262,3 +1262,113 @@ Observed result:
 - Existing evidence correlation, gap planning, action planning, and investigation-state engines remain the source of truth.
 
 Milestone status: **CLOSED**.
+
+## Semantic Investigation Core — CLOSED
+
+NetRecon now separates raw collection-mechanism gaps from the semantic analyst requirements those collectors are intended to satisfy.
+
+Closed bounded workflow:
+
+```text
+Discover
+  -> Plan semantic evidence needs
+  -> Collect primary evidence once
+  -> Re-evaluate
+  -> Guard repeated actions
+  -> Select one supported semantic alternative when available
+  -> Collect alternative once
+  -> Verify exact observed evidence
+  -> Final semantic decision
+  -> STOP
+```
+
+### Semantic evidence model
+
+- Script-specific `EvidenceGap` objects remain the provenance truth for what an Nmap collector did or did not return.
+- `EvidenceRequirement` represents the analyst knowledge need independently of its collection mechanism.
+- `EvidenceRequirementState` binds that need to an exact host/port/protocol endpoint.
+- Requirement state is deduplicated by endpoint plus requirement identity.
+- Primary semantic progress is tracked separately from verified alternative satisfaction.
+- Alternative evidence can satisfy a semantic requirement only on the exact endpoint and only when the configured alternative script is actually observed with non-empty output.
+- A raw script gap may remain visible even when a verified alternative has satisfied the corresponding semantic requirement.
+- Final investigation completion is therefore allowed when all semantic requirements are satisfied while raw gaps remain preserved as collection provenance.
+
+### Bounded continuation and safety
+
+- Exact repeated primary commands are blocked from automatic re-execution.
+- Stall diagnosis distinguishes repeated-action exhaustion, unsupported actions, and no progress.
+- The current bounded alternative catalog includes `http-headers` only for the `http_identity_context` requirement originally associated with `http-title`.
+- `http-headers` is not treated as equivalent to `http-methods`; `http_supported_methods` has no fabricated alternative.
+- No speculative SMB, SSH, or TLS alternatives were added merely to make the catalog look generic.
+- At most one supported alternative collection round is executed.
+- There is no recursive Auto-Run or unlimited Nmap chaining.
+
+### Semantic provenance reporting
+
+Continuation reporting now distinguishes:
+- semantic requirements resolved by primary collection;
+- requirements satisfied by verified alternative evidence;
+- requirements still unresolved.
+
+When both continuation and final decisions are available, text reporting includes:
+
+```text
+Semantic Requirement Progress
+-----------------------------
+Resolved by Primary: <count>
+Satisfied by Alternative: <count>
+Remaining: <count>
+```
+
+JSON exposes the same information in `semantic_requirement_progress`.
+
+### Regression baseline
+
+- Full suite: **674/674 tests passing**.
+- GitHub Actions green after the semantic progress summary regression test.
+- Production behavior and reporter contracts are covered separately, including semantic completion with preserved raw-gap provenance and partial alternative satisfaction.
+
+### Real field validation
+
+Authorized lab target: `192.168.227.138`.
+
+Primary collection:
+- SMB 445 with `smb-protocols,smb2-security-mode`: collection succeeded and requested evidence was observed.
+- HTTP 5357 with `http-title,http-methods`: collection succeeded technically but both requested script results remained absent.
+
+Continuation result:
+- `Status: stalled`
+- `Stall Reason: repeated_actions_exhausted`
+- 2 raw gaps resolved.
+- 2 semantic requirements resolved by primary collection:
+  - `smb_protocol_support`
+  - `smb_signing_configuration`
+- 2 HTTP raw gaps remained.
+- repeated primary HTTP action was blocked.
+- one supported semantic alternative, `http-headers`, was selected.
+
+Alternative round:
+- `http-headers` executed once.
+- verification result: `incomplete`.
+- no semantic requirement was falsely marked satisfied.
+
+Final semantic progress:
+- `Resolved by Primary: 2`
+- `Satisfied by Alternative: 0`
+- `Remaining: 2`
+
+Final decision:
+- `Status: stalled`
+- `Reason: alternative_evidence_incomplete`
+- remaining endpoint-bound requirements:
+  - `192.168.227.138:5357/tcp http_identity_context`
+  - `192.168.227.138:5357/tcp http_supported_methods`
+- further supported actions: 0.
+
+The field result confirms the intended evidence-first boundary: a successful Nmap process is not treated as successful investigation evidence, unsupported semantic equivalence is not invented, and the investigation stops explicitly when the bounded evidence strategy is exhausted.
+
+Milestone status: **CLOSED**.
+
+Next-development rule:
+Build above this semantic provenance layer rather than adding more collectors by default. New alternative collectors should be introduced only when their evidence semantics are defensible and verifiable. Preserve the bounded STOP behavior and the distinction between Nmap collection provenance and NetRecon investigation knowledge.
+
