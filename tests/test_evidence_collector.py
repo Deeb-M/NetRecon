@@ -190,6 +190,19 @@ class EvidenceCollectorTests(unittest.TestCase):
                     build_collection_specs(plan)
 
 
+    def test_rejects_blank_target_before_building_collection_specs(self) -> None:
+        plan = HostEvidencePlan(
+            target="   ",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Evidence collection requires a target",
+        ):
+            build_collection_specs(plan)
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
