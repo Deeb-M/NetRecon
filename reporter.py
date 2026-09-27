@@ -21,6 +21,7 @@ from network_summary import summarize_network, summarize_shared_services
 from scan_diff import ExposureChange
 from scan_orchestration import DiscoveryPlan, DiscoveryResult
 from investigation_orchestration import InvestigationSnapshot
+from investigation_synthesis import InvestigationSynthesis
 
 
 def _format_history_time(timestamp: int) -> str:
@@ -96,6 +97,46 @@ def render_analyst_attention_correlations_json(
         indent=2,
         ensure_ascii=False,
     )
+
+
+def render_investigation_synthesis(synthesis: InvestigationSynthesis) -> str:
+    """Render the factual final investigation synthesis."""
+    lines = [
+        "Investigation Synthesis",
+        "-----------------------",
+        f"Status: {synthesis.status}",
+        f"Reason: {synthesis.reason}",
+        f"Attention Items: {synthesis.attention_items}",
+        f"Correlated Review Groups: {synthesis.correlated_review_groups}",
+        f"Remaining Requirements: {len(synthesis.remaining_requirements)}",
+    ]
+    for state in synthesis.remaining_requirements:
+        requirement = state.requirement
+        lines.append(
+            f"Requirement: {state.host}:{state.port}/{state.protocol}  "
+            f"{requirement.requirement_id} — {requirement.purpose}"
+        )
+    return "\n".join(lines)
+
+
+def render_investigation_synthesis_json(synthesis: InvestigationSynthesis) -> str:
+    """Render the factual synthesis as a stable machine-readable envelope."""
+    return json.dumps(
+        {
+            "report_type": "investigation_synthesis",
+            "status": synthesis.status,
+            "reason": synthesis.reason,
+            "summary": {
+                "attention_items": synthesis.attention_items,
+                "correlated_review_groups": synthesis.correlated_review_groups,
+                "remaining_requirements": len(synthesis.remaining_requirements),
+            },
+            "remaining_requirements": [asdict(state) for state in synthesis.remaining_requirements],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
 
 def render_evidence_gaps(gaps: tuple[EvidenceGap, ...]) -> str:
     """Render missing planner-supported evidence for analyst follow-up."""
