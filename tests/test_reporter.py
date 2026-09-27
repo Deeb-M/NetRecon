@@ -11,7 +11,7 @@ from evidence_collector import (
     ParsedCollectionResult,
 )
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_findings, render_text
+from reporter import render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_findings, render_host_summaries, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -545,6 +545,36 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(len(payload["findings"]), 1)
         self.assertEqual(payload["findings"][0]["finding_id"], "json-evidence")
         self.assertEqual(payload["findings"][0]["title"], "Collected SSH evidence")
+
+
+    def test_renders_host_summaries_with_finding_severity_breakdown(self) -> None:
+        scan = Scan(
+            source="analysis.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=80, protocol="tcp", state="open", service="http"),
+                        Port(port=445, protocol="tcp", state="open", service="microsoft-ds"),
+                    ),
+                ),
+                Host(address="192.0.2.20", status="up"),
+            ),
+        )
+        findings = (
+            Finding("high.one", "test", "192.0.2.10", 445, "tcp", "high", "High", "evidence", "Review."),
+            Finding("medium.one", "test", "192.0.2.10", 80, "tcp", "medium", "Medium", "evidence", "Review."),
+            Finding("info.one", "test", "192.0.2.10", None, None, "info", "Info", "evidence", "Review."),
+        )
+
+        report = render_host_summaries(scan, findings)
+
+        self.assertIn("Host Summary", report)
+        self.assertIn("192.0.2.10 — 2 open ports — http, microsoft-ds — 3 findings", report)
+        self.assertIn("  Severity: high=1, medium=1, info=1", report)
+        self.assertIn("192.0.2.20 — 0 open ports — no open services — 0 findings", report)
+        self.assertIn("  Severity: none", report)
 
 
 if __name__ == "__main__":
