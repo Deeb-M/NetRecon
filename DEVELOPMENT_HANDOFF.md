@@ -666,3 +666,26 @@ Hardening completed since the Stage A field test:
 ### Stage B checkpoint decision
 
 Stop adding unit tests merely to increase the count. The next meaningful activity is the **second controlled field test** against the authorized lab target. It should exercise the hardened normal path and partial/failure behavior with real Nmap. Any new Stage B implementation after this checkpoint should be driven by observations from that field test.
+
+
+## Stage B Field Test #2 — validated — 2026-09-27
+
+The second controlled field test validated the Stage B hardening against the authorized Windows lab target `192.168.227.138`.
+
+Observed real behavior:
+- Normal collection remained compatible and returned `Status: complete` with the same 6 findings validated in Stage A.
+- A `0.001` second per-command timeout produced `Status: partial` rather than aborting the CLI, preserved the 4 discovery-derived findings, and reported two independent collection failures.
+- JSON mode preserved the same partial status, two failures, and 4 findings in one valid document.
+- A `0.75` second timeout produced a real mixed partial result on one run (one collection unit timed out while another completed), proving continuation after a real per-command timeout. The same threshold was timing-sensitive and could also complete on a later run, so it must not be treated as deterministic.
+- Field testing exposed an analyst-UX gap: timeout failures originally did not identify which evidence command failed.
+- Regression test 506 and implementation commit `0f110c1` fixed that gap. A repeated `0.001` field run then reported:
+  - `445/tcp` with `smb-protocols,smb2-security-mode`
+  - `5357/tcp` with `http-title,http-methods`
+  as distinct timed-out Nmap commands.
+- The validated regression baseline is **506/506 tests passing**, with GitHub CI green.
+
+Stage B exit decision:
+- The field-derived timeout/partial-result hardening is proven end-to-end.
+- Stop adding Stage B tests merely to increase coverage count.
+- Stage B — Evidence Collection Hardening is closed.
+- The next milestone is **Stage C — Intelligence Workflow**, connecting the proven evidence pipeline more deeply to analyst-facing Network/Host Summary, prioritization, and workflow.
