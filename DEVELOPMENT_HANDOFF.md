@@ -600,3 +600,45 @@ Stage B is **Evidence Collection Hardening** and begins only after the Stage A f
 
 Stage B work should be driven by observed field behavior: real Nmap output compatibility, permissions, timing, unreachable/filtered targets, partial results, multi-host behavior, and operator UX. Do not preemptively implement speculative hardening before collecting that evidence.
 
+
+
+## Stage A Field Validation Closure — 2026-09-27
+
+Stage A — Evidence Collection POC is field-validated and closed.
+
+Real Kali/Windows lab validation:
+- Kali executed the current NetRecon CLI against discovery XML for authorized Windows target `192.168.227.138`.
+- Discovery identified `135/tcp msrpc`, `139/tcp netbios-ssn`, `445/tcp microsoft-ds`, and `5357/tcp http`.
+- Live process observation confirmed targeted collection commands for:
+  - `445/tcp -> smb-protocols,smb2-security-mode`
+  - `5357/tcp -> http-title,http-methods`
+- Manual Nmap validation showed the Windows host returns host-level SMB NSE evidence:
+  - modern SMB dialects `2.0.2, 2.1, 3.0, 3.0.2, 3.1.1`
+  - SMB signing enabled but not required.
+- Field testing exposed a real correlation gap: host-level NSE scripts were parsed but were not merged into the discovery host. This was fixed in commits `e33d733` / `554e48e`, with regression test 484.
+- After reinstalling the updated checkout with `python -m pip install .`, the real end-to-end run produced 6 findings, including:
+  - `smb.signing.review`
+  - `smb.protocol.modern_only`
+- JSON mode also returned the same 6 findings with `status: complete` and no failures.
+
+Important field-test workflow lesson:
+- A `git pull` updates the checkout but does not reinstall the already-built CLI package in the active virtual environment. Field validation of the installed `netrecon` command must reinstall the checkout after relevant code changes (for example, `python -m pip install .`).
+
+Stage A exit decision:
+- The POC is proven end-to-end in a real lab:
+  `Discovery XML -> Evidence Planner -> targeted Nmap/NSE -> XML stdout -> Parser -> Correlation -> Analyzer -> Text/JSON Reporter`.
+- Stage A is closed at the 484-test regression baseline.
+- Do not add more Stage A tests merely to increase the count.
+
+### Stage B entry finding — timeout hardening
+
+The first controlled failure test used `--evidence-timeout 0.001` and produced:
+`Error: Nmap evidence collection timed out`.
+
+This demonstrates the first Stage B hardening gap:
+- `subprocess.TimeoutExpired` currently becomes `EvidenceCollectionError` immediately.
+- A timed-out collection command therefore aborts the collection instead of being preserved as a failed outcome.
+- Stage B should make per-command timeout a reportable collection outcome where practical, continue later evidence commands, preserve already completed evidence, and report a partial result rather than losing the collection context.
+- The implementation must remain conservative: no shell execution, no fabricated evidence, and timeout/failure state must be explicit to the analyst.
+
+Stage B should be driven by real failure behavior (timeouts, non-responsive targets, partial results, Nmap failures, UDP/privilege behavior, and multi-host behavior), followed by a second field test.
