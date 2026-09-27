@@ -263,14 +263,15 @@ def main() -> int:
             report = render_investigation_continuation_json(
                 continuation, decision, alternative_round, final_decision, attention, correlations
             )
-            import json
-            payload = json.loads(report)
             if args.adaptive_plan:
+                import json
+                payload = json.loads(report)
                 payload["adaptive_investigation_plan"] = json.loads(
                     render_adaptive_investigation_plan_json(adaptive_plan)
                 )
-            report = json.dumps(payload, indent=2, ensure_ascii=False)
+                report = json.dumps(payload, indent=2, ensure_ascii=False)
             if synthesis is not None:
+                import json
                 payload = json.loads(report)
                 payload["investigation_synthesis"] = json.loads(
                     render_investigation_synthesis_json(synthesis)
