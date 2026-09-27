@@ -208,6 +208,7 @@ python -m unittest discover -s tests -v
 - `analysis_diff.py` — evidence-aware finding comparison across scans
 - `exposure_history.py` — descriptive open-endpoint history across timestamped scans
 - `finding_history.py` — evidence-aware finding history across timestamped scans
+- `evidence_gaps.py` — planner-derived missing-evidence guidance for analyst follow-up
 - `reporter.py` — text and JSON rendering
 - `tests/` — automated tests
 - `examples/` — safe example input
@@ -225,6 +226,21 @@ Change intelligence follows the same evidence-first rule. NetRecon does not trea
 Scan Coverage Intelligence makes that scope visible to the analyst instead of keeping it only inside comparison logic. Diff reports show the Nmap-reported coverage before and after, flag whether it changed, and identify numeric protocol/port pairs that were newly scanned or no longer scanned. Small differences remain explicit in text; large scopes and differences are summarized by port count to keep terminal output readable, while JSON retains the complete original scope and expanded difference lists. Coverage differences are descriptive measurement context only; they are not reported as exposure changes or finding changes. This behavior has been validated end-to-end with controlled lab comparisons, including a reduced-scope scan and a 1-port-to-1000-port comparison.
 
 For NSE-derived findings, `NEW` means the same NSE evidence source was collected before and the finding was absent; `NEWLY_OBSERVED` means the evidence source was not collected before, so NetRecon only claims that the finding is newly observed; and `NO_LONGER_OBSERVED` requires the relevant evidence source to be collected again without supporting the previous finding. These semantics have been validated end-to-end with controlled `http-title` lab scans. Text reports include deterministic change-count summaries, and JSON output includes the same summary data for automation. Both analysis-change and exposure-change summaries have been validated end-to-end against real lab scan files.
+
+
+## Evidence Gaps
+
+On development `main`, `--evidence-gaps` turns the existing Evidence Planner into an analyst-facing next-action view without running Nmap:
+
+```bash
+netrecon scan.xml --evidence-gaps
+netrecon scan.xml --evidence-gaps --format json
+```
+
+A gap means that the existing planner supports a specific evidence source for an already discovered service and that evidence is not present in the supplied scan. The fixed `purpose` explains why that evidence is useful for review; it is not a vulnerability, risk score, or claim that a weakness exists. Existing matching NSE evidence suppresses the gap whether Nmap stored it at port level or host level. Unsupported services do not create speculative gaps, and `Gaps: 0` means only that no planner-supported evidence is missing from that scan.
+
+Real field validation on `main` used `stage-a-discovery.xml` and `windows-smb-detail.xml`. The discovery scan produced four expected gaps: SMB protocol/signing evidence on `445/tcp` and HTTP title/method evidence on `5357/tcp`. The detailed SMB scan produced `Gaps: 0`, confirming that real host-level SMB NSE evidence does not create false gaps. JSON validation preserved the same four discovery gaps and their host, port, protocol, script ID, and purpose.
+
 
 ## Responsible use
 
