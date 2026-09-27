@@ -524,5 +524,36 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(context.exception.code, 2)
 
 
+    @patch("netrecon.render_findings", return_value="Findings report")
+    @patch("netrecon.render_host_summaries", return_value="Host summary report")
+    @patch("netrecon.render_text", return_value="Scan report")
+    @patch("netrecon.analyze_scan", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_analyze_text_includes_host_summary_before_findings(
+        self,
+        parse_mock,
+        analyze_mock,
+        render_text_mock,
+        render_host_summaries_mock,
+        render_findings_mock,
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scan = Scan(source="scan.xml")
+        parse_mock.return_value = scan
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "--analyze"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        render_host_summaries_mock.assert_called_once_with(scan, ())
+        self.assertEqual(
+            output.getvalue().strip().splitlines(),
+            ["Scan report", "", "Host summary report", "", "Findings report"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
