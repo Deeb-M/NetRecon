@@ -1309,7 +1309,7 @@ class CliTests(unittest.TestCase):
             updated,
             attempted_actions=initial.actions,
         )
-        render_mock.assert_called_once_with(continuation, decision, None, None, ())
+        render_mock.assert_called_once_with(continuation, decision, None, None, (), ())
         self.assertEqual(output.getvalue().strip(), "Investigation continuation")
 
 
@@ -1394,6 +1394,7 @@ class CliTests(unittest.TestCase):
             alternative_result,
             FinalInvestigationDecision("complete", "all_gaps_resolved", (), ()),
             (),
+            (),
         )
 
     @patch("netrecon.render_investigation_continuation_json", return_value='{"report_type":"investigation_continuation"}')
@@ -1452,7 +1453,7 @@ class CliTests(unittest.TestCase):
             updated,
             attempted_actions=initial.actions,
         )
-        render_json_mock.assert_called_once_with(continuation, decision, None, None, ())
+        render_json_mock.assert_called_once_with(continuation, decision, None, None, (), ())
         self.assertEqual(output.getvalue().strip(), '{"report_type":"investigation_continuation"}')
 
 
@@ -1582,6 +1583,7 @@ class CliTests(unittest.TestCase):
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation with attention")
+    @patch("netrecon.correlate_analyst_attention", return_value=("correlation-item",))
     @patch("netrecon.build_investigation_attention", return_value=("attention-item",))
     @patch("netrecon.assess_final_investigation_decision")
     @patch("netrecon.execute_alternative_evidence_round")
@@ -1602,6 +1604,7 @@ class CliTests(unittest.TestCase):
         alternative_round_mock,
         final_decision_mock,
         attention_mock,
+        correlation_mock,
         render_mock,
     ) -> None:
         from evidence_action_plan import EvidenceAction
@@ -1645,12 +1648,14 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(main(), 0)
 
         attention_mock.assert_called_once_with(final_snapshot)
+        correlation_mock.assert_called_once_with(("attention-item",))
         render_mock.assert_called_once_with(
             continuation,
             decision,
             alternative_result,
             final_decision,
             ("attention-item",),
+            ("correlation-item",),
         )
 
 
