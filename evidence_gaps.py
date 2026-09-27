@@ -96,6 +96,18 @@ def requirement_for_gap(gap: EvidenceGap) -> EvidenceRequirement | None:
     """Return the semantic analyst requirement represented by a script-specific gap."""
     return EVIDENCE_REQUIREMENTS.get(gap.script_id.strip().lower())
 
+def requirement_state_for_gap(gap: EvidenceGap) -> EvidenceRequirementState | None:
+    """Bind a script-specific evidence gap to its semantic endpoint requirement."""
+    requirement = requirement_for_gap(gap)
+    if requirement is None:
+        return None
+    return EvidenceRequirementState(
+        gap.host.strip(),
+        gap.port,
+        gap.protocol.strip().lower(),
+        requirement,
+    )
+
 
 def summarize_evidence_gaps(scan: Scan) -> tuple[EvidenceGap, ...]:
     """Describe evidence still requested by the existing planner."""

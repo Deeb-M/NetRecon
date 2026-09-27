@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
-from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_for_gap, summarize_evidence_gaps
+from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_state_for_gap, summarize_evidence_gaps
 from evidence_collector import (
     NmapCommand,
     ParsedCollectionResult,
@@ -225,13 +225,14 @@ def assess_final_investigation_decision(
         for script_id in verification.observed_script_ids
     }
     for gap in remaining:
-        requirement = requirement_for_gap(gap)
-        if requirement is None:
+        state = requirement_state_for_gap(gap)
+        if state is None:
             continue
+        requirement = state.requirement
         endpoint_key = (
-            gap.host.strip(),
-            gap.port,
-            gap.protocol.strip().lower(),
+            state.host,
+            state.port,
+            state.protocol,
             requirement.requirement_id,
         )
         if endpoint_key in seen_requirements:
@@ -250,7 +251,7 @@ def assess_final_investigation_decision(
         }
         if alternative_ids and alternative_ids.issubset(endpoint_observed_ids):
             continue
-        requirements.append(EvidenceRequirementState(gap.host.strip(), gap.port, gap.protocol.strip().lower(), requirement))
+        requirements.append(state)
     remaining_requirements = tuple(requirements)
     statuses = {verification.status for verification in alternative_round.verifications}
 
@@ -307,11 +308,12 @@ def _build_alternative_actions(
         endpoint = (gap.host.strip(), gap.port, gap.protocol.strip().lower())
         if endpoint not in blocked_endpoints:
             continue
-        requirement = requirement_for_gap(gap)
-        if requirement is None or not requirement.alternative_script_ids:
+        state = requirement_state_for_gap(gap)
+        if state is None or not state.requirement.alternative_script_ids:
             continue
+        requirement = state.requirement
         script_ids = tuple(script_id.strip().lower() for script_id in requirement.alternative_script_ids)
-        key = (*endpoint, script_ids)
+        key = (state.host, state.port, state.protocol, script_ids)
         alternatives[key] = EvidenceAction(
             host=endpoint[0], port=endpoint[1], protocol=endpoint[2],
             script_ids=script_ids, purposes=(requirement.purpose,),
