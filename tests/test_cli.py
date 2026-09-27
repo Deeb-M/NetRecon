@@ -289,6 +289,50 @@ class CliTests(unittest.TestCase):
         )
 
 
+    @patch("netrecon.render_evidence_collection", return_value="Partial evidence report")
+    @patch("netrecon.collect_correlated_host_evidence")
+    @patch("netrecon.plan_host_evidence")
+    @patch("netrecon.parse_nmap_xml")
+    def test_collect_evidence_cli_returns_success_for_reportable_partial_result(
+        self,
+        parse_mock,
+        plan_mock,
+        collect_mock,
+        render_mock,
+    ) -> None:
+        from evidence_collector import CollectionResult, CorrelatedEvidenceResult, NmapCommand, ParsedCollectionResult
+        from evidence_planner import HostEvidencePlan
+        from models import Host, Scan
+        from netrecon import main
+
+        host = Host(address="192.0.2.145", status="up")
+        plan = HostEvidencePlan(target=host.address, requests=())
+        timed_out = ParsedCollectionResult(
+            result=CollectionResult(
+                NmapCommand(("nmap",)),
+                124,
+                "",
+                "Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(timed_out,),
+            host=host,
+            findings=(),
+        )
+        parse_mock.return_value = Scan(source="scan.xml", hosts=(host,))
+        plan_mock.return_value = plan
+        collect_mock.return_value = result
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "--collect-evidence"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        render_mock.assert_called_once_with(result)
+        self.assertEqual(output.getvalue().strip(), "Partial evidence report")
+
     @patch("netrecon.collect_correlated_host_evidence")
     @patch("netrecon.plan_host_evidence")
     @patch("netrecon.parse_nmap_xml")
