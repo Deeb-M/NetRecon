@@ -1814,5 +1814,95 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+
+    def test_investigation_memory_report_preserves_factual_changes(self) -> None:
+        from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
+        from investigation_memory import InvestigationMemory
+        from reporter import render_investigation_memory, render_investigation_memory_json
+
+        added = EvidenceRequirementState(
+            "192.0.2.91",
+            443,
+            "tcp",
+            EvidenceRequirement(
+                "tls_certificate_identity",
+                "review TLS certificate identity",
+                ("ssl-cert",),
+            ),
+        )
+        resolved = EvidenceRequirementState(
+            "192.0.2.91",
+            5357,
+            "tcp",
+            EvidenceRequirement(
+                "http_identity_context",
+                "review HTTP service identity and exposed content context",
+                ("http-title",),
+                ("http-headers",),
+            ),
+        )
+        memory = InvestigationMemory(
+            status_changed=False,
+            previous_status="stalled",
+            current_status="stalled",
+            reason_changed=True,
+            previous_reason="alternative_evidence_incomplete",
+            current_reason="no_supported_actions",
+            attention_item_change=1,
+            correlated_review_group_change=-1,
+            added_requirements=(added,),
+            resolved_requirements=(resolved,),
+        )
+
+        text_report = render_investigation_memory(memory)
+        json_report = json.loads(render_investigation_memory_json(memory))
+
+        self.assertIn("Investigation Memory", text_report)
+        self.assertIn("Status: stalled -> stalled", text_report)
+        self.assertIn("Status Changed: no", text_report)
+        self.assertIn(
+            "Reason: alternative_evidence_incomplete -> no_supported_actions",
+            text_report,
+        )
+        self.assertIn("Reason Changed: yes", text_report)
+        self.assertIn("Attention Item Change: +1", text_report)
+        self.assertIn("Correlated Review Group Change: -1", text_report)
+        self.assertIn("Added Requirements: 1", text_report)
+        self.assertIn("tls_certificate_identity", text_report)
+        self.assertIn("Resolved Requirements: 1", text_report)
+        self.assertIn("http_identity_context", text_report)
+
+        self.assertEqual(json_report["report_type"], "investigation_memory")
+        self.assertEqual(
+            json_report["status"],
+            {"previous": "stalled", "current": "stalled", "changed": False},
+        )
+        self.assertEqual(
+            json_report["reason"],
+            {
+                "previous": "alternative_evidence_incomplete",
+                "current": "no_supported_actions",
+                "changed": True,
+            },
+        )
+        self.assertEqual(
+            json_report["summary"],
+            {
+                "attention_item_change": 1,
+                "correlated_review_group_change": -1,
+                "added_requirements": 1,
+                "resolved_requirements": 1,
+            },
+        )
+        self.assertEqual(
+            json_report["added_requirements"][0]["requirement"]["requirement_id"],
+            "tls_certificate_identity",
+        )
+        self.assertEqual(
+            json_report["resolved_requirements"][0]["requirement"]["requirement_id"],
+            "http_identity_context",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
