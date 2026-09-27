@@ -1,6 +1,7 @@
 """Tests for NetRecon command-line argument validation."""
 
 import subprocess
+import sys
 import json
 import unittest
 import tempfile
