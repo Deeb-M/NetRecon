@@ -812,5 +812,42 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), '{"report_type":"evidence_gaps"}')
 
 
+    def test_evidence_gaps_integration_from_real_xml_to_cli_output(self) -> None:
+        from netrecon import main
+
+        xml = """<?xml version="1.0"?>
+<nmaprun scanner="nmap" args="nmap -sV -p 445 -oX - 192.0.2.60" start="100">
+  <scaninfo type="syn" protocol="tcp" numservices="1" services="445"/>
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.60" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="445">
+        <state state="open"/>
+        <service name="microsoft-ds"/>
+      </port>
+    </ports>
+  </host>
+  <runstats><finished time="101"/><hosts up="1" down="0" total="1"/></runstats>
+</nmaprun>
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "scan.xml"
+            path.write_text(xml, encoding="utf-8")
+            output = StringIO()
+
+            with patch("sys.argv", ["netrecon", str(path), "--evidence-gaps"]):
+                with redirect_stdout(output):
+                    self.assertEqual(main(), 0)
+
+        report = output.getvalue()
+        self.assertIn("Evidence Gaps", report)
+        self.assertIn("Gaps: 2", report)
+        self.assertIn("192.0.2.60:445/tcp  smb-protocols", report)
+        self.assertIn("review SMB protocol dialect support", report)
+        self.assertIn("192.0.2.60:445/tcp  smb2-security-mode", report)
+        self.assertIn("review SMB signing configuration", report)
+
+
 if __name__ == "__main__":
     unittest.main()
