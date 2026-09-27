@@ -1659,5 +1659,88 @@ class CliTests(unittest.TestCase):
         )
 
 
+    @patch("netrecon.render_investigation_synthesis", return_value="Investigation Synthesis\nStatus: stalled")
+    @patch("netrecon.build_investigation_synthesis", return_value="synthesis-result")
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation Continuation")
+    @patch("netrecon.correlate_analyst_attention", return_value=("correlation-item",))
+    @patch("netrecon.build_investigation_attention", return_value=("attention-item",))
+    @patch("netrecon.assess_final_investigation_decision")
+    @patch("netrecon.execute_alternative_evidence_round")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_appends_synthesis_after_terminal_decision(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        alternative_round_mock,
+        final_decision_mock,
+        attention_mock,
+        correlation_mock,
+        render_continuation_mock,
+        synthesis_mock,
+        render_synthesis_mock,
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            FinalInvestigationDecision,
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+
+        initial = InvestigationSnapshot(True, Scan("initial.xml"), (), (), (), None)
+        updated = InvestigationSnapshot(True, Scan("updated.xml"), (), (), (), None)
+        final_snapshot = InvestigationSnapshot(True, Scan("final.xml"), (), (), (), None)
+        continuation = InvestigationContinuationResult((), updated)
+        alternative = EvidenceAction(
+            "192.0.2.120", 5357, "tcp", ("http-headers",), ("purpose",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.120"),
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled", (), (), (), (), "repeated_actions_exhausted", (alternative,)
+        )
+        alternative_result = AlternativeEvidenceRoundResult((), (), final_snapshot)
+        final_decision = FinalInvestigationDecision(
+            "stalled", "alternative_evidence_incomplete", ()
+        )
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = continuation
+        decision_mock.return_value = decision
+        alternative_round_mock.return_value = alternative_result
+        final_decision_mock.return_value = final_decision
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.120"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        synthesis_mock.assert_called_once_with(
+            final_decision,
+            ("attention-item",),
+            ("correlation-item",),
+        )
+        render_synthesis_mock.assert_called_once_with("synthesis-result")
+        self.assertEqual(
+            output.getvalue().strip(),
+            "Investigation Continuation\n\nInvestigation Synthesis\nStatus: stalled",
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()
