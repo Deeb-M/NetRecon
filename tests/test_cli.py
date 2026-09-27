@@ -1579,5 +1579,78 @@ class CliTests(unittest.TestCase):
         self.assertIn("Location: 192.0.2.40:445/tcp", report)
 
 
+
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation with attention")
+    @patch("netrecon.build_investigation_attention", return_value=("attention-item",))
+    @patch("netrecon.assess_final_investigation_decision")
+    @patch("netrecon.execute_alternative_evidence_round")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_builds_attention_from_final_alternative_snapshot(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        alternative_round_mock,
+        final_decision_mock,
+        attention_mock,
+        render_mock,
+    ) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            FinalInvestigationDecision,
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+
+        initial = InvestigationSnapshot(True, Scan(source="initial.xml"), (), (), (), None)
+        updated = InvestigationSnapshot(True, Scan(source="updated.xml"), (), (), (), None)
+        final_snapshot = InvestigationSnapshot(True, Scan(source="final.xml"), (), (), (), None)
+        continuation = InvestigationContinuationResult((), updated)
+        alternative = EvidenceAction(
+            "192.0.2.10", 5357, "tcp", ("http-headers",),
+            ("review HTTP response headers for service identity and context",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.10"),
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled", (), (), (), (), "repeated_actions_exhausted", (alternative,)
+        )
+        alternative_result = AlternativeEvidenceRoundResult((), (), final_snapshot)
+        final_decision = FinalInvestigationDecision("complete", "all_gaps_resolved", ())
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = continuation
+        decision_mock.return_value = decision
+        alternative_round_mock.return_value = alternative_result
+        final_decision_mock.return_value = final_decision
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.10"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        attention_mock.assert_called_once_with(final_snapshot)
+        render_mock.assert_called_once_with(
+            continuation,
+            decision,
+            alternative_result,
+            final_decision,
+            ("attention-item",),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
