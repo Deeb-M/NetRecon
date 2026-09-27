@@ -1715,5 +1715,50 @@ class ReporterTests(unittest.TestCase):
             ["service:detection", "nse:smb2-security-mode"],
         )
 
+
+    def test_continuation_report_embeds_correlated_review(self) -> None:
+        from analyst_attention import AnalystAttentionCorrelation
+        from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
+        from models import Scan
+        from reporter import render_investigation_continuation, render_investigation_continuation_json
+
+        result = InvestigationContinuationResult(
+            (),
+            InvestigationSnapshot(True, Scan("final.xml"), (), (), (), None),
+        )
+        correlations = (
+            AnalystAttentionCorrelation(
+                "smb.exposure_and_signing_review",
+                "192.0.2.80",
+                "SMB exposure and signing configuration require joint review",
+                ("smb.service.exposed", "smb.signing.review"),
+                ("service:detection", "nse:smb2-security-mode"),
+                "Review SMB exposure together with signing configuration.",
+            ),
+        )
+
+        text_report = render_investigation_continuation(
+            result, correlations=correlations
+        )
+        json_report = json.loads(
+            render_investigation_continuation_json(
+                result, correlations=correlations
+            )
+        )
+
+        self.assertIn("Correlated Review", text_report)
+        self.assertIn(
+            "Findings: smb.service.exposed, smb.signing.review",
+            text_report,
+        )
+        self.assertEqual(
+            json_report["correlated_review"]["report_type"],
+            "analyst_attention_correlations",
+        )
+        self.assertEqual(
+            json_report["correlated_review"]["groups"][0]["evidence_sources"],
+            ["service:detection", "nse:smb2-security-mode"],
+        )
+
 if __name__ == "__main__":
     unittest.main()
