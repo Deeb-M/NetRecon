@@ -1767,5 +1767,52 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         )
 
 
+    def test_adaptive_continue_authorizes_only_repeat_guard_safe_next_actions(self) -> None:
+        from adaptive_investigation import (
+            build_adaptive_investigation_plan,
+            select_adaptive_actions,
+        )
+        from investigation_orchestration import assess_investigation_continuation
+
+        attempted = EvidenceAction(
+            "192.0.2.220", 445, "tcp", ("smb-protocols",), ("review SMB dialects",),
+            ("nmap", "-p", "445", "--script", "smb-protocols", "-oX", "-", "192.0.2.220"),
+        )
+        next_action = EvidenceAction(
+            "192.0.2.220", 443, "tcp", ("ssl-cert",), ("review TLS certificate",),
+            ("nmap", "-p", "443", "--script", "ssl-cert", "-oX", "-", "192.0.2.220"),
+        )
+        resolved_gap = EvidenceGap(
+            "192.0.2.220", 445, "tcp", "smb-protocols", "review SMB dialects"
+        )
+        remaining_gap = EvidenceGap(
+            "192.0.2.220", 443, "tcp", "ssl-cert", "review TLS certificate"
+        )
+
+        before = self._snapshot(
+            (resolved_gap, remaining_gap),
+            (attempted, next_action),
+        )
+        after = self._snapshot(
+            (remaining_gap,),
+            (attempted, next_action),
+        )
+
+        decision = assess_investigation_continuation(
+            before,
+            after,
+            attempted_actions=(attempted,),
+        )
+        plan = build_adaptive_investigation_plan(decision)
+        selected = select_adaptive_actions(plan)
+
+        self.assertEqual(decision.status, "progressed")
+        self.assertEqual(decision.repeat_blocked_actions, (attempted,))
+        self.assertEqual(decision.next_actions, (next_action,))
+        self.assertEqual(plan.decision, "continue")
+        self.assertEqual(selected, (next_action,))
+        self.assertNotIn(attempted, selected)
+
+
 if __name__ == "__main__":
     unittest.main()
