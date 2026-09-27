@@ -128,6 +128,7 @@ def execute_selected_evidence_actions(
     actions: tuple[EvidenceAction, ...],
     *,
     timeout: float | None = None,
+    explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
 ) -> InvestigationContinuationResult:
     """Execute exactly the supplied bounded actions and re-evaluate once."""
     if not snapshot.ready or snapshot.scan is None:
@@ -145,7 +146,11 @@ def execute_selected_evidence_actions(
 
     return InvestigationContinuationResult(
         outcomes=outcomes,
-        snapshot=re_evaluate_investigation(snapshot.scan, outcomes),
+        snapshot=re_evaluate_investigation(
+            snapshot.scan,
+            outcomes,
+            explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+        ),
     )
 
 
