@@ -1,6 +1,8 @@
 """Tests for NetRecon command-line argument validation."""
 
 import unittest
+import tempfile
+from pathlib import Path
 from contextlib import redirect_stdout
 from io import StringIO
 from unittest.mock import patch
@@ -207,6 +209,43 @@ class CliTests(unittest.TestCase):
         summarize_mock.assert_called_once_with(scans, ((), ()))
         render_json_mock.assert_called_once_with(())
         self.assertEqual(output.getvalue().strip(), '{"report_type":"finding_history"}')
+
+    def test_finding_history_cli_integrates_parser_analyzer_engine_and_reporter(self) -> None:
+        from netrecon import main
+
+        xml_template = """<?xml version="1.0"?>
+<nmaprun start="{timestamp}">
+  <scaninfo type="syn" protocol="tcp" numservices="1" services="445"/>
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="445">
+        <state state="open"/>
+        <service name="microsoft-ds"/>
+        <script id="smb2-security-mode" output="Message signing enabled but not required"/>
+      </port>
+    </ports>
+  </host>
+  <runstats><finished time="{timestamp}"/></runstats>
+</nmaprun>
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            first = Path(directory) / "one.xml"
+            second = Path(directory) / "two.xml"
+            first.write_text(xml_template.format(timestamp=100), encoding="utf-8")
+            second.write_text(xml_template.format(timestamp=200), encoding="utf-8")
+            output = StringIO()
+
+            with patch("sys.argv", ["netrecon", "--finding-history", str(first), str(second)]):
+                with redirect_stdout(output):
+                    self.assertEqual(main(), 0)
+
+        report = output.getvalue()
+        self.assertIn("Finding History", report)
+        self.assertIn("smb.signing.review", report)
+        self.assertIn("observations=2", report)
+        self.assertIn("opportunities=2", report)
 
     def test_rejects_analyze_with_diff(self) -> None:
         parser = build_parser()
