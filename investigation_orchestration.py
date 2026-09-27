@@ -6,7 +6,13 @@ from dataclasses import dataclass, replace
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
 from evidence_gaps import EvidenceGap, summarize_evidence_gaps
-from evidence_collector import ParsedCollectionResult, merge_collection_outcomes_into_host
+from evidence_collector import (
+    NmapCommand,
+    ParsedCollectionResult,
+    execute_nmap_command,
+    merge_collection_outcomes_into_host,
+    parse_collection_outcome,
+)
 from investigation_state import EndpointInvestigationState, summarize_investigation_state
 from models import Scan
 from scan_orchestration import DiscoveryResult
@@ -69,4 +75,37 @@ def re_evaluate_investigation(
         actions=build_evidence_action_plan(scan),
         states=summarize_investigation_state(scan),
         error=None,
+    )
+
+
+@dataclass(frozen=True)
+class InvestigationContinuationResult:
+    """Evidence collection outcomes paired with the re-evaluated investigation."""
+
+    outcomes: tuple[ParsedCollectionResult, ...]
+    snapshot: InvestigationSnapshot
+
+
+def execute_approved_evidence_actions(
+    snapshot: InvestigationSnapshot,
+    *,
+    timeout: float | None = None,
+) -> InvestigationContinuationResult:
+    """Execute exactly the proposed action argv and re-evaluate the investigation."""
+    if not snapshot.ready or snapshot.scan is None:
+        raise ValueError("Approved evidence execution requires a ready investigation")
+
+    outcomes = tuple(
+        parse_collection_outcome(
+            execute_nmap_command(
+                NmapCommand(arguments=action.command),
+                timeout=timeout,
+            )
+        )
+        for action in snapshot.actions
+    )
+
+    return InvestigationContinuationResult(
+        outcomes=outcomes,
+        snapshot=re_evaluate_investigation(snapshot.scan, outcomes),
     )
