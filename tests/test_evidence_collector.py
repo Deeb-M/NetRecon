@@ -1780,6 +1780,18 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(outcome.failure_message, "permission denied")
 
 
+    def test_invalid_xml_failure_does_not_report_success_status(self) -> None:
+        command = NmapCommand(("nmap",))
+        outcome = parse_collection_outcome(
+            CollectionResult(command, 0, "not xml", ""),
+        )
+
+        self.assertIsNone(outcome.scan)
+        self.assertEqual(
+            outcome.failure_message,
+            "Nmap returned invalid XML",
+        )
+
     def test_failed_collection_outcome_falls_back_to_returncode_message(self) -> None:
         command = NmapCommand(("nmap",))
         outcome = ParsedCollectionResult(
