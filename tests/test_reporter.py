@@ -520,6 +520,12 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Findings", report)
         self.assertIn("Collected TLS evidence", report)
         self.assertIn("TLS evidence was collected", report)
+        self.assertIn("Host Summary", report)
+        self.assertIn(
+            "192.0.2.139 — 0 open ports — no open services — 1 findings",
+            report,
+        )
+        self.assertIn("  Severity: info=1", report)
 
 
     def test_evidence_collection_json_includes_correlated_findings(self) -> None:
