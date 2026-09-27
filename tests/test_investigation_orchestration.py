@@ -159,5 +159,77 @@ class InvestigationStateContractTests(unittest.TestCase):
         self.assertEqual(state.unknown, ())
 
 
+    def test_state_normalizes_endpoint_identity_without_cross_host_gap_leakage(self) -> None:
+        from investigation_state import summarize_investigation_state
+        from models import Host, Port, Scan, ScriptResult
+
+        scan = Scan(
+            source="scan.xml",
+            hosts=(
+                Host(
+                    address=" 192.0.2.40 ",
+                    status="up",
+                    ports=(Port(445, " TCP ", "open", "microsoft-ds"),),
+                ),
+                Host(
+                    address="192.0.2.41",
+                    status="up",
+                    ports=(
+                        Port(
+                            445,
+                            "tcp",
+                            "open",
+                            "microsoft-ds",
+                            scripts=(
+                                ScriptResult("smb-protocols", "3.1.1"),
+                                ScriptResult("smb2-security-mode", "enabled"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        states = summarize_investigation_state(scan)
+
+        self.assertEqual(
+            tuple((state.host, state.port, state.protocol) for state in states),
+            (
+                ("192.0.2.40", 445, "tcp"),
+                ("192.0.2.41", 445, "tcp"),
+            ),
+        )
+        self.assertEqual(
+            tuple(gap.script_id for gap in states[0].unknown),
+            ("smb-protocols", "smb2-security-mode"),
+        )
+        self.assertEqual(states[1].unknown, ())
+
+    def test_closed_endpoint_is_not_present_in_investigation_state(self) -> None:
+        from investigation_state import summarize_investigation_state
+        from models import Host, Port, Scan
+
+        scan = Scan(
+            source="scan.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.50",
+                    status="up",
+                    ports=(
+                        Port(22, "tcp", "closed", "ssh"),
+                        Port(80, "tcp", "open", "http"),
+                    ),
+                ),
+            ),
+        )
+
+        states = summarize_investigation_state(scan)
+
+        self.assertEqual(
+            tuple((state.port, state.known[0]) for state in states),
+            ((80, "state=open"),),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
