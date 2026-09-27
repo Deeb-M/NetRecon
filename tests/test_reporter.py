@@ -1217,5 +1217,77 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+    def test_investigation_continuation_text_exposes_final_decision(self) -> None:
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+        from reporter import render_investigation_continuation
+
+        gap = EvidenceGap("192.0.2.110", 5357, "tcp", "http-title", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        final = FinalInvestigationDecision(
+            "stalled",
+            "alternative_evidence_incomplete",
+            (gap,),
+            (),
+        )
+
+        report = render_investigation_continuation(
+            InvestigationContinuationResult((), snapshot),
+            None,
+            None,
+            final,
+        )
+
+        self.assertIn("Final Investigation Decision", report)
+        self.assertIn("Status: stalled", report)
+        self.assertIn("Reason: alternative_evidence_incomplete", report)
+        self.assertIn("Remaining Gaps: 1", report)
+        self.assertIn("Further Supported Actions: 0", report)
+
+    def test_investigation_continuation_json_exposes_final_decision(self) -> None:
+        import json
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+        from reporter import render_investigation_continuation_json
+
+        gap = EvidenceGap("192.0.2.111", 5357, "tcp", "http-methods", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        final = FinalInvestigationDecision(
+            "stalled",
+            "alternative_collection_failed",
+            (gap,),
+            (),
+        )
+
+        data = json.loads(
+            render_investigation_continuation_json(
+                InvestigationContinuationResult((), snapshot),
+                None,
+                None,
+                final,
+            )
+        )
+
+        self.assertEqual(
+            data["final_investigation_decision"],
+            {
+                "status": "stalled",
+                "reason": "alternative_collection_failed",
+                "remaining_gaps": 1,
+                "further_supported_actions": 0,
+            },
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
