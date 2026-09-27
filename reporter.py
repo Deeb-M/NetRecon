@@ -19,6 +19,7 @@ from models import Host, Port, Scan, ScanScope
 from network_summary import summarize_network, summarize_shared_services
 from scan_diff import ExposureChange
 from scan_orchestration import DiscoveryPlan, DiscoveryResult
+from investigation_orchestration import InvestigationSnapshot
 
 
 def _format_history_time(timestamp: int) -> str:
@@ -795,6 +796,53 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
             "timed_out": execution.timed_out,
             "error": result.error,
             "scan": scan_payload,
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
+def render_investigation_snapshot(snapshot: InvestigationSnapshot) -> str:
+    """Render the current evidence-aware investigation state for analyst review."""
+    lines = [
+        "Investigation Snapshot",
+        "----------------------",
+        f"Status: {'ready' if snapshot.ready else 'blocked'}",
+        f"Evidence Gaps: {len(snapshot.gaps)}",
+        f"Proposed Actions: {len(snapshot.actions)}",
+    ]
+    if not snapshot.ready:
+        lines.append(f"Error: {snapshot.error or 'unknown investigation failure'}")
+        return "\n".join(lines)
+
+    for gap in snapshot.gaps:
+        lines.append(
+            f"Gap: {gap.host}:{gap.port}/{gap.protocol}  {gap.script_id}"
+        )
+        lines.append(f"  Purpose: {gap.purpose}")
+
+    for action in snapshot.actions:
+        lines.append(f"Action: {action.host}:{action.port}/{action.protocol}")
+        for purpose in action.purposes:
+            lines.append(f"  Purpose: {purpose}")
+        lines.append(f"  Suggested collection: {' '.join(action.command)}")
+
+    return "\n".join(lines)
+
+
+def render_investigation_snapshot_json(snapshot: InvestigationSnapshot) -> str:
+    """Render an investigation snapshot as a stable machine-readable envelope."""
+    return json.dumps(
+        {
+            "report_type": "investigation_snapshot",
+            "status": "ready" if snapshot.ready else "blocked",
+            "summary": {
+                "evidence_gaps": len(snapshot.gaps),
+                "proposed_actions": len(snapshot.actions),
+            },
+            "error": snapshot.error,
+            "gaps": [asdict(gap) for gap in snapshot.gaps],
+            "actions": [asdict(action) for action in snapshot.actions],
         },
         indent=2,
         ensure_ascii=False,
