@@ -51,6 +51,10 @@ def render_evidence_collection(result: CorrelatedEvidenceResult) -> str:
 
 def evidence_collection_payload(result: CorrelatedEvidenceResult) -> dict[str, object]:
     """Return the JSON-ready payload for one host evidence collection result."""
+    host_summary = summarize_hosts(
+        Scan(source="correlated evidence", hosts=(result.host,)),
+        result.findings,
+    )[0]
     return {
         "host": result.host.address,
         "status": "complete" if result.collection_complete else "partial",
@@ -58,6 +62,7 @@ def evidence_collection_payload(result: CorrelatedEvidenceResult) -> dict[str, o
             outcome.failure_message
             for outcome in result.failed_outcomes
         ],
+        "host_summary": asdict(host_summary),
         "findings": [asdict(finding) for finding in prioritize_findings(result.findings)],
     }
 
