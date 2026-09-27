@@ -1475,6 +1475,10 @@ class ReporterTests(unittest.TestCase):
             InvestigationSnapshot,
         )
         from models import Scan
+        from reporter import (
+            render_investigation_continuation,
+            render_investigation_continuation_json,
+        )
 
         state = EvidenceRequirementState(
             "192.0.2.115",
