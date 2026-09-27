@@ -15,6 +15,26 @@ class HostSummary:
     open_ports: int
     services: tuple[str, ...]
     findings: int
+    severity_counts: tuple[tuple[str, int], ...]
+
+
+_SEVERITY_ORDER = ("critical", "high", "medium", "low", "info")
+
+
+def _ordered_severity_counts(counts: dict[str, int]) -> tuple[tuple[str, int], ...]:
+    ordered = tuple(
+        (severity, counts[severity])
+        for severity in _SEVERITY_ORDER
+        if severity in counts
+    )
+    remaining = tuple(
+        sorted(
+            (severity, count)
+            for severity, count in counts.items()
+            if severity not in _SEVERITY_ORDER
+        )
+    )
+    return ordered + remaining
 
 
 def summarize_hosts(
@@ -23,8 +43,12 @@ def summarize_hosts(
 ) -> tuple[HostSummary, ...]:
     """Build descriptive per-host summaries without assigning risk scores."""
     finding_counts: dict[str, int] = {}
+    severity_counts: dict[str, dict[str, int]] = {}
     for finding in findings:
         finding_counts[finding.host] = finding_counts.get(finding.host, 0) + 1
+        severity = finding.severity.strip().lower()
+        host_counts = severity_counts.setdefault(finding.host, {})
+        host_counts[severity] = host_counts.get(severity, 0) + 1
 
     summaries: list[HostSummary] = []
     for host in scan.hosts:
@@ -46,6 +70,9 @@ def summarize_hosts(
                 open_ports=len(open_ports),
                 services=services,
                 findings=finding_counts.get(host.address, 0),
+                severity_counts=_ordered_severity_counts(
+                    severity_counts.get(host.address, {})
+                ),
             )
         )
 
