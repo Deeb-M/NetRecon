@@ -17,6 +17,7 @@ from evidence_collector import (
     parse_collection_outcome,
 )
 from investigation_state import EndpointInvestigationState, summarize_investigation_state
+from finding_collection_planner import build_authorized_finding_evidence_actions
 from models import Scan
 from scan_orchestration import DiscoveryResult
 
@@ -80,6 +81,19 @@ def re_evaluate_investigation(
         error=None,
     )
 
+
+
+
+def build_dynamic_evidence_actions(
+    scan: Scan,
+    *,
+    explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
+) -> tuple[EvidenceAction, ...]:
+    """Derive authorized follow-up actions from findings in the current evidence state."""
+    return build_authorized_finding_evidence_actions(
+        analyze_scan(scan),
+        explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+    )
 
 def build_investigation_attention(
     snapshot: InvestigationSnapshot,
