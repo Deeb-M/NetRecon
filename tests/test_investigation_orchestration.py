@@ -639,7 +639,10 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
     @patch("investigation_orchestration.execute_nmap_command")
     def test_selected_evidence_actions_execute_only_supplied_actions_once(self, execute_mock) -> None:
         from evidence_collector import CollectionResult, NmapCommand
-        from investigation_orchestration import execute_selected_evidence_actions
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            execute_selected_evidence_actions,
+        )
         from models import Scan
 
         selected = EvidenceAction(
