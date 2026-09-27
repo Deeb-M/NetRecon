@@ -857,6 +857,9 @@ def render_investigation_continuation(result, decision=None) -> str:
         lines.append(f"Remaining Gaps: {len(decision.remaining_gaps)}")
         lines.append(f"Next Actions: {len(decision.next_actions)}")
         lines.append(f"Repeat-Blocked Actions: {len(decision.repeat_blocked_actions)}")
+        lines.append(f"Alternative Actions: {len(decision.alternative_actions)}")
+        for action in decision.alternative_actions:
+            lines.append("Alternative: " + " ".join(action.command))
 
     lines.append("")
     lines.append(render_investigation_snapshot(result.snapshot))
@@ -915,6 +918,17 @@ def render_investigation_continuation_json(result, decision=None) -> str:
             "remaining_gaps": len(decision.remaining_gaps),
             "next_actions": len(decision.next_actions),
             "repeat_blocked_actions": len(decision.repeat_blocked_actions),
+            "alternative_actions": [
+                {
+                    "host": action.host,
+                    "port": action.port,
+                    "protocol": action.protocol,
+                    "script_ids": list(action.script_ids),
+                    "purposes": list(action.purposes),
+                    "command": list(action.command),
+                }
+                for action in decision.alternative_actions
+            ],
         }
     return json.dumps(
         payload,

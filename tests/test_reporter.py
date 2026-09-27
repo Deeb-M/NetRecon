@@ -1212,6 +1212,7 @@ class ReporterTests(unittest.TestCase):
                 "remaining_gaps": 0,
                 "next_actions": 0,
                 "repeat_blocked_actions": 0,
+                "alternative_actions": [],
             },
         )
 
