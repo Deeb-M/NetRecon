@@ -1388,5 +1388,82 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(final_json["remaining_requirements"], [])
 
 
+    def test_report_distinguishes_satisfied_and_remaining_semantic_requirements(self) -> None:
+        from evidence_gaps import (
+            EvidenceGap,
+            EvidenceRequirement,
+            EvidenceRequirementState,
+        )
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import (
+            render_investigation_continuation,
+            render_investigation_continuation_json,
+        )
+
+        gaps = (
+            EvidenceGap("192.0.2.114", 5357, "tcp", "http-title", "purpose"),
+            EvidenceGap("192.0.2.114", 5357, "tcp", "http-methods", "purpose"),
+        )
+        satisfied = EvidenceRequirementState(
+            "192.0.2.114",
+            5357,
+            "tcp",
+            EvidenceRequirement(
+                "http_identity_context",
+                "review HTTP service identity and exposed content context",
+                ("http-title",),
+                ("http-headers",),
+            ),
+        )
+        remaining = EvidenceRequirementState(
+            "192.0.2.114",
+            5357,
+            "tcp",
+            EvidenceRequirement(
+                "http_supported_methods",
+                "review supported HTTP methods",
+                ("http-methods",),
+            ),
+        )
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), gaps, (), (), None)
+        final = FinalInvestigationDecision(
+            status="stalled",
+            reason="alternative_evidence_partially_satisfied_requirements",
+            remaining_gaps=gaps,
+            remaining_requirements=(remaining,),
+            satisfied_requirements=(satisfied,),
+        )
+        result = InvestigationContinuationResult((), snapshot)
+
+        text_report = render_investigation_continuation(result, None, None, final)
+        json_report = json.loads(
+            render_investigation_continuation_json(result, None, None, final)
+        )["final_investigation_decision"]
+
+        self.assertIn("Satisfied Requirements: 1", text_report)
+        self.assertIn(
+            "Satisfied: 192.0.2.114:5357/tcp  http_identity_context",
+            text_report,
+        )
+        self.assertIn("Remaining Requirements: 1", text_report)
+        self.assertIn(
+            "Requirement: 192.0.2.114:5357/tcp  http_supported_methods",
+            text_report,
+        )
+        self.assertEqual(
+            json_report["satisfied_requirements"][0]["requirement_id"],
+            "http_identity_context",
+        )
+        self.assertEqual(
+            json_report["remaining_requirements"][0]["requirement_id"],
+            "http_supported_methods",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
