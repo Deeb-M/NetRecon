@@ -2179,5 +2179,73 @@ class FindingCollectionEvidenceActionTests(unittest.TestCase):
         )
 
 
+class DynamicEvidenceActionDerivationTests(unittest.TestCase):
+    def test_dynamic_actions_remain_blocked_without_required_approval(self) -> None:
+        from investigation_orchestration import build_dynamic_evidence_actions
+        from models import Host, NseScript, Port, Scan
+
+        scan = Scan(
+            source="merged evidence",
+            hosts=(
+                Host(
+                    address="192.0.2.80",
+                    ports=(
+                        Port(
+                            port=445,
+                            protocol="tcp",
+                            state="open",
+                            service="microsoft-ds",
+                            scripts=(
+                                NseScript(
+                                    script_id="smb2-security-mode",
+                                    output="Message signing enabled but not required",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        self.assertEqual(build_dynamic_evidence_actions(scan), ())
+
+    def test_dynamic_actions_emerge_after_explicit_requirement_approval(self) -> None:
+        from investigation_orchestration import build_dynamic_evidence_actions
+        from models import Host, NseScript, Port, Scan
+
+        scan = Scan(
+            source="merged evidence",
+            hosts=(
+                Host(
+                    address="192.0.2.81",
+                    ports=(
+                        Port(
+                            port=445,
+                            protocol="tcp",
+                            state="open",
+                            service="microsoft-ds",
+                            scripts=(
+                                NseScript(
+                                    script_id="smb2-security-mode",
+                                    output="Message signing enabled but not required",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        actions = build_dynamic_evidence_actions(
+            scan,
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].script_ids, ("smb-enum-shares",))
+        self.assertEqual(actions[0].host, "192.0.2.81")
+        self.assertEqual(actions[0].port, 445)
+
+
 if __name__ == "__main__":
     unittest.main()
