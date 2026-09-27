@@ -1309,7 +1309,7 @@ class CliTests(unittest.TestCase):
             updated,
             attempted_actions=initial.actions,
         )
-        render_mock.assert_called_once_with(continuation, decision, None, None)
+        render_mock.assert_called_once_with(continuation, decision, None, None, ())
         self.assertEqual(output.getvalue().strip(), "Investigation continuation")
 
 
@@ -1392,6 +1392,7 @@ class CliTests(unittest.TestCase):
             decision,
             alternative_result,
             FinalInvestigationDecision("complete", "all_gaps_resolved", (), ()),
+            (),
         )
 
     @patch("netrecon.render_investigation_continuation_json", return_value='{"report_type":"investigation_continuation"}')
@@ -1450,7 +1451,7 @@ class CliTests(unittest.TestCase):
             updated,
             attempted_actions=initial.actions,
         )
-        render_json_mock.assert_called_once_with(continuation, decision, None, None)
+        render_json_mock.assert_called_once_with(continuation, decision, None, None, ())
         self.assertEqual(output.getvalue().strip(), '{"report_type":"investigation_continuation"}')
 
 
