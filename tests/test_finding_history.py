@@ -70,5 +70,43 @@ class FindingHistoryTests(unittest.TestCase):
             summarize_finding_history((scan,), ((),))
 
 
+    def test_duplicate_finding_in_one_scan_counts_once(self) -> None:
+        scan = Scan(source="one.xml", started_at=100)
+        from findings import Finding
+        finding = Finding(
+            finding_id="test.finding", category="test", host="192.0.2.10",
+            port=80, protocol="tcp", severity="info", title="test",
+            evidence="evidence", recommendation="review",
+        )
+
+        history = summarize_finding_history((scan,), ((finding, finding),))
+
+        self.assertEqual(history[0].observations, 1)
+
+    def test_first_and_last_seen_use_timestamps_not_input_order(self) -> None:
+        from findings import Finding
+        finding = Finding(
+            finding_id="test.finding", category="test", host="192.0.2.10",
+            port=None, protocol=None, severity="info", title="test",
+            evidence="evidence", recommendation="review",
+        )
+        scans = (
+            Scan(source="late.xml", started_at=300),
+            Scan(source="early.xml", started_at=100),
+        )
+
+        history = summarize_finding_history(scans, ((finding,), (finding,)))
+
+        self.assertEqual(history[0].first_seen, 100)
+        self.assertEqual(history[0].last_seen, 300)
+
+    def test_scan_and_finding_sequence_lengths_must_match(self) -> None:
+        scans = (Scan(source="one.xml", started_at=100),)
+
+        with self.assertRaisesRegex(ValueError, "length"):
+            summarize_finding_history(scans, ())
+
+
+
 if __name__ == "__main__":
     unittest.main()
