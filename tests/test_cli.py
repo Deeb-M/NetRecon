@@ -1863,5 +1863,111 @@ class CliTests(unittest.TestCase):
         self.assertEqual(appended.synthesis, "current-synthesis")
 
 
+
+    @patch("netrecon.render_investigation_memory", return_value="Investigation Memory\nReason Changed: yes")
+    @patch("netrecon.append_investigation_history_record")
+    @patch("netrecon.compare_investigation_syntheses", return_value="memory-result")
+    @patch("netrecon.latest_investigation_for_target")
+    @patch("netrecon.load_investigation_history")
+    @patch("netrecon.render_investigation_synthesis", return_value="Investigation Synthesis\nStatus: stalled")
+    @patch("netrecon.build_investigation_synthesis", return_value="current-synthesis")
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation Continuation")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.assess_final_investigation_decision")
+    @patch("netrecon.execute_alternative_evidence_round")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_reports_memory_when_previous_history_exists(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        alternative_round_mock,
+        final_decision_mock,
+        attention_mock,
+        correlation_mock,
+        render_continuation_mock,
+        synthesis_mock,
+        render_synthesis_mock,
+        load_history_mock,
+        latest_mock,
+        compare_mock,
+        append_mock,
+        render_memory_mock,
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_history import InvestigationHistoryRecord
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            FinalInvestigationDecision,
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+
+        initial = InvestigationSnapshot(True, Scan("initial.xml"), (), (), (), None)
+        updated = InvestigationSnapshot(True, Scan("updated.xml"), (), (), (), None)
+        final_snapshot = InvestigationSnapshot(True, Scan("final.xml"), (), (), (), None)
+        continuation = InvestigationContinuationResult((), updated)
+        alternative = EvidenceAction(
+            "192.0.2.190", 5357, "tcp", ("http-headers",), ("purpose",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.190"),
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled", (), (), (), (), "repeated_actions_exhausted", (alternative,)
+        )
+        alternative_result = AlternativeEvidenceRoundResult((), (), final_snapshot)
+        final_decision = FinalInvestigationDecision(
+            "stalled", "alternative_evidence_incomplete", ()
+        )
+        previous = InvestigationHistoryRecord(100, "192.0.2.190", "previous-synthesis")
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = continuation
+        decision_mock.return_value = decision
+        alternative_round_mock.return_value = alternative_result
+        final_decision_mock.return_value = final_decision
+        load_history_mock.return_value = (previous,)
+        latest_mock.return_value = previous
+        output = StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            history_path = Path(directory) / "history.jsonl"
+            history_path.touch()
+            with patch(
+                "sys.argv",
+                [
+                    "netrecon",
+                    "--investigate-collect",
+                    "192.0.2.190",
+                    "--investigation-history",
+                    str(history_path),
+                ],
+            ):
+                with redirect_stdout(output):
+                    self.assertEqual(main(), 0)
+
+        render_memory_mock.assert_called_once_with("memory-result")
+        self.assertEqual(
+            output.getvalue().strip(),
+            "Investigation Continuation\n\n"
+            "Investigation Synthesis\nStatus: stalled\n\n"
+            "Investigation Memory\nReason Changed: yes",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
