@@ -979,7 +979,6 @@ class EvidenceCollectorTests(unittest.TestCase):
 
 
     @patch("evidence_collector.subprocess.run")
-    @patch("evidence_collector.subprocess.run")
     def test_timeout_failure_identifies_collection_command(self, run_mock) -> None:
         run_mock.side_effect = subprocess.TimeoutExpired(
             cmd=("nmap", "-p", "445"),
@@ -996,6 +995,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertIn("smb-protocols", result.stderr)
 
 
+    @patch("evidence_collector.subprocess.run")
     def test_timeout_is_preserved_as_failed_collection_result(self, run_mock) -> None:
         command = NmapCommand(("nmap", "-p", "445", "192.0.2.140"))
         run_mock.side_effect = subprocess.TimeoutExpired(
