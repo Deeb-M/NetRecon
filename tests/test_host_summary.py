@@ -70,5 +70,61 @@ class HostSummaryTests(unittest.TestCase):
         self.assertEqual(summary.severity_counts, ())
 
 
+    def test_orders_hosts_by_highest_finding_severity_for_analyst_attention(self) -> None:
+        from findings import Finding
+
+        scan = Scan(
+            source="scan.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up"),
+                Host(address="192.0.2.20", status="up"),
+                Host(address="192.0.2.30", status="up"),
+                Host(address="192.0.2.40", status="up"),
+            ),
+        )
+        findings = (
+            Finding(
+                finding_id="INFO-1",
+                category="service",
+                host="192.0.2.10",
+                port=None,
+                protocol=None,
+                severity="info",
+                title="Info",
+                evidence="info evidence",
+                recommendation="Review",
+            ),
+            Finding(
+                finding_id="MEDIUM-1",
+                category="service",
+                host="192.0.2.30",
+                port=None,
+                protocol=None,
+                severity="medium",
+                title="Medium",
+                evidence="medium evidence",
+                recommendation="Review",
+            ),
+            Finding(
+                finding_id="HIGH-1",
+                category="service",
+                host="192.0.2.20",
+                port=None,
+                protocol=None,
+                severity="high",
+                title="High",
+                evidence="high evidence",
+                recommendation="Review",
+            ),
+        )
+
+        summaries = summarize_hosts(scan, findings)
+
+        self.assertEqual(
+            tuple(summary.host for summary in summaries),
+            ("192.0.2.20", "192.0.2.30", "192.0.2.10", "192.0.2.40"),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
