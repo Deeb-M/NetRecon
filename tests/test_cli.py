@@ -1758,6 +1758,7 @@ class CliTests(unittest.TestCase):
 
 
 
+    @patch("netrecon.render_investigation_memory", return_value="Investigation Memory")
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses", return_value="memory-result")
     @patch("netrecon.latest_investigation_for_target")
@@ -1794,6 +1795,7 @@ class CliTests(unittest.TestCase):
         latest_mock,
         compare_mock,
         append_mock,
+        render_memory_mock,
     ) -> None:
         from evidence_action_plan import EvidenceAction
         from investigation_history import InvestigationHistoryRecord
@@ -1854,6 +1856,7 @@ class CliTests(unittest.TestCase):
         load_history_mock.assert_called_once()
         latest_mock.assert_called_once_with((previous,), "192.0.2.180")
         compare_mock.assert_called_once_with("previous-synthesis", "current-synthesis")
+        render_memory_mock.assert_called_once_with("memory-result")
         append_mock.assert_called_once()
         appended = append_mock.call_args.args[1]
         self.assertEqual(appended.target, "192.0.2.180")
