@@ -149,6 +149,19 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_rejects_blank_script_id_before_building_collection_specs(self) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.28",
+            requests=(EvidenceRequest(443, "tcp", "   "),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Evidence collection script IDs must not be blank",
+        ):
+            build_collection_specs(plan)
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
