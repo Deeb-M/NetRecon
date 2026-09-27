@@ -2058,5 +2058,24 @@ class CliTests(unittest.TestCase):
         append_mock.assert_not_called()
 
 
+    def test_investigation_history_requires_investigate_collect(self) -> None:
+        from netrecon import main
+
+        stderr = StringIO()
+        with patch(
+            "sys.argv",
+            ["netrecon", "--investigation-history", "history.jsonl"],
+        ):
+            with redirect_stderr(stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    main()
+
+        self.assertEqual(raised.exception.code, 2)
+        self.assertIn(
+            "--investigation-history requires --investigate-collect",
+            stderr.getvalue(),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
