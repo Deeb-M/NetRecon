@@ -1136,6 +1136,8 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.repeat_blocked_actions, (repeated,))
 
     def test_http_methods_gap_alone_does_not_offer_identity_alternative(self) -> None:
+        from investigation_orchestration import InvestigationSnapshot
+
         gap = EvidenceGap("192.0.2.60", 5357, "tcp", "http-methods", "review supported HTTP methods")
         repeated = EvidenceAction(
             "192.0.2.60", 5357, "tcp", ("http-methods",),
