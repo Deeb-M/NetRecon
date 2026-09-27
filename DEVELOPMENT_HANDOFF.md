@@ -1772,3 +1772,77 @@ It becomes:
 > Given what this investigation already knows, what it tried before, what remains unresolved, and what changed over time, what is the next evidence action that is actually justified?
 
 Preserve the existing product constraints: evidence-first reasoning, bounded collection, explicit semantic alternatives, provenance, repeat guards, and explicit STOP. Adaptive planning must not become uncontrolled scanning or speculative vulnerability hunting.
+
+
+## Adaptive Investigation Planning V1 — FIELD-VALIDATED (REPORT-ONLY)
+
+NetRecon now projects the existing continuation truth into one explicit bounded next-step decision:
+
+```text
+Continuation Decision
+  -> Adaptive Investigation Plan
+  -> continue | alternative | stop
+```
+
+The Adaptive layer does not invent Nmap scripts, risk scores, severity, or unsupported collection. It can continue only when an existing planner-supported `EvidenceAction` is available.
+
+V1 decisions:
+- `continue` — a new supported primary evidence action exists;
+- `alternative` — primary collection is exhausted and an explicit supported semantic alternative exists;
+- `stop` — the investigation is complete or no supported next step remains.
+
+The current CLI integration is deliberately opt-in and report-only:
+
+```bash
+netrecon --investigate-collect TARGET --adaptive-plan
+```
+
+Without `--adaptive-plan`, legacy Text and JSON output contracts remain unchanged. With the flag, NetRecon renders the factual Adaptive decision, reason, and exact supported actions. The existing proven orchestration path still controls execution; Adaptive V1 does not yet execute actions itself.
+
+### Regression baseline
+
+- Full suite: **702/702 tests passing**.
+- GitHub Actions green.
+- Coverage includes the adaptive decision model, Text/JSON reporting, opt-in CLI reporting, legacy output compatibility, and proof that enabling the Adaptive report does not replace the existing alternative-execution path.
+
+### Real field validation
+
+Authorized Kali lab target: `192.168.227.138`.
+
+Command:
+
+```bash
+netrecon --investigate-collect 192.168.227.138 --adaptive-plan
+```
+
+The primary HTTP evidence action remained incomplete, so Continuation reported:
+- status `stalled`;
+- stall reason `repeated_actions_exhausted`;
+- zero safe next primary actions;
+- one explicit supported alternative:
+  `nmap -p 5357 --script http-headers -oX - 192.168.227.138`.
+
+Adaptive Planning independently projected that state as:
+
+```text
+Adaptive Investigation Plan
+---------------------------
+Decision: alternative
+Reason: supported_alternative_actions_available
+Actions: 1
+Action: nmap -p 5357 --script http-headers -oX - 192.168.227.138
+```
+
+The existing orchestration path executed exactly that same `http-headers` action. Verification remained `incomplete`, and the final investigation stopped with `alternative_evidence_incomplete`, zero further supported actions, and the two unresolved HTTP semantic requirements preserved.
+
+This field run proves the key V1 invariant:
+
+> **Adaptive Planning recommends exactly the bounded action already justified by investigation state, and does not invent another step when evidence remains incomplete.**
+
+Milestone status: **FIELD-VALIDATED (REPORT-ONLY)**.
+
+### Next architectural decision
+
+Do not automatically promote Adaptive Planning into the execution controller. The report-only phase first establishes agreement between adaptive reasoning and the existing proven orchestration path.
+
+The next development step is to define the controller boundary carefully: determine whether Adaptive should become the single authority that selects among already-supported actions, while evidence execution remains a separate bounded mechanism. Avoid creating a circular dependency between `adaptive_investigation.py` and `investigation_orchestration.py`.
