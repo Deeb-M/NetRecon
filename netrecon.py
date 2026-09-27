@@ -217,11 +217,15 @@ def main() -> int:
         investigation_memory = None
         if synthesis is not None and args.investigation_history is not None:
             history_path = args.investigation_history
-            records = (
-                load_investigation_history(str(history_path))
-                if history_path.exists()
-                else ()
-            )
+            try:
+                records = (
+                    load_investigation_history(str(history_path))
+                    if history_path.exists()
+                    else ()
+                )
+            except (OSError, ValueError) as exc:
+                print(f"Error: unable to load investigation history: {exc}")
+                return 2
             previous = latest_investigation_for_target(
                 records,
                 args.investigate_collect,
@@ -231,14 +235,18 @@ def main() -> int:
                     previous.synthesis,
                     synthesis,
                 )
-            append_investigation_history_record(
-                str(history_path),
-                InvestigationHistoryRecord(
-                    observed_at=int(time.time()),
-                    target=args.investigate_collect,
-                    synthesis=synthesis,
-                ),
-            )
+            try:
+                append_investigation_history_record(
+                    str(history_path),
+                    InvestigationHistoryRecord(
+                        observed_at=int(time.time()),
+                        target=args.investigate_collect,
+                        synthesis=synthesis,
+                    ),
+                )
+            except OSError as exc:
+                print(f"Error: unable to write investigation history: {exc}")
+                return 2
         if args.format == "json":
             report = render_investigation_continuation_json(
                 continuation, decision, alternative_round, final_decision, attention, correlations
