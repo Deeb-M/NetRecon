@@ -43,6 +43,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Produce machine-readable JSON for Exposure Changes and Analysis Changes, including change summaries
 - Combine both comparison views in one analyst workflow with `--combined-diff` while keeping exposure and finding changes explicitly separate
 - Summarize open-endpoint history across multiple timestamped scans with first/last observation times, open-observation counts, and evidence-aware observation opportunities via `--history`
+- Summarize evidence-backed finding history across multiple timestamped scans with first/last observation times and evidence-aware opportunities via `--finding-history`
 - Run automated tests with GitHub Actions
 
 ## Installation
@@ -148,6 +149,20 @@ netrecon --history scan1.xml scan2.xml scan3.xml --format json
 
 History is deliberately observational. `observations` counts scans where an endpoint was actually observed open; `opportunities` counts scans where that host was observed up and the port/protocol was in Nmap's scan scope. NetRecon does not turn this into an uptime percentage or assume continuous exposure between scans.
 
+Summarize repeated evidence-backed findings across two or more timestamped Nmap XML scans:
+
+```bash
+netrecon --finding-history scan1.xml scan2.xml scan3.xml
+```
+
+Return Finding History as machine-readable JSON:
+
+```bash
+netrecon --finding-history scan1.xml scan2.xml scan3.xml --format json
+```
+
+Finding History is evidence-aware: `observations` counts scans where the finding was emitted, while `opportunities` counts only scans where the same host was observed up and the finding's required evidence source was actually available. Missing NSE evidence is not treated as a negative result, and no persistence, duration, or risk score is inferred.
+
 Try the included safe sample:
 
 ```bash
@@ -192,6 +207,7 @@ python -m unittest discover -s tests -v
 - `scan_diff.py` — evidence-aware open-port exposure comparison
 - `analysis_diff.py` — evidence-aware finding comparison across scans
 - `exposure_history.py` — descriptive open-endpoint history across timestamped scans
+- `finding_history.py` — evidence-aware finding history across timestamped scans
 - `reporter.py` — text and JSON rendering
 - `tests/` — automated tests
 - `examples/` — safe example input
