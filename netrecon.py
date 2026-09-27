@@ -169,6 +169,9 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
+    if args.investigation_history is not None and args.investigate_collect is None:
+        parser.error("--investigation-history requires --investigate-collect")
+
     if args.investigate_collect is not None:
         if args.scan is not None or args.compare_scan is not None:
             parser.error("--investigate-collect does not accept scan files")
