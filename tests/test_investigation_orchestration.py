@@ -1988,5 +1988,65 @@ class RequirementCollectionStrategyTests(unittest.TestCase):
         )
 
 
+class CollectionAuthorizationGateTests(unittest.TestCase):
+    def test_intrusive_strategy_is_blocked_without_explicit_approval(self) -> None:
+        from requirement_collection import (
+            CollectionAuthorizationDecision,
+            RequirementCollectionStrategy,
+            authorize_collection_strategy,
+        )
+
+        strategy = RequirementCollectionStrategy(
+            requirement_id="smb_access_control_context",
+            status="supported",
+            script_ids=("smb-enum-shares",),
+            risk_class="intrusive",
+            authorization="requires_approval",
+        )
+
+        self.assertEqual(
+            authorize_collection_strategy(strategy),
+            CollectionAuthorizationDecision(False, "explicit_approval_required"),
+        )
+
+    def test_intrusive_strategy_is_allowed_only_after_explicit_approval(self) -> None:
+        from requirement_collection import (
+            CollectionAuthorizationDecision,
+            RequirementCollectionStrategy,
+            authorize_collection_strategy,
+        )
+
+        strategy = RequirementCollectionStrategy(
+            requirement_id="smb_access_control_context",
+            status="supported",
+            script_ids=("smb-enum-shares",),
+            risk_class="intrusive",
+            authorization="requires_approval",
+        )
+
+        self.assertEqual(
+            authorize_collection_strategy(strategy, explicitly_approved=True),
+            CollectionAuthorizationDecision(True, "explicitly_approved"),
+        )
+
+    def test_unsupported_strategy_cannot_be_overridden_by_approval(self) -> None:
+        from requirement_collection import (
+            CollectionAuthorizationDecision,
+            RequirementCollectionStrategy,
+            authorize_collection_strategy,
+        )
+
+        strategy = RequirementCollectionStrategy(
+            requirement_id="unknown_requirement",
+            status="unsupported",
+            reason="no_approved_collection_strategy",
+        )
+
+        self.assertEqual(
+            authorize_collection_strategy(strategy, explicitly_approved=True),
+            CollectionAuthorizationDecision(False, "unsupported_strategy"),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
