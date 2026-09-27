@@ -219,7 +219,20 @@ def assess_final_investigation_decision(
             continue
         requirements.append(requirement)
         seen_requirements.add(requirement.requirement_id)
-    remaining_requirements = tuple(requirements)
+    observed_alternative_scripts = {
+        script_id.strip().lower()
+        for verification in alternative_round.verifications
+        if verification.status == "observed"
+        for script_id in verification.observed_script_ids
+    }
+    remaining_requirements = tuple(
+        requirement
+        for requirement in requirements
+        if not (
+            requirement.alternative_script_ids
+            and set(requirement.alternative_script_ids).issubset(observed_alternative_scripts)
+        )
+    )
     statuses = {verification.status for verification in alternative_round.verifications}
 
     if not remaining:

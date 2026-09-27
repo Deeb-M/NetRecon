@@ -852,6 +852,37 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         self.assertEqual(result.verifications[0].status, "incomplete")
 
+    def test_observed_http_headers_satisfies_only_http_identity_requirement(self) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            AlternativeEvidenceVerification,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+
+        action = EvidenceAction("192.0.2.98", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        gaps = (
+            EvidenceGap("192.0.2.98", 5357, "tcp", "http-title", "purpose"),
+            EvidenceGap("192.0.2.98", 5357, "tcp", "http-methods", "purpose"),
+        )
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), gaps, (), (), None)
+        round_result = AlternativeEvidenceRoundResult(
+            (),
+            (AlternativeEvidenceVerification("observed", action, ("http-headers",)),),
+            snapshot,
+        )
+
+        decision = assess_final_investigation_decision(round_result)
+
+        self.assertEqual(
+            tuple(r.requirement_id for r in decision.remaining_requirements),
+            ("http_supported_methods",),
+        )
+        self.assertEqual(decision.remaining_gaps, gaps)
+        self.assertEqual(decision.reason, "alternative_evidence_observed_gaps_remain")
+
     def test_final_decision_exposes_distinct_remaining_semantic_requirements(self) -> None:
         from investigation_orchestration import (
             AlternativeEvidenceRoundResult,
