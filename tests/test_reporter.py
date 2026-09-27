@@ -551,6 +551,12 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(len(payload["findings"]), 1)
         self.assertEqual(payload["findings"][0]["finding_id"], "json-evidence")
         self.assertEqual(payload["findings"][0]["title"], "Collected SSH evidence")
+        self.assertEqual(payload["host_summary"]["host"], "192.0.2.140")
+        self.assertEqual(payload["host_summary"]["status"], "up")
+        self.assertEqual(payload["host_summary"]["open_ports"], 0)
+        self.assertEqual(payload["host_summary"]["services"], [])
+        self.assertEqual(payload["host_summary"]["findings"], 1)
+        self.assertEqual(payload["host_summary"]["severity_counts"], [["info", 1]])
 
 
     def test_renders_host_summaries_with_finding_severity_breakdown(self) -> None:
