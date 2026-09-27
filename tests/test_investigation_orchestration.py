@@ -1689,5 +1689,55 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         )
 
 
+    def test_adaptive_plan_chooses_only_supported_next_step(self) -> None:
+        from adaptive_investigation import build_adaptive_investigation_plan
+        from investigation_orchestration import InvestigationContinuationDecision
+
+        new_action = EvidenceAction(
+            "192.0.2.200", 443, "tcp", ("ssl-cert",), ("review certificate",),
+            ("nmap", "-p", "443", "--script", "ssl-cert", "-oX", "-", "192.0.2.200"),
+        )
+        alternative = EvidenceAction(
+            "192.0.2.200", 5357, "tcp", ("http-headers",), ("review HTTP identity",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.200"),
+        )
+
+        complete = build_adaptive_investigation_plan(
+            InvestigationContinuationDecision("complete", (), (), (), ())
+        )
+        continuing = build_adaptive_investigation_plan(
+            InvestigationContinuationDecision(
+                "progressed", (), (), (new_action,), ()
+            )
+        )
+        alternative_plan = build_adaptive_investigation_plan(
+            InvestigationContinuationDecision(
+                "stalled", (), (), (), (), "repeated_actions_exhausted", (alternative,)
+            )
+        )
+        stalled = build_adaptive_investigation_plan(
+            InvestigationContinuationDecision(
+                "stalled", (), (), (), (), "no_supported_actions"
+            )
+        )
+
+        self.assertEqual(
+            (complete.decision, complete.reason, complete.actions),
+            ("stop", "investigation_complete", ()),
+        )
+        self.assertEqual(
+            (continuing.decision, continuing.reason, continuing.actions),
+            ("continue", "new_supported_actions_available", (new_action,)),
+        )
+        self.assertEqual(
+            (alternative_plan.decision, alternative_plan.reason, alternative_plan.actions),
+            ("alternative", "supported_alternative_actions_available", (alternative,)),
+        )
+        self.assertEqual(
+            (stalled.decision, stalled.reason, stalled.actions),
+            ("stop", "no_supported_actions", ()),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
