@@ -25,6 +25,10 @@ class ExposureHistoryReporterTests(unittest.TestCase):
 
         self.assertIn("Exposure History", report)
         self.assertIn("192.0.2.10:22/tcp", report)
+        self.assertIn("first_observed=", report)
+        self.assertIn("last_observed=", report)
+        self.assertNotIn("first_seen=", report)
+        self.assertNotIn("last_seen=", report)
         self.assertIn("observations=3", report)
         self.assertIn("opportunities=4", report)
         self.assertIn("2026-", report)
