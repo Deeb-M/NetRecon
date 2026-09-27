@@ -1291,5 +1291,58 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+    def test_final_decision_reports_real_remaining_semantic_requirement(self) -> None:
+        import json
+        from evidence_gaps import EvidenceGap, EvidenceRequirement
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import (
+            render_investigation_continuation,
+            render_investigation_continuation_json,
+        )
+
+        gap = EvidenceGap("192.0.2.112", 5357, "tcp", "http-methods", "purpose")
+        requirement = EvidenceRequirement(
+            "http_supported_methods",
+            "review supported HTTP methods",
+            ("http-methods",),
+        )
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        final = FinalInvestigationDecision(
+            "stalled",
+            "alternative_evidence_incomplete",
+            (gap,),
+            (),
+            (requirement,),
+        )
+        result = InvestigationContinuationResult((), snapshot)
+
+        text_report = render_investigation_continuation(result, None, None, final)
+        json_report = json.loads(
+            render_investigation_continuation_json(result, None, None, final)
+        )
+
+        self.assertIn("Remaining Requirements: 1", text_report)
+        self.assertIn(
+            "Requirement: http_supported_methods — review supported HTTP methods",
+            text_report,
+        )
+        self.assertEqual(
+            json_report["final_investigation_decision"]["remaining_requirements"],
+            [
+                {
+                    "requirement_id": "http_supported_methods",
+                    "purpose": "review supported HTTP methods",
+                    "primary_script_ids": ["http-methods"],
+                    "alternative_script_ids": [],
+                }
+            ],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
