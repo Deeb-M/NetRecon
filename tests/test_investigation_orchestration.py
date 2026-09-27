@@ -881,6 +881,32 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             ("http_identity_context",),
         )
 
+    def test_verified_alternative_can_complete_semantic_investigation_with_raw_gap_remaining(self) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            AlternativeEvidenceVerification,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+
+        action = EvidenceAction("192.0.2.96", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        gap = EvidenceGap("192.0.2.96", 5357, "tcp", "http-title", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        decision = assess_final_investigation_decision(
+            AlternativeEvidenceRoundResult(
+                (),
+                (AlternativeEvidenceVerification("observed", action, ("http-headers",)),),
+                snapshot,
+            )
+        )
+
+        self.assertEqual(decision.status, "complete")
+        self.assertEqual(decision.reason, "all_semantic_requirements_satisfied")
+        self.assertEqual(decision.remaining_gaps, (gap,))
+        self.assertEqual(decision.remaining_requirements, ())
+
     def test_observed_http_headers_satisfies_only_http_identity_requirement(self) -> None:
         from investigation_orchestration import (
             AlternativeEvidenceRoundResult,

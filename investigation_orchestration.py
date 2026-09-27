@@ -258,6 +258,15 @@ def assess_final_investigation_decision(
     if not remaining:
         return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), ())
 
+    if not remaining_requirements:
+        return FinalInvestigationDecision(
+            "complete",
+            "all_semantic_requirements_satisfied",
+            remaining,
+            (),
+            (),
+        )
+
     if "collection_failed" in statuses:
         reason = "alternative_collection_failed"
     elif "incomplete" in statuses:
