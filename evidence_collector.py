@@ -210,7 +210,16 @@ def execute_nmap_command(
     except FileNotFoundError as exc:
         raise EvidenceCollectionError("Nmap executable not found") from exc
     except subprocess.TimeoutExpired as exc:
-        raise EvidenceCollectionError("Nmap evidence collection timed out") from exc
+        stdout = exc.stdout.decode(errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+        stderr = exc.stderr.decode(errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        timeout_message = "Nmap evidence collection timed out"
+        stderr = f"{stderr.rstrip()}\n{timeout_message}".strip()
+        return CollectionResult(
+            command=command,
+            returncode=124,
+            stdout=stdout,
+            stderr=stderr,
+        )
     return CollectionResult(
         command=command,
         returncode=completed.returncode,
