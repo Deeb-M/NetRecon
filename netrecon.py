@@ -17,8 +17,9 @@ from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text
 from scan_diff import compare_scans
+from scan_orchestration import build_baseline_discovery_plan
 
 
 class AtLeastTwoPaths(argparse.Action):
@@ -68,6 +69,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Per-command evidence collection timeout in seconds (default: 60)",
     )
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--discovery-plan",
+        metavar="TARGET",
+        help="Show the transparent baseline discovery plan for a target without running Nmap",
+    )
     mode.add_argument(
         "--analyze",
         action="store_true",
@@ -126,6 +132,21 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
+    if args.discovery_plan is not None:
+        if args.scan is not None or args.compare_scan is not None:
+            parser.error("--discovery-plan does not accept scan files")
+        try:
+            plan = build_baseline_discovery_plan(args.discovery_plan)
+        except ValueError as exc:
+            print(f"Error: {exc}")
+            return 2
+        print(
+            render_discovery_plan_json(plan)
+            if args.format == "json"
+            else render_discovery_plan(plan)
+        )
+        return 0
+
     if args.history is not None:
         if args.scan is not None or args.compare_scan is not None:
             parser.error("--history scan files must be supplied after --history")
@@ -160,7 +181,7 @@ def main() -> int:
         return 0
 
     if args.scan is None:
-        parser.error("a scan file is required unless --history or --finding-history is used")
+        parser.error("a scan file is required unless --discovery-plan, --history, or --finding-history is used")
 
     if args.compare_scan is not None and not (args.diff or args.analysis_diff or args.combined_diff):
         parser.error("a second scan file requires --diff, --analysis-diff, or --combined-diff")
