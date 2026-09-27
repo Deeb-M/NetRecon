@@ -6,6 +6,7 @@ import unittest
 from analyzer import Finding
 from evidence_gaps import EvidenceGap
 from evidence_action_plan import EvidenceAction
+from investigation_orchestration import InvestigationSnapshot
 from evidence_collector import (
     CollectionResult,
     CorrelatedEvidenceResult,
@@ -14,7 +15,7 @@ from evidence_collector import (
 )
 from models import Host, Port, Scan, ScriptResult
 from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
-from reporter import render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
+from reporter import render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json
 
 
 class ReporterTests(unittest.TestCase):
@@ -822,6 +823,98 @@ class ReporterTests(unittest.TestCase):
         self.assertFalse(payload["timed_out"])
         self.assertEqual(payload["error"], "nmap failed")
         self.assertIsNone(payload["scan"])
+
+
+    def test_renders_investigation_snapshot_for_analyst_review(self) -> None:
+        scan = Scan(source="<discovery:192.0.2.10>")
+        gap = EvidenceGap(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_id="smb-protocols",
+            purpose="review SMB protocol dialect support",
+        )
+        action = EvidenceAction(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-protocols",),
+            purposes=("review SMB protocol dialect support",),
+            command=("nmap", "-p", "445", "--script", "smb-protocols", "-oX", "-", "192.0.2.10"),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=scan,
+            gaps=(gap,),
+            actions=(action,),
+            error=None,
+        )
+
+        report = render_investigation_snapshot(snapshot)
+
+        self.assertIn("Investigation Snapshot", report)
+        self.assertIn("Status: ready", report)
+        self.assertIn("Evidence Gaps: 1", report)
+        self.assertIn("Proposed Actions: 1", report)
+        self.assertIn("192.0.2.10:445/tcp", report)
+        self.assertIn("smb-protocols", report)
+        self.assertIn(
+            "Suggested collection: nmap -p 445 --script smb-protocols -oX - 192.0.2.10",
+            report,
+        )
+
+    def test_renders_blocked_investigation_snapshot_without_actions(self) -> None:
+        snapshot = InvestigationSnapshot(
+            ready=False,
+            scan=None,
+            gaps=(),
+            actions=(),
+            error="nmap failed",
+        )
+
+        report = render_investigation_snapshot(snapshot)
+
+        self.assertIn("Status: blocked", report)
+        self.assertIn("Evidence Gaps: 0", report)
+        self.assertIn("Proposed Actions: 0", report)
+        self.assertIn("Error: nmap failed", report)
+
+    def test_renders_investigation_snapshot_json(self) -> None:
+        scan = Scan(source="<discovery:192.0.2.10>")
+        gap = EvidenceGap(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_id="smb-protocols",
+            purpose="review SMB protocol dialect support",
+        )
+        action = EvidenceAction(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-protocols",),
+            purposes=("review SMB protocol dialect support",),
+            command=("nmap", "-p", "445", "--script", "smb-protocols", "-oX", "-", "192.0.2.10"),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=scan,
+            gaps=(gap,),
+            actions=(action,),
+            error=None,
+        )
+
+        payload = json.loads(render_investigation_snapshot_json(snapshot))
+
+        self.assertEqual(payload["report_type"], "investigation_snapshot")
+        self.assertEqual(payload["status"], "ready")
+        self.assertEqual(payload["summary"], {"evidence_gaps": 1, "proposed_actions": 1})
+        self.assertEqual(payload["error"], None)
+        self.assertEqual(payload["gaps"][0]["script_id"], "smb-protocols")
+        self.assertEqual(
+            payload["actions"][0]["command"],
+            ["nmap", "-p", "445", "--script", "smb-protocols", "-oX", "-", "192.0.2.10"],
+        )
 
 
 if __name__ == "__main__":
