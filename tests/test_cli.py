@@ -1313,6 +1313,81 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), "Investigation continuation")
 
 
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
+    @patch("netrecon.execute_alternative_evidence_round")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_executes_one_selected_alternative_round(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        alternative_round_mock,
+        render_mock,
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+        from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+
+        plan = DiscoveryPlan("192.0.2.10", "baseline", "purpose", ("nmap", "-sV", "-oX", "-", "192.0.2.10"))
+        execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
+        scan = Scan(source="discovery.xml")
+        discovery = DiscoveryResult(execution, True, scan, None)
+        initial = InvestigationSnapshot(True, scan, (), (), (), None)
+        updated = InvestigationSnapshot(True, scan, (), (), (), None)
+        continuation = InvestigationContinuationResult((), updated)
+        alternative = EvidenceAction(
+            host="192.0.2.10",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-headers",),
+            purposes=("review HTTP response headers for service identity and context",),
+            command=("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.10"),
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled",
+            (),
+            (),
+            (),
+            repeat_blocked_actions=(),
+            stall_reason="repeated_actions_exhausted",
+            alternative_actions=(alternative,),
+        )
+        alternative_result = AlternativeEvidenceRoundResult((), (), updated)
+        build_plan_mock.return_value = plan
+        execute_discovery_mock.return_value = execution
+        interpret_mock.return_value = discovery
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = continuation
+        decision_mock.return_value = decision
+        alternative_round_mock.return_value = alternative_result
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.10", "--evidence-timeout", "7"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        alternative_round_mock.assert_called_once_with(
+            updated,
+            (alternative,),
+            timeout=7.0,
+        )
+        render_mock.assert_called_once_with(continuation, decision, alternative_result)
+
     @patch("netrecon.render_investigation_continuation_json", return_value='{"report_type":"investigation_continuation"}')
     @patch("netrecon.assess_investigation_continuation")
     @patch("netrecon.execute_approved_evidence_actions")
