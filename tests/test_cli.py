@@ -2431,5 +2431,91 @@ class CliTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 2)
 
 
+    @patch("netrecon.render_investigation_continuation", return_value="Dynamic continue")
+    @patch("netrecon.execute_selected_evidence_actions")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_executes_one_approved_dynamic_continue_round(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        execute_selected_mock,
+        render_mock,
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+
+        initial = InvestigationSnapshot(True, Scan(source="initial.xml"), (), (), (), None)
+        updated = InvestigationSnapshot(True, Scan(source="updated.xml"), (), (), (), None)
+        final = InvestigationSnapshot(True, Scan(source="final.xml"), (), (), (), None)
+        dynamic = EvidenceAction(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-enum-shares",),
+            purposes=("review SMB access controls in the context of the observed signing configuration",),
+            command=("nmap", "-p", "445", "--script", "smb-enum-shares", "-oX", "-", "192.0.2.10"),
+        )
+        first_round = InvestigationContinuationResult((), updated)
+        second_round = InvestigationContinuationResult((), final)
+        progressed = InvestigationContinuationDecision(
+            "progressed",
+            (),
+            (dynamic,),
+            (),
+        )
+        complete = InvestigationContinuationDecision("complete", (), (), ())
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = first_round
+        decision_mock.side_effect = (progressed, complete)
+        execute_selected_mock.return_value = second_round
+
+        with patch(
+            "sys.argv",
+            [
+                "netrecon",
+                "--investigate-collect",
+                "192.0.2.10",
+                "--approve-requirement",
+                "smb_access_control_context",
+                "--adaptive-plan",
+            ],
+        ):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(), 0)
+
+        approval = frozenset({"smb_access_control_context"})
+        execute_evidence_mock.assert_called_once_with(
+            initial,
+            timeout=60.0,
+            explicitly_approved_requirement_ids=approval,
+        )
+        execute_selected_mock.assert_called_once_with(
+            updated,
+            (dynamic,),
+            timeout=60.0,
+            explicitly_approved_requirement_ids=approval,
+        )
+        self.assertEqual(decision_mock.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
