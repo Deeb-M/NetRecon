@@ -689,3 +689,37 @@ Stage B exit decision:
 - Stop adding Stage B tests merely to increase coverage count.
 - Stage B — Evidence Collection Hardening is closed.
 - The next milestone is **Stage C — Intelligence Workflow**, connecting the proven evidence pipeline more deeply to analyst-facing Network/Host Summary, prioritization, and workflow.
+
+
+## Stage C — Intelligence Workflow checkpoint — 2026-09-27
+
+Stage C has begun with a deliberately descriptive, evidence-first host intelligence summary. No arbitrary risk score has been introduced.
+
+Validated development baseline:
+- **508/508 tests passing locally on Kali**.
+- GitHub CI is green at commit `4ffeef4`.
+- Stage B remains closed; Stage C builds on the proven collection/correlation pipeline.
+
+Completed Stage C work:
+- `HostSummary` now preserves per-host finding severity counts in deterministic order.
+- Severity labels are normalized before counting; known severities use the established order and unknown severities remain visible rather than being discarded.
+- Analysis JSON exposes the same per-host `severity_counts` through the existing `host_summaries` envelope.
+- Text analysis now has a dedicated `Host Summary` section. It is kept separate from the raw scan renderer so observations and intelligence remain distinct.
+- `netrecon <scan.xml> --analyze` now presents the workflow as:
+  `Scan observations -> Host Summary -> prioritized Findings`.
+- Hosts with no findings remain explicit and descriptive (`Severity: none`); collection completeness is not converted into security severity.
+
+### Stage C Field Validation #1
+
+The installed CLI was refreshed in the dedicated field-test checkout and run against the existing authorized Windows discovery scan `stage-a-discovery.xml` for `192.168.227.138`.
+
+Observed output:
+- 4 open ports and 4 normalized services.
+- Host Summary reported 4 findings with `info=4`.
+- The four discovery-derived findings remained the same platform/RPC/NetBIOS/SMB informational findings.
+- The summary therefore reflected the evidence actually present in the discovery XML and did not imply the richer SMB conclusions that require targeted collection.
+
+Stage C checkpoint decision:
+- The first analyst-facing Host Summary is useful and field-valid on discovery-only evidence.
+- The next meaningful question is whether the same analyst summary remains useful after targeted evidence collection, where richer evidence-backed findings such as SMB signing/protocol findings are available.
+- Do not add a risk score. Keep collection completeness and security severity as separate dimensions.
