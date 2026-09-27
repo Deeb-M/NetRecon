@@ -17,6 +17,7 @@ class ExposureHistoryReporterTests(unittest.TestCase):
                 first_seen=1790180000,
                 last_seen=1790183600,
                 observations=3,
+                opportunities=4,
             ),
         )
 
@@ -25,6 +26,7 @@ class ExposureHistoryReporterTests(unittest.TestCase):
         self.assertIn("Exposure History", report)
         self.assertIn("192.0.2.10:22/tcp", report)
         self.assertIn("observations=3", report)
+        self.assertIn("opportunities=4", report)
         self.assertIn("2026-", report)
         self.assertIn("UTC", report)
 
@@ -37,6 +39,7 @@ class ExposureHistoryReporterTests(unittest.TestCase):
                 first_seen=100,
                 last_seen=300,
                 observations=2,
+                opportunities=3,
             ),
         )
 
@@ -51,6 +54,7 @@ class ExposureHistoryReporterTests(unittest.TestCase):
             "first_seen": 100,
             "last_seen": 300,
             "observations": 2,
+            "opportunities": 3,
         }])
 
     def test_empty_history_is_reported_without_inventing_observations(self) -> None:
