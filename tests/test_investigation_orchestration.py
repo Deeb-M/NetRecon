@@ -239,5 +239,52 @@ class InvestigationStateContractTests(unittest.TestCase):
         )
 
 
+    def test_new_matching_evidence_reduces_only_the_supported_unknown(self) -> None:
+        from investigation_state import summarize_investigation_state
+        from models import Host, Port, Scan, ScriptResult
+
+        before = Scan(
+            source="before.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.60",
+                    status="up",
+                    ports=(Port(445, "tcp", "open", "microsoft-ds"),),
+                ),
+            ),
+        )
+        after = Scan(
+            source="after.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.60",
+                    status="up",
+                    ports=(
+                        Port(
+                            445,
+                            "tcp",
+                            "open",
+                            "microsoft-ds",
+                            scripts=(ScriptResult("smb-protocols", "3.1.1"),),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        before_state = summarize_investigation_state(before)[0]
+        after_state = summarize_investigation_state(after)[0]
+
+        self.assertEqual(
+            tuple(gap.script_id for gap in before_state.unknown),
+            ("smb-protocols", "smb2-security-mode"),
+        )
+        self.assertEqual(
+            tuple(gap.script_id for gap in after_state.unknown),
+            ("smb2-security-mode",),
+        )
+        self.assertEqual(after_state.known, before_state.known)
+
+
 if __name__ == "__main__":
     unittest.main()
