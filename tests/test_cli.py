@@ -1164,7 +1164,7 @@ class CliTests(unittest.TestCase):
         execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
         discovery = DiscoveryResult(execution, True, object(), None)
         from investigation_orchestration import InvestigationSnapshot
-        snapshot = InvestigationSnapshot(True, discovery.scan, (), (), None)
+        snapshot = InvestigationSnapshot(True, discovery.scan, (), (), (), None)
         build_plan_mock.return_value = plan
         execute_mock.return_value = execution
         interpret_mock.return_value = discovery
@@ -1207,7 +1207,7 @@ class CliTests(unittest.TestCase):
         )
         execution = DiscoveryExecutionResult(plan, 2, "", "nmap failed", False)
         discovery = DiscoveryResult(execution, False, None, "nmap failed")
-        snapshot = InvestigationSnapshot(False, None, (), (), "nmap failed")
+        snapshot = InvestigationSnapshot(False, None, (), (), (), "nmap failed")
         build_plan_mock.return_value = plan
         execute_mock.return_value = execution
         interpret_mock.return_value = discovery
