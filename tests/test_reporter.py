@@ -391,6 +391,28 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Failure: permission denied", report)
 
 
+    def test_renders_timeout_as_partial_evidence_collection_failure(self) -> None:
+        command = NmapCommand(("nmap", "-p", "445", "192.0.2.143"))
+        timed_out = ParsedCollectionResult(
+            result=CollectionResult(
+                command,
+                124,
+                "",
+                "Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(timed_out,),
+            host=Host(address="192.0.2.143", status="up"),
+            findings=(),
+        )
+
+        report = render_evidence_collection(result)
+
+        self.assertIn("Status: partial", report)
+        self.assertIn("Failure: Nmap evidence collection timed out", report)
+
     def test_renders_complete_evidence_collection_without_failure(self) -> None:
         command = NmapCommand(("nmap",))
         successful = ParsedCollectionResult(
