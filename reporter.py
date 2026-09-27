@@ -879,6 +879,9 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
         lines.append(f"Reason: {final_decision.reason}")
         lines.append(f"Remaining Gaps: {len(final_decision.remaining_gaps)}")
         lines.append(f"Further Supported Actions: {len(final_decision.further_actions)}")
+        lines.append(f"Remaining Requirements: {len(final_decision.remaining_requirements)}")
+        for requirement in final_decision.remaining_requirements:
+            lines.append(f"Requirement: {requirement.requirement_id} — {requirement.purpose}")
 
     lines.append("")
     lines.append(render_investigation_snapshot(
@@ -947,6 +950,15 @@ def render_investigation_continuation_json(result, decision=None, alternative_ro
             "reason": final_decision.reason,
             "remaining_gaps": len(final_decision.remaining_gaps),
             "further_supported_actions": len(final_decision.further_actions),
+            "remaining_requirements": [
+                {
+                    "requirement_id": requirement.requirement_id,
+                    "purpose": requirement.purpose,
+                    "primary_script_ids": list(requirement.primary_script_ids),
+                    "alternative_script_ids": list(requirement.alternative_script_ids),
+                }
+                for requirement in final_decision.remaining_requirements
+            ],
         }
     if decision is not None:
         payload["continuation_decision"] = {

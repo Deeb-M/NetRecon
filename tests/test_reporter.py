@@ -1248,6 +1248,7 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Reason: alternative_evidence_incomplete", report)
         self.assertIn("Remaining Gaps: 1", report)
         self.assertIn("Further Supported Actions: 0", report)
+        self.assertIn("Remaining Requirements: 0", report)
 
     def test_investigation_continuation_json_exposes_final_decision(self) -> None:
         import json
@@ -1285,6 +1286,7 @@ class ReporterTests(unittest.TestCase):
                 "reason": "alternative_collection_failed",
                 "remaining_gaps": 1,
                 "further_supported_actions": 0,
+                "remaining_requirements": [],
             },
         )
 
