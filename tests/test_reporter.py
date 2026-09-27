@@ -1623,5 +1623,50 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+
+    def test_continuation_report_embeds_analyst_attention_with_provenance(self) -> None:
+        from analyst_attention import AnalystAttentionItem
+        from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
+        from models import Scan
+        from reporter import render_investigation_continuation, render_investigation_continuation_json
+
+        snapshot = InvestigationSnapshot(True, Scan("final.xml"), (), (), (), None)
+        result = InvestigationContinuationResult((), snapshot)
+        attention = (
+            AnalystAttentionItem(
+                "smb.signing.review",
+                "configuration",
+                "192.0.2.50",
+                445,
+                "tcp",
+                "SMB signing configuration requires review",
+                "SMB message signing is enabled but not required.",
+                "Review whether SMB signing should be required.",
+                "nse:smb2-security-mode",
+            ),
+        )
+
+        text_report = render_investigation_continuation(
+            result, attention=attention
+        )
+        json_report = json.loads(
+            render_investigation_continuation_json(
+                result, attention=attention
+            )
+        )
+
+        self.assertIn("Analyst Attention", text_report)
+        self.assertIn("SMB signing configuration requires review", text_report)
+        self.assertIn("Evidence Source: nse:smb2-security-mode", text_report)
+        self.assertEqual(
+            json_report["analyst_attention"]["report_type"],
+            "analyst_attention",
+        )
+        self.assertEqual(
+            json_report["analyst_attention"]["items"][0]["evidence_source"],
+            "nse:smb2-security-mode",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
