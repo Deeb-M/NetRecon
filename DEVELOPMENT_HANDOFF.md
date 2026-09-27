@@ -1178,3 +1178,87 @@ NetRecon now exposes an evidence-traceable investigation state as part of `--inv
   - exact proposed Nmap argv remains visible and unexecuted.
 
 This milestone establishes the explicit state question: **what is known, what is unknown, and what evidence would reduce the unknowns?**
+
+
+## Investigation Continuation / Evidence Collection Loop — CLOSED
+
+NetRecon now supports an explicit one-pass investigation continuation workflow:
+
+```text
+Discover
+  -> Known / Unknown
+  -> Evidence Gaps
+  -> Proposed Actions
+  -> Collect approved evidence
+  -> Re-evaluate
+  -> Updated Known / Unknown
+```
+
+### CLI boundary
+
+- `--investigate TARGET` remains preview-only. It runs baseline Discovery, builds Investigation State / Evidence Gaps / Evidence Actions, and stops without executing evidence actions.
+- `--investigate-collect TARGET` is the explicit execution boundary. It runs baseline Discovery, executes exactly the displayed planner-supported evidence action argv once, preserves collection outcomes, and re-evaluates the investigation.
+- Newly proposed actions after re-evaluation are displayed but are not recursively executed.
+- A blocked/failed Discovery never executes evidence actions.
+- `--evidence-timeout` applies consistently to Discovery and approved evidence collection.
+
+### Evidence semantics
+
+Collection execution success is intentionally separate from requested-evidence completeness:
+
+- `Collection Status: success` means the collection command returned parseable Nmap XML.
+- `Requested Evidence: observed` means the requested evidence is no longer represented by a planner-supported gap after re-evaluation.
+- `Requested Evidence: incomplete` means collection succeeded technically but one or more requested evidence gaps remain.
+- Failed or timed-out collection does not reduce Unknowns.
+- Exit code 0 alone is never treated as proof that requested evidence was obtained.
+
+The exact executed argv, return code, failure information, requested-evidence state, and missing evidence are preserved in continuation reporting.
+
+### Reporting
+
+Text and JSON continuation reports are supported.
+
+JSON uses `report_type: investigation_continuation` and includes:
+
+- `collection_outcomes`
+  - exact `argv`
+  - `collection_status`
+  - `requested_evidence`
+  - `missing_evidence`
+  - `returncode`
+  - `failure`
+- `updated_investigation`
+  - the re-evaluated `investigation_snapshot`
+
+### Field validation
+
+Authorized target: `192.168.227.138`.
+
+Preview remained unchanged:
+
+- 4 evidence gaps
+- 2 proposed actions
+- no evidence actions executed
+
+Explicit continuation executed exactly two proposed actions:
+
+- SMB 445: `smb-protocols,smb2-security-mode`
+- HTTP 5357: `http-title,http-methods`
+
+Observed result:
+
+- SMB collection succeeded and requested evidence was observed; both SMB Unknowns disappeared.
+- HTTP collection succeeded technically, but `http-title` and `http-methods` evidence was not observed; both Unknowns remained and one HTTP action remained proposed.
+- This field result validated the evidence-first distinction between command success and evidence completeness.
+- Text and JSON output were both field-validated.
+- Installed entry-point help exposes both `--investigate` and `--investigate-collect`.
+
+### Verification baseline
+
+- Full local suite: **632/632 passing**
+- GitHub Actions: Python 3.10–3.14 green before final field validation.
+- No recursive Auto-Run was introduced.
+- No second planner or decision engine was introduced.
+- Existing evidence correlation, gap planning, action planning, and investigation-state engines remain the source of truth.
+
+Milestone status: **CLOSED**.
