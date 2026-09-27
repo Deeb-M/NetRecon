@@ -13,8 +13,8 @@ from evidence_collector import (
     ParsedCollectionResult,
 )
 from models import Host, Port, Scan, ScriptResult
-from scan_orchestration import DiscoveryPlan
-from reporter import render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
+from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+from reporter import render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -761,6 +761,67 @@ class ReporterTests(unittest.TestCase):
             payload["command"],
             ["nmap", "-sV", "-oX", "-", "192.0.2.10"],
         )
+
+
+    def test_renders_successful_discovery_execution_as_text(self) -> None:
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
+        result = DiscoveryResult(
+            execution=execution,
+            success=True,
+            scan=Scan(source="<discovery:192.0.2.10>", hosts_up=0, hosts_down=1, hosts_total=1),
+            error=None,
+        )
+
+        report = render_discovery_execution(result)
+
+        self.assertIn("Discovery Execution", report)
+        self.assertIn("Status: success", report)
+        self.assertIn("Command: nmap -sV -oX - 192.0.2.10", report)
+        self.assertIn("Hosts: 0 parsed / 1 total (0 up, 1 down)", report)
+
+    def test_renders_failed_discovery_execution_as_text(self) -> None:
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 2, "", "nmap failed", False)
+        result = DiscoveryResult(execution, False, None, "nmap failed")
+
+        report = render_discovery_execution(result)
+
+        self.assertIn("Status: failed", report)
+        self.assertIn("Command: nmap -sV -oX - 192.0.2.10", report)
+        self.assertIn("Error: nmap failed", report)
+
+    def test_renders_discovery_execution_json_with_provenance(self) -> None:
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 2, "", "nmap failed", False)
+        result = DiscoveryResult(execution, False, None, "nmap failed")
+
+        payload = json.loads(render_discovery_execution_json(result))
+
+        self.assertEqual(payload["report_type"], "discovery_execution")
+        self.assertEqual(payload["status"], "failed")
+        self.assertEqual(payload["target"], "192.0.2.10")
+        self.assertEqual(payload["profile"], "baseline")
+        self.assertEqual(payload["command"], ["nmap", "-sV", "-oX", "-", "192.0.2.10"])
+        self.assertEqual(payload["returncode"], 2)
+        self.assertFalse(payload["timed_out"])
+        self.assertEqual(payload["error"], "nmap failed")
+        self.assertIsNone(payload["scan"])
 
 
 if __name__ == "__main__":
