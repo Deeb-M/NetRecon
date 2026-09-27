@@ -10,6 +10,7 @@ from analysis_diff import FindingChange
 from analysis_summary import summarize_analysis
 from evidence_collector import CorrelatedEvidenceResult
 from exposure_history import ExposureHistory
+from finding_history import FindingHistory
 from findings import Finding
 from host_summary import summarize_hosts
 from models import Host, Port, Scan, ScanScope
@@ -45,6 +46,40 @@ def render_exposure_history_json(history: tuple[ExposureHistory, ...]) -> str:
         {
             "report_type": "exposure_history",
             "summary": {"endpoints": len(history)},
+            "history": [asdict(item) for item in history],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
+def render_finding_history(history: tuple[FindingHistory, ...]) -> str:
+    """Render evidence-aware finding observation history."""
+    lines = [
+        "Finding History",
+        "---------------",
+        f"Findings: {len(history)}",
+    ]
+    for item in history:
+        location = item.host
+        if item.port is not None:
+            location += f":{item.port}/{item.protocol or 'unknown'}"
+        lines.append(
+            f"{item.finding_id}  {location}  "
+            f"first_observed={_format_history_time(item.first_seen)}  "
+            f"last_observed={_format_history_time(item.last_seen)}  "
+            f"observations={item.observations}  "
+            f"opportunities={item.opportunities}"
+        )
+    return "\n".join(lines)
+
+
+def render_finding_history_json(history: tuple[FindingHistory, ...]) -> str:
+    """Render finding history with exact numeric Nmap timestamps."""
+    return json.dumps(
+        {
+            "report_type": "finding_history",
+            "summary": {"findings": len(history)},
             "history": [asdict(item) for item in history],
         },
         indent=2,
