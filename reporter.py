@@ -211,6 +211,25 @@ def render_text(scan: Scan) -> str:
     return "\n".join(lines)
 
 
+
+def render_host_summaries(scan: Scan, findings: tuple[Finding, ...]) -> str:
+    """Render descriptive per-host analysis summaries without assigning risk scores."""
+    summaries = summarize_hosts(scan, findings)
+    lines = ["Host Summary", "------------"]
+    for summary in summaries:
+        services = ", ".join(summary.services) if summary.services else "no open services"
+        lines.append(
+            f"{summary.host} — {summary.open_ports} open ports — "
+            f"{services} — {summary.findings} findings"
+        )
+        severity = (
+            ", ".join(f"{name}={count}" for name, count in summary.severity_counts)
+            if summary.severity_counts
+            else "none"
+        )
+        lines.append(f"  Severity: {severity}")
+    return "\n".join(lines)
+
 def render_json(scan: Scan) -> str:
     """Render the complete parsed scan as stable, machine-readable JSON."""
     return json.dumps(asdict(scan), indent=2, ensure_ascii=False)
