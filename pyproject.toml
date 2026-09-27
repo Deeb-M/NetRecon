@@ -35,6 +35,7 @@ py-modules = [
     "analyzer",
     "evidence_collector",
     "evidence_planner",
+    "exposure_history",
     "findings",
     "host_summary",
     "models",
