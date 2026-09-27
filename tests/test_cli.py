@@ -344,6 +344,8 @@ class CliTests(unittest.TestCase):
         collect_mock,
         render_json_mock,
     ) -> None:
+        import json
+
         from evidence_collector import CollectionResult, CorrelatedEvidenceResult, NmapCommand, ParsedCollectionResult
         from evidence_planner import HostEvidencePlan
         from models import Host, Scan
