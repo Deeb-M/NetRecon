@@ -18,8 +18,9 @@ from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
 from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_attention, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions
+from investigation_synthesis import build_investigation_synthesis
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json, render_investigation_synthesis, render_investigation_synthesis_json
 from scan_diff import compare_scans
 from scan_orchestration import build_baseline_discovery_plan, execute_discovery_plan, interpret_discovery_execution
 
@@ -194,11 +195,29 @@ def main() -> int:
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
         attention = build_investigation_attention(final_snapshot)
         correlations = correlate_analyst_attention(attention)
-        print(
-            render_investigation_continuation_json(continuation, decision, alternative_round, final_decision, attention, correlations)
-            if args.format == "json"
-            else render_investigation_continuation(continuation, decision, alternative_round, final_decision, attention, correlations)
+        synthesis = (
+            build_investigation_synthesis(final_decision, attention, correlations)
+            if final_decision is not None
+            else None
         )
+        if args.format == "json":
+            report = render_investigation_continuation_json(
+                continuation, decision, alternative_round, final_decision, attention, correlations
+            )
+            if synthesis is not None:
+                import json
+                payload = json.loads(report)
+                payload["investigation_synthesis"] = json.loads(
+                    render_investigation_synthesis_json(synthesis)
+                )
+                report = json.dumps(payload, indent=2, ensure_ascii=False)
+        else:
+            report = render_investigation_continuation(
+                continuation, decision, alternative_round, final_decision, attention, correlations
+            )
+            if synthesis is not None:
+                report += "\n\n" + render_investigation_synthesis(synthesis)
+        print(report)
         return 0 if updated.ready else 2
 
     if args.investigate is not None:
