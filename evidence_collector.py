@@ -405,6 +405,10 @@ def build_nmap_commands(plan: HostEvidencePlan) -> tuple[NmapCommand, ...]:
 
 def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]:
     """Group a host evidence plan into executable collection units."""
+    target = plan.target.strip()
+    if not target:
+        raise ValueError("Evidence collection requires a target")
+
     grouped: dict[tuple[int, str], list[str]] = {}
 
     for request in plan.requests:
@@ -423,7 +427,7 @@ def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]
 
     return tuple(
         CollectionSpec(
-            target=plan.target,
+            target=target,
             port=port,
             protocol=protocol,
             script_ids=tuple(script_ids),
