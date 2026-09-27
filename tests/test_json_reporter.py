@@ -102,6 +102,7 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["host_summaries"][0]["open_ports"], 0)
         self.assertEqual(data["host_summaries"][0]["services"], [])
         self.assertEqual(data["host_summaries"][0]["findings"], 1)
+        self.assertEqual(data["host_summaries"][0]["severity_counts"], [["info", 1]])
         self.assertEqual(data["findings"][0]["finding_id"], "example.finding")
         self.assertEqual(data["findings"][0]["category"], "test")
         self.assertEqual(data["findings"][0]["port"], 445)
