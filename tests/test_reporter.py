@@ -1335,6 +1335,9 @@ class ReporterTests(unittest.TestCase):
             json_report["final_investigation_decision"]["remaining_requirements"],
             [
                 {
+                    "host": "192.0.2.112",
+                    "port": 5357,
+                    "protocol": "tcp",
                     "requirement_id": "http_supported_methods",
                     "purpose": "review supported HTTP methods",
                     "primary_script_ids": ["http-methods"],
