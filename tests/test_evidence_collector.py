@@ -162,6 +162,19 @@ class EvidenceCollectorTests(unittest.TestCase):
             build_collection_specs(plan)
 
 
+    def test_rejects_blank_protocol_before_building_collection_specs(self) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.29",
+            requests=(EvidenceRequest(443, "   ", "ssl-cert"),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Unsupported collection protocol",
+        ):
+            build_collection_specs(plan)
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
