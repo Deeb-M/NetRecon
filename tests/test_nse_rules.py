@@ -118,6 +118,51 @@ class NseRulesTests(unittest.TestCase):
         self.assertIn("encryption_algorithms", finding.evidence)
         self.assertEqual(finding.evidence_source, "nse:ssh2-enum-algos")
 
+    def test_ssh_legacy_kex_requires_review(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=22,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(
+                        ScriptResult(
+                            script_id="ssh2-enum-algos",
+                            output=(
+                                "kex_algorithms:\n"
+                                "  curve25519-sha256\n"
+                                "  diffie-hellman-group1-sha1\n"
+                                "  diffie-hellman-group-exchange-sha1\n"
+                                "encryption_algorithms:\n"
+                                "  aes256-gcm@openssh.com"
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        finding = next(
+            finding
+            for finding in findings
+            if finding.finding_id == "ssh.kex.legacy_review"
+        )
+        self.assertEqual(finding.category, "configuration")
+        self.assertEqual(finding.severity, "medium")
+        self.assertEqual(finding.port, 22)
+        self.assertIn("diffie-hellman-group1-sha1", finding.evidence)
+        self.assertIn("diffie-hellman-group-exchange-sha1", finding.evidence)
+        self.assertNotIn("curve25519-sha256", finding.evidence)
+        self.assertEqual(finding.evidence_source, "nse:ssh2-enum-algos")
+
     def test_expired_tls_certificate_finding(self) -> None:
         host = Host(
             address="192.0.2.10",
