@@ -204,6 +204,7 @@ class FinalInvestigationDecision:
     remaining_gaps: tuple[EvidenceGap, ...]
     further_actions: tuple[EvidenceAction, ...] = ()
     remaining_requirements: tuple[EvidenceRequirementState, ...] = ()
+    satisfied_requirements: tuple[EvidenceRequirementState, ...] = ()
 
 
 def assess_final_investigation_decision(
@@ -212,6 +213,7 @@ def assess_final_investigation_decision(
     """Stop after the bounded alternative round and explain why."""
     remaining = alternative_round.snapshot.gaps
     requirements: list[EvidenceRequirementState] = []
+    satisfied_requirements: list[EvidenceRequirementState] = []
     seen_requirements: set[tuple[str, str, int, str]] = set()
     observed_alternatives = {
         (
@@ -250,13 +252,15 @@ def assess_final_investigation_decision(
             and protocol == gap.protocol.strip().lower()
         }
         if alternative_ids and alternative_ids.issubset(endpoint_observed_ids):
+            satisfied_requirements.append(state)
             continue
         requirements.append(state)
     remaining_requirements = tuple(requirements)
+    satisfied_requirements_tuple = tuple(satisfied_requirements)
     statuses = {verification.status for verification in alternative_round.verifications}
 
     if not remaining:
-        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), ())
+        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), (), ())
 
     if not remaining_requirements:
         return FinalInvestigationDecision(
@@ -264,7 +268,7 @@ def assess_final_investigation_decision(
             "all_semantic_requirements_satisfied",
             remaining,
             (),
-            (),
+            satisfied_requirements_tuple,
         )
 
     if "collection_failed" in statuses:
@@ -280,7 +284,14 @@ def assess_final_investigation_decision(
     else:
         reason = "no_verified_alternative_evidence"
 
-    return FinalInvestigationDecision("stalled", reason, remaining, (), remaining_requirements)
+    return FinalInvestigationDecision(
+        "stalled",
+        reason,
+        remaining,
+        (),
+        remaining_requirements,
+        satisfied_requirements_tuple,
+    )
 
 
 @dataclass(frozen=True)
