@@ -1010,3 +1010,45 @@ The public `v0.1.0` tag remains immutable; Evidence Gaps is post-release develop
 Next-development rule:
 Do not turn Evidence Gaps into speculative vulnerability advice or a duplicate scanner. Future work should build on the separation between discovery, evidence planning, collection, and interpretation, and should only automate another analyst task when the required evidence and semantics are explicit.
 
+
+
+### Stage C Evidence Action Plan milestone — CLOSED
+
+Evidence Action Plan is now a completed Stage C milestone on `main`.
+
+Validated behavior:
+- `netrecon scan.xml --evidence-actions` converts planner-supported missing evidence into transparent proposed collection actions without running Nmap.
+- `--format json` exposes the same actions in a stable `evidence_action_plan` envelope.
+- The Evidence Planner remains the source of truth for missing evidence.
+- Existing collector grouping and Nmap command construction are reused; Action Plan does not duplicate Nmap syntax or collection decisions.
+- Requests sharing host, port, and protocol are grouped into one action while preserving all script IDs and fixed purposes.
+- Text output shows the proposed Nmap command for analyst review.
+- JSON preserves the exact command as an argv array, avoiding shell-string parsing ambiguity.
+- Multi-host actions remain bound to the correct target.
+- Existing matching port-level or host-level NSE evidence suppresses redundant actions.
+- Unsupported services do not create speculative actions.
+- `Actions: 0` means only that no planner-supported collection action is currently required by the supplied scan.
+- No subprocess execution, automatic collection, vulnerability inference, risk score, severity claim, or safety claim is introduced by `--evidence-actions`.
+- `--evidence-actions` is mutually exclusive with `--collect-evidence` and other CLI modes.
+
+Implementation:
+- `evidence_action_plan.py` composes the existing planner, `build_collection_specs()`, `build_nmap_command()`, and Evidence Gaps purpose mapping.
+- `reporter.py` provides text and JSON renderers.
+- `netrecon.py` exposes `--evidence-actions`.
+- `evidence_action_plan.py` is included in package metadata.
+- A no-mock CLI integration test validates XML -> Parser -> Planner -> Collection grouping -> Nmap command builder -> Action Plan -> Reporter -> CLI.
+
+Real field validation:
+- Installed development CLI was refreshed in `~/netrecon-new-user/NetRecon`.
+- `stage-a-discovery.xml` on `192.168.227.138` produced exactly two actions from the four previously validated Evidence Gaps:
+  - `445/tcp`: `smb-protocols,smb2-security-mode` -> `nmap -p 445 --script smb-protocols,smb2-security-mode -oX - 192.168.227.138`.
+  - `5357/tcp`: `http-title,http-methods` -> `nmap -p 5357 --script http-title,http-methods -oX - 192.168.227.138`.
+- JSON field validation preserved exactly the same two actions, endpoints, script IDs, purposes, and commands as argv arrays.
+- `windows-smb-detail.xml` produced `Actions: 0`, confirming that real existing host-level SMB NSE evidence does not create redundant actions.
+
+Regression baseline before closure documentation: **568/568 tests passing**, with GitHub CI green before final field-validation documentation.
+
+The public `v0.1.0` tag remains immutable; Evidence Action Plan is post-release development on `main`.
+
+Next-development rule:
+Preserve the boundary: Action Plan proposes; `--collect-evidence` executes. Any future Scan Orchestration proof of concept should reuse these existing planner, command, provenance, and reporting layers rather than introducing a second scanner or hiding the exact Nmap actions from the analyst.
