@@ -251,3 +251,17 @@ Use NetRecon only with scan data from systems you own or are explicitly authoriz
 NetRecon is released under the MIT License.
 
 Created and maintained by Deeb Mzareb.
+
+
+## Evidence Action Plan
+
+On development `main`, `--evidence-actions` turns planner-supported missing evidence into grouped, transparent collection actions without running Nmap:
+
+```bash
+netrecon scan.xml --evidence-actions
+netrecon scan.xml --evidence-actions --format json
+```
+
+The Action Plan reuses the existing Evidence Planner and evidence collector command builder. Requests for the same host, port, and protocol are grouped into one proposed Nmap command, while the fixed purposes explain why each evidence source is useful. Text output shows a human-readable suggested collection command; JSON preserves the exact command as an argv array rather than a shell string. The mode only proposes actions: it does not execute Nmap, infer vulnerabilities, assign risk, or claim that `Actions: 0` means a host is safe or fully assessed.
+
+Real field validation on `main` used `stage-a-discovery.xml` and `windows-smb-detail.xml`. The discovery scan's four Evidence Gaps were grouped into exactly two actions: one SMB action on `445/tcp` for `smb-protocols,smb2-security-mode`, and one HTTP action on `5357/tcp` for `http-title,http-methods`. Text and JSON outputs preserved the same hosts, endpoints, scripts, purposes, and commands. The detailed SMB scan produced `Actions: 0`, confirming that existing real host-level SMB evidence does not create redundant collection actions.
