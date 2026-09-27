@@ -7,6 +7,7 @@ from analyzer import Finding
 from evidence_gaps import EvidenceGap
 from evidence_action_plan import EvidenceAction
 from investigation_orchestration import InvestigationSnapshot
+from investigation_state import EndpointInvestigationState
 from evidence_collector import (
     CollectionResult,
     CorrelatedEvidenceResult,
@@ -917,6 +918,90 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(
             payload["actions"][0]["command"],
             ["nmap", "-p", "445", "--script", "smb-protocols", "-oX", "-", "192.0.2.10"],
+        )
+
+
+    def test_investigation_snapshot_renders_known_and_unknown_endpoint_state(self) -> None:
+        gap = EvidenceGap(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_id="smb-protocols",
+            purpose="review SMB protocol dialect support",
+        )
+        state = EndpointInvestigationState(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            known=("state=open", "service=microsoft-ds"),
+            unknown=(gap,),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="<discovery:192.0.2.10>"),
+            gaps=(gap,),
+            actions=(),
+            states=(state,),
+            error=None,
+        )
+
+        report = render_investigation_snapshot(snapshot)
+
+        self.assertIn("Investigation State", report)
+        self.assertIn("192.0.2.10:445/tcp", report)
+        self.assertIn("Known: state=open", report)
+        self.assertIn("Known: service=microsoft-ds", report)
+        self.assertIn(
+            "Unknown: smb-protocols — review SMB protocol dialect support",
+            report,
+        )
+
+    def test_investigation_snapshot_json_preserves_structured_endpoint_state(self) -> None:
+        gap = EvidenceGap(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_id="smb2-security-mode",
+            purpose="review SMB signing configuration",
+        )
+        state = EndpointInvestigationState(
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            known=("state=open", "service=microsoft-ds"),
+            unknown=(gap,),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="<discovery:192.0.2.10>"),
+            gaps=(gap,),
+            actions=(),
+            states=(state,),
+            error=None,
+        )
+
+        data = json.loads(render_investigation_snapshot_json(snapshot))
+
+        self.assertEqual(data["summary"]["investigation_states"], 1)
+        self.assertEqual(
+            data["states"],
+            [
+                {
+                    "host": "192.0.2.10",
+                    "port": 445,
+                    "protocol": "tcp",
+                    "known": ["state=open", "service=microsoft-ds"],
+                    "unknown": [
+                        {
+                            "host": "192.0.2.10",
+                            "port": 445,
+                            "protocol": "tcp",
+                            "script_id": "smb2-security-mode",
+                            "purpose": "review SMB signing configuration",
+                        }
+                    ],
+                }
+            ],
         )
 
 
