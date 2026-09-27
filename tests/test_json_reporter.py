@@ -293,5 +293,47 @@ class JsonReporterTests(unittest.TestCase):
         self.assertEqual(data["shared_services"][0]["host_count"], 2)
 
 
+    def test_analysis_json_orders_host_summaries_by_analyst_attention(self) -> None:
+        scan = Scan(
+            source="multi-attention.xml",
+            hosts=(
+                Host(address="192.0.2.10", status="up"),
+                Host(address="192.0.2.20", status="up"),
+                Host(address="192.0.2.30", status="up"),
+            ),
+        )
+        findings = (
+            Finding(
+                finding_id="info.finding",
+                category="test",
+                host="192.0.2.10",
+                port=None,
+                protocol=None,
+                severity="info",
+                title="Info",
+                evidence="info evidence",
+                recommendation="Review",
+            ),
+            Finding(
+                finding_id="high.finding",
+                category="test",
+                host="192.0.2.20",
+                port=None,
+                protocol=None,
+                severity="high",
+                title="High",
+                evidence="high evidence",
+                recommendation="Review",
+            ),
+        )
+
+        data = json.loads(render_analysis_json(scan, findings))
+
+        self.assertEqual(
+            [summary["host"] for summary in data["host_summaries"]],
+            ["192.0.2.20", "192.0.2.10", "192.0.2.30"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
