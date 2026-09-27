@@ -889,3 +889,38 @@ Real text field validation reused `lab-multi.xml`, `lab-multi-after.xml`, and `l
 - `192.168.227.140:135/tcp`, `:139/tcp`, `:445/tcp`, and `:5357/tcp`: each `observations=3`, `opportunities=3`.
 
 This preserves the evidence-first distinction between “observed open” and “had a valid measurement opportunity”.
+
+
+### Stage C Exposure History milestone — CLOSED
+
+Exposure History is now a completed Stage C milestone on `main`.
+
+Final validated behavior:
+- Stateless history across two or more timestamped Nmap XML scans through `--history`.
+- Endpoint identity is normalized host + port + protocol; service/product/version changes do not split endpoint history.
+- Only endpoints actually observed `open` at least once are emitted.
+- `first_seen` / `last_seen` remain stable integer Unix timestamps in the model/JSON contract.
+- Human-readable text uses the more precise labels `first_observed` / `last_observed`.
+- `observations` counts scan documents where the endpoint was observed open.
+- `opportunities` counts scans where the normalized host was observed up and that port/protocol was explicitly in Nmap scan scope.
+- Duplicate endpoint entries inside one scan count once.
+- Nmap `started_at` is preferred; `finished_at` is the fallback; missing timestamps fail closed.
+- Input order does not determine first/last observation.
+- No database, persistence layer, uptime percentage, availability score, inferred duration, or continuous-exposure claim was introduced.
+- History complements Diff/Combined Diff rather than replacing their state-change semantics.
+
+Real field validation:
+- Text and JSON were both validated against `lab-multi.xml`, `lab-multi-after.xml`, and `lab-multi-restored.xml`.
+- Raw XML was cross-checked against the History result.
+- `192.168.227.128:80/tcp` was open in the first and third scans and filtered in the middle scan: `observations=2`, `opportunities=3`.
+- Four Windows endpoints remained open across all three valid opportunities: `observations=3`, `opportunities=3`.
+- JSON preserved the same values and integer timestamps.
+
+Documentation:
+- README now exposes the History workflow in the feature list and Quick Start, documents JSON usage, lists `exposure_history.py` in Architecture, and explicitly explains the observational semantics.
+- The public `v0.1.0` tag remains immutable; History is post-release development on `main`.
+
+Final regression baseline: **530/530 tests passing**, with GitHub CI green through the History documentation checkpoint.
+
+Next-development rule:
+Do not extend History merely to add more metrics. Select the next milestone by identifying a distinct analyst task that NetRecon can remove through evidence-backed correlation, orchestration, interpretation, or workflow without inventing risk or certainty.
