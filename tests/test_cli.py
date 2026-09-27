@@ -1130,5 +1130,19 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), '{"status":"failed"}')
 
 
+    def test_installed_cli_help_exposes_discover_mode(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, "-m", "netrecon", "--help"],
+            capture_output=True,
+            text=True,
+            shell=False,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("--discover TARGET", completed.stdout)
+        self.assertIn("--discovery-plan TARGET", completed.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
