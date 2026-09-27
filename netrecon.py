@@ -18,7 +18,7 @@ from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
 from investigation_orchestration import build_investigation_snapshot, execute_approved_evidence_actions
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json
 from scan_diff import compare_scans
 from scan_orchestration import build_baseline_discovery_plan, execute_discovery_plan, interpret_discovery_execution
 
@@ -172,7 +172,7 @@ def main() -> int:
         )
         updated = continuation.snapshot
         print(
-            render_investigation_snapshot_json(updated)
+            render_investigation_continuation_json(continuation)
             if args.format == "json"
             else render_investigation_continuation(continuation)
         )
