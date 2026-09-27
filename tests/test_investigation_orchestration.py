@@ -1568,5 +1568,44 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(memory.added_requirements, (added,))
 
 
+
+    def test_investigation_history_record_json_round_trip_preserves_state(self) -> None:
+        from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
+        from investigation_history import (
+            InvestigationHistoryRecord,
+            parse_investigation_history_record_json,
+            render_investigation_history_record_json,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+
+        remaining = EvidenceRequirementState(
+            "192.0.2.140",
+            5357,
+            "tcp",
+            EvidenceRequirement(
+                "http_identity_context",
+                "review HTTP service identity and exposed content context",
+                ("http-title",),
+                ("http-headers",),
+            ),
+        )
+        record = InvestigationHistoryRecord(
+            observed_at=1770000000,
+            target="192.0.2.140",
+            synthesis=InvestigationSynthesis(
+                status="stalled",
+                reason="alternative_evidence_incomplete",
+                attention_items=4,
+                correlated_review_groups=1,
+                remaining_requirements=(remaining,),
+            ),
+        )
+
+        payload = render_investigation_history_record_json(record)
+        restored = parse_investigation_history_record_json(payload)
+
+        self.assertEqual(restored, record)
+
+
 if __name__ == "__main__":
     unittest.main()
