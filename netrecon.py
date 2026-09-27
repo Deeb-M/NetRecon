@@ -16,7 +16,7 @@ from evidence_gaps import summarize_evidence_gaps
 from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
-from investigation_orchestration import assess_investigation_continuation, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions
+from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions
 from parser import NmapParseError, parse_nmap_xml
 from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json
 from scan_diff import compare_scans
@@ -177,16 +177,18 @@ def main() -> int:
             attempted_actions=snapshot.actions,
         )
         alternative_round = None
+        final_decision = None
         if decision.alternative_actions:
             alternative_round = execute_alternative_evidence_round(
                 updated,
                 decision.alternative_actions,
                 timeout=args.evidence_timeout,
             )
+            final_decision = assess_final_investigation_decision(alternative_round)
         print(
-            render_investigation_continuation_json(continuation, decision, alternative_round)
+            render_investigation_continuation_json(continuation, decision, alternative_round, final_decision)
             if args.format == "json"
-            else render_investigation_continuation(continuation, decision, alternative_round)
+            else render_investigation_continuation(continuation, decision, alternative_round, final_decision)
         )
         return 0 if updated.ready else 2
 

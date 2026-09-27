@@ -803,7 +803,7 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
 
 
 
-def render_investigation_continuation(result, decision=None, alternative_round=None) -> str:
+def render_investigation_continuation(result, decision=None, alternative_round=None, final_decision=None) -> str:
     """Render collection execution separately from requested-evidence completeness."""
     lines = [
         "Investigation Continuation",
@@ -871,6 +871,15 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
             if verification.observed_script_ids:
                 lines.append("Observed Evidence: " + ", ".join(verification.observed_script_ids))
 
+    if final_decision is not None:
+        lines.append("")
+        lines.append("Final Investigation Decision")
+        lines.append("----------------------------")
+        lines.append(f"Status: {final_decision.status}")
+        lines.append(f"Reason: {final_decision.reason}")
+        lines.append(f"Remaining Gaps: {len(final_decision.remaining_gaps)}")
+        lines.append(f"Further Supported Actions: {len(final_decision.further_actions)}")
+
     lines.append("")
     lines.append(render_investigation_snapshot(
         alternative_round.snapshot if alternative_round is not None else result.snapshot
@@ -914,7 +923,7 @@ def _investigation_continuation_outcomes(result):
     return rendered
 
 
-def render_investigation_continuation_json(result, decision=None, alternative_round=None) -> str:
+def render_investigation_continuation_json(result, decision=None, alternative_round=None, final_decision=None) -> str:
     """Render continuation provenance and updated investigation as JSON."""
     final_snapshot = alternative_round.snapshot if alternative_round is not None else result.snapshot
     updated = json.loads(render_investigation_snapshot_json(final_snapshot))
@@ -932,6 +941,13 @@ def render_investigation_continuation_json(result, decision=None, alternative_ro
             }
             for verification in alternative_round.verifications
         ]
+    if final_decision is not None:
+        payload["final_investigation_decision"] = {
+            "status": final_decision.status,
+            "reason": final_decision.reason,
+            "remaining_gaps": len(final_decision.remaining_gaps),
+            "further_supported_actions": len(final_decision.further_actions),
+        }
     if decision is not None:
         payload["continuation_decision"] = {
             "status": decision.status,
