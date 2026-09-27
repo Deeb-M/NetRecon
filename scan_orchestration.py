@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 import subprocess
 
 from models import Scan
@@ -51,6 +52,16 @@ def execute_discovery_plan(
     timeout: float = 60.0,
 ) -> DiscoveryExecutionResult:
     """Execute exactly the argv stored in a discovery plan."""
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError("Discovery timeout must be a positive finite number")
+
+    def normalize_output(value: str | bytes | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, bytes):
+            return value.decode(errors="replace")
+        return value
+
     try:
         completed = subprocess.run(
             plan.command,
@@ -63,9 +74,17 @@ def execute_discovery_plan(
         return DiscoveryExecutionResult(
             plan=plan,
             returncode=124,
-            stdout=exc.output or "",
-            stderr=exc.stderr or "",
+            stdout=normalize_output(exc.output),
+            stderr=normalize_output(exc.stderr),
             timed_out=True,
+        )
+    except FileNotFoundError as exc:
+        return DiscoveryExecutionResult(
+            plan=plan,
+            returncode=127,
+            stdout="",
+            stderr=str(exc),
+            timed_out=False,
         )
 
     return DiscoveryExecutionResult(
