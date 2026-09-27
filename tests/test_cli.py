@@ -1309,7 +1309,7 @@ class CliTests(unittest.TestCase):
             updated,
             attempted_actions=initial.actions,
         )
-        render_mock.assert_called_once_with(continuation, decision)
+        render_mock.assert_called_once_with(continuation, decision, None)
         self.assertEqual(output.getvalue().strip(), "Investigation continuation")
 
 
@@ -1369,7 +1369,7 @@ class CliTests(unittest.TestCase):
             updated,
             attempted_actions=initial.actions,
         )
-        render_json_mock.assert_called_once_with(continuation, decision)
+        render_json_mock.assert_called_once_with(continuation, decision, None)
         self.assertEqual(output.getvalue().strip(), '{"report_type":"investigation_continuation"}')
 
 
