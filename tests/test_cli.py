@@ -1,5 +1,6 @@
 """Tests for NetRecon command-line argument validation."""
 
+import json
 import unittest
 import tempfile
 from pathlib import Path
