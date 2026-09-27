@@ -803,3 +803,40 @@ Validation decision:
 - The SSH workflow is now field-validated through discovery, evidence planning, collection, parsing, correlation, analysis, and Host Summary.
 - Keep the first SSH intelligence rule deliberately narrow; do not generalize it into a broad vulnerability claim.
 - Development regression baseline is 511/511 tests passing locally on Kali.
+
+### Stage C Combined Analyst Diff checkpoint
+
+Stage C now includes a combined analyst comparison workflow through `--combined-diff`.
+
+The workflow composes the existing exposure and analysis comparison engines rather than introducing a third comparison model:
+
+- `Exposure Changes` continues to describe observed network/service exposure changes.
+- `Analysis Changes` continues to describe evidence-based finding changes.
+- Text output keeps both sections visibly separate.
+- JSON uses a `change_type: combined` envelope with independent `exposure` and `analysis` objects.
+- Existing `--diff` and `--analysis-diff` behavior remains available and unchanged.
+- No combined risk score or hidden weighting is introduced.
+
+Regression baseline after the implementation: **513/513 tests passing locally**, with GitHub CI green for the implementation commit.
+
+Real field validation used the existing Kali Telnet scans `kali-telnet-real.xml` and `kali-telnet-after.xml`.
+
+Observed text result:
+
+- Exposure summary: `NO_LONGER_OPEN=1` for `192.168.227.128:23/tcp telnet`.
+- Analysis summary: `NO_LONGER_OBSERVED=2`.
+- The removed findings were the informational missing-product finding and the medium Telnet exposure finding.
+- Both scans covered `tcp:23`; coverage was unchanged, with no newly scanned or no-longer-scanned ports.
+
+This is an important semantic validation: NetRecon distinguished **a previously open Telnet service becoming no longer open** from **Telnet merely disappearing because port 23 was no longer scanned**.
+
+The same field pair was validated with `--combined-diff --format json`. The JSON preserved:
+
+- top-level `change_type: combined`;
+- separate machine-readable `exposure` and `analysis` sections;
+- exposure and finding change details;
+- finding evidence provenance;
+- unchanged coverage metadata in both sections.
+
+This closes the first real field-validation checkpoint for the Combined Analyst Diff workflow.
+
