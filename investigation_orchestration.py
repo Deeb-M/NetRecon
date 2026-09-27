@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
-from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_state_for_gap, requirement_states_for_gaps, summarize_evidence_gaps
+from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_state_for_gap, requirement_states_for_gaps, resolved_requirement_states, summarize_evidence_gaps
 from evidence_collector import (
     NmapCommand,
     ParsedCollectionResult,
@@ -306,6 +306,7 @@ class InvestigationContinuationDecision:
     repeat_blocked_actions: tuple[EvidenceAction, ...] = ()
     stall_reason: str | None = None
     alternative_actions: tuple[EvidenceAction, ...] = ()
+    resolved_requirements: tuple[EvidenceRequirementState, ...] = ()
 
 
 def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
@@ -404,4 +405,5 @@ def assess_investigation_continuation(
         repeat_blocked_actions=repeat_blocked,
         stall_reason=stall_reason,
         alternative_actions=alternative_actions,
+        resolved_requirements=resolved_requirement_states(before.gaps, after.gaps),
     )

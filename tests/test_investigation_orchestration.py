@@ -1366,5 +1366,27 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             assess_investigation_continuation(blocked, self._snapshot(()))
 
 
+
+    def test_continuation_decision_reports_resolved_semantic_requirements(self) -> None:
+        before_gap = EvidenceGap(
+            "192.0.2.62", 445, "tcp", "smb-protocols", "review SMB protocol dialect support"
+        )
+        after_gap = EvidenceGap(
+            "192.0.2.62", 5357, "tcp", "http-title", "review HTTP service identity"
+        )
+        before = InvestigationSnapshot(True, Scan("before.xml"), (before_gap, after_gap), (), (), None)
+        after = InvestigationSnapshot(True, Scan("after.xml"), (after_gap,), (), (), None)
+
+        decision = assess_investigation_continuation(before, after)
+
+        self.assertEqual(
+            [
+                (state.host, state.port, state.protocol, state.requirement.requirement_id)
+                for state in decision.resolved_requirements
+            ],
+            [("192.0.2.62", 445, "tcp", "smb_protocol_support")],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
