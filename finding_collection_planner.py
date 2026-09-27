@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 from finding_requirements import FindingDerivedRequirement, derive_finding_requirements
 from findings import Finding
+from evidence_action_plan import EvidenceAction
+from evidence_collector import CollectionSpec, build_nmap_command
 from requirement_collection import (
     CollectionAuthorizationDecision,
     RequirementCollectionStrategy,
@@ -44,3 +46,33 @@ def build_finding_collection_plans(
             )
         )
     return tuple(plans)
+
+
+
+def evidence_action_for_finding_collection_plan(
+    plan: FindingCollectionPlan,
+) -> EvidenceAction | None:
+    """Convert only an authorized finding-derived plan into a standard EvidenceAction."""
+    if not plan.authorization.allowed:
+        return None
+    requirement = plan.requirement
+    if requirement.port is None or requirement.protocol is None:
+        return None
+    if not plan.strategy.script_ids:
+        return None
+
+    spec = CollectionSpec(
+        target=requirement.host,
+        port=requirement.port,
+        protocol=requirement.protocol,
+        script_ids=plan.strategy.script_ids,
+    )
+    command = build_nmap_command(spec)
+    return EvidenceAction(
+        host=requirement.host,
+        port=requirement.port,
+        protocol=requirement.protocol,
+        script_ids=plan.strategy.script_ids,
+        purposes=(requirement.purpose,),
+        command=command.arguments,
+    )
