@@ -1100,7 +1100,7 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Collection Status: success", report)
         self.assertIn("Requested Evidence: incomplete", report)
         self.assertIn("Missing Evidence: http-title, http-methods", report)
-        self.assertNotIn("Status: success", report)
+        self.assertNotIn("\nStatus: success\n", f"\n{report}\n")
 
 
 if __name__ == "__main__":
