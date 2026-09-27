@@ -1293,7 +1293,7 @@ class ReporterTests(unittest.TestCase):
 
     def test_final_decision_reports_real_remaining_semantic_requirement(self) -> None:
         import json
-        from evidence_gaps import EvidenceGap, EvidenceRequirement
+        from evidence_gaps import EvidenceGap, EvidenceRequirement, EvidenceRequirementState
         from investigation_orchestration import (
             FinalInvestigationDecision,
             InvestigationContinuationResult,
@@ -1317,7 +1317,7 @@ class ReporterTests(unittest.TestCase):
             "alternative_evidence_incomplete",
             (gap,),
             (),
-            (requirement,),
+            (EvidenceRequirementState("192.0.2.112", 5357, "tcp", requirement),),
         )
         result = InvestigationContinuationResult((), snapshot)
 
@@ -1328,7 +1328,7 @@ class ReporterTests(unittest.TestCase):
 
         self.assertIn("Remaining Requirements: 1", text_report)
         self.assertIn(
-            "Requirement: http_supported_methods — review supported HTTP methods",
+            "Requirement: 192.0.2.112:5357/tcp  http_supported_methods — review supported HTTP methods",
             text_report,
         )
         self.assertEqual(
