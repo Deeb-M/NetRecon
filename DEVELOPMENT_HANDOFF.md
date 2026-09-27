@@ -1649,3 +1649,126 @@ Milestone status: **FIELD-VALIDATED**.
 Investigation Synthesis is now a validated layer. Before expanding its prose or adding interpretation, preserve its role as a factual projection over existing truth.
 
 The next major vision layer is **Investigation Memory / History**: enable NetRecon to compare investigation knowledge over time while preserving endpoint identity, evidence provenance, and the distinction between observed change and analyst interpretation.
+
+
+## Investigation Memory / History V1 — FIELD-VALIDATED
+
+NetRecon now persists and compares completed factual investigation states across runs. This layer remembers **investigation knowledge state** rather than duplicating the existing endpoint Exposure History or evidence-backed Finding History.
+
+Validated flow:
+
+```text
+Investigation Synthesis
+  -> Opt-in append-only History
+  -> Previous same-target Synthesis
+  -> Factual Investigation Memory
+  -> Current-vs-previous change report
+```
+
+### V1 memory contract
+
+`InvestigationMemory` compares two `InvestigationSynthesis` states and reports only factual change:
+
+- previous/current final status and whether it changed;
+- previous/current final reason and whether it changed;
+- Analyst Attention item count delta;
+- Correlated Review group count delta;
+- added semantic requirements;
+- resolved semantic requirements.
+
+It does not label a change as improvement/deterioration, safer/riskier, or assign severity/risk.
+
+Requirement identity remains endpoint- and semantics-aware:
+`(normalized host, port, normalized protocol, requirement_id)`.
+
+### Persistence contract
+
+History is explicitly opt-in:
+
+```bash
+netrecon --investigate-collect TARGET --investigation-history FILE
+```
+
+The store is append-only JSONL. Each completed record contains:
+- `schema_version: 1`;
+- observation timestamp;
+- target;
+- complete factual `InvestigationSynthesis`.
+
+The current parser accepts only schema version 1. Unsupported/missing versions fail closed rather than being guessed. History read/write errors return a clear CLI error and exit code 2. A failed history load is not silently skipped and no new record is appended to an untrusted history stream.
+
+`--investigation-history` is valid only with `--investigate-collect`; misuse is rejected by the CLI.
+
+Previous-state selection is target-scoped and timestamp-based. A newer record for another target is not used as comparison context.
+
+### Regression baseline
+
+- Full suite after the V1 CLI-contract regression: **699/699 tests passing**.
+- GitHub Actions green.
+- Coverage includes model comparison, Text/JSON reporting, JSON round-trip tuple preservation, append/load ordering, same-target previous-state selection, persistence flow, visible CLI Memory reporting, fail-closed invalid-history behavior, and CLI modifier validation.
+
+### Real field validation
+
+Authorized Kali lab target: `192.168.227.138`.
+
+A clean History baseline was created with:
+
+```bash
+rm -f investigation-history.jsonl
+netrecon --investigate-collect 192.168.227.138 --investigation-history investigation-history.jsonl
+```
+
+The first terminal investigation produced the expected Synthesis and no Memory section because no previous same-target investigation existed. Its factual state was persisted as the baseline.
+
+A second investigation used the same target and History file:
+
+```bash
+netrecon --investigate-collect 192.168.227.138 --investigation-history investigation-history.jsonl
+```
+
+The second run recalled the previous same-target Synthesis and produced:
+
+```text
+Investigation Memory
+--------------------
+Status: stalled -> stalled
+Status Changed: no
+Reason: alternative_evidence_incomplete -> alternative_evidence_incomplete
+Reason Changed: no
+Attention Item Change: +0
+Correlated Review Group Change: +0
+Added Requirements: 0
+Resolved Requirements: 0
+```
+
+This is a useful stable-state validation: NetRecon did not invent change when the underlying investigation state remained the same.
+
+The field run therefore demonstrates:
+
+> **Investigate -> Persist -> Re-investigate -> Recall same target -> Compare -> Report factual change**
+
+Milestone status: **FIELD-VALIDATED**.
+
+### Architectural boundary
+
+Investigation Memory does not replace:
+- Exposure History, which tracks observed open endpoints over scans;
+- Finding History, which tracks repeated evidence-backed Findings.
+
+Memory V1 tracks the higher-level investigation knowledge state represented by Synthesis.
+
+Only runs that produce a real terminal `InvestigationSynthesis` are currently persisted. Investigation paths without a `FinalInvestigationDecision` remain outside this V1 contract rather than receiving an invented terminal state.
+
+### Next major vision layer
+
+With factual single-run Synthesis and cross-run Memory now field-validated, the next major layer is **Adaptive Investigation Planning**.
+
+The planning question is no longer only:
+
+> What evidence is missing now?
+
+It becomes:
+
+> Given what this investigation already knows, what it tried before, what remains unresolved, and what changed over time, what is the next evidence action that is actually justified?
+
+Preserve the existing product constraints: evidence-first reasoning, bounded collection, explicit semantic alternatives, provenance, repeat guards, and explicit STOP. Adaptive planning must not become uncontrolled scanning or speculative vulnerability hunting.
