@@ -76,4 +76,19 @@ def summarize_hosts(
             )
         )
 
-    return tuple(summaries)
+    severity_priority = {
+        severity: priority for priority, severity in enumerate(_SEVERITY_ORDER)
+    }
+
+    def attention_key(summary: HostSummary) -> tuple[int, str]:
+        highest_severity = (
+            summary.severity_counts[0][0] if summary.severity_counts else None
+        )
+        priority = (
+            severity_priority.get(highest_severity, len(_SEVERITY_ORDER))
+            if highest_severity is not None
+            else len(_SEVERITY_ORDER) + 1
+        )
+        return priority, summary.host
+
+    return tuple(sorted(summaries, key=attention_key))
