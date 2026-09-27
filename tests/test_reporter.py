@@ -13,7 +13,7 @@ from evidence_collector import (
     ParsedCollectionResult,
 )
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
+from reporter import render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
 
 
 class ReporterTests(unittest.TestCase):
