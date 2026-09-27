@@ -642,3 +642,27 @@ This demonstrates the first Stage B hardening gap:
 - The implementation must remain conservative: no shell execution, no fabricated evidence, and timeout/failure state must be explicit to the analyst.
 
 Stage B should be driven by real failure behavior (timeouts, non-responsive targets, partial results, Nmap failures, UDP/privilege behavior, and multi-host behavior), followed by a second field test.
+
+
+## Stage B — Evidence Collection Hardening checkpoint — 2026-09-27
+
+Stage B implementation hardening has reached the next field-test boundary.
+
+Validated development baseline:
+- **505/505 tests passing locally on Kali**.
+- GitHub CI is green at commit `0bf0e3d`.
+- Stage A remains closed and field-validated; no new public release has been published.
+
+Hardening completed since the Stage A field test:
+- Per-command timeout is preserved as an explicit failed collection outcome (synthetic return code 124) instead of aborting the entire host collection.
+- Collection continues after a timed-out command so later evidence can still be collected and correlated.
+- Text and JSON CLI paths preserve/report partial evidence results.
+- Non-zero command outcomes cannot be accepted as successful evidence even if stdout resembles XML.
+- A zero exit with invalid XML is reported explicitly as `Nmap returned invalid XML`.
+- `--evidence-timeout` rejects non-positive and non-finite values.
+- Evidence grouping normalizes protocol and script IDs, deduplicates script IDs while preserving order, and rejects blank scripts, unsupported/blank protocols, and ports outside 1..65535.
+- Evidence targets are normalized and blank targets are rejected at both planning and collection boundaries.
+
+### Stage B checkpoint decision
+
+Stop adding unit tests merely to increase the count. The next meaningful activity is the **second controlled field test** against the authorized lab target. It should exercise the hardened normal path and partial/failure behavior with real Nmap. Any new Stage B implementation after this checkpoint should be driven by observations from that field test.
