@@ -42,7 +42,8 @@ class HostSummaryTests(unittest.TestCase):
         self.assertEqual(summaries[0].status, "up")
         self.assertEqual(summaries[0].open_ports, 1)
         self.assertEqual(summaries[0].services, ("http",))
-        self.assertEqual(summaries[0].findings, 1)\n        self.assertEqual(summaries[0].severity_counts, (("info", 1),))
+        self.assertEqual(summaries[0].findings, 1)
+        self.assertEqual(summaries[0].severity_counts, (("info", 1),))
 
     def test_normalizes_and_deduplicates_open_services(self) -> None:
         scan = Scan(
@@ -65,7 +66,8 @@ class HostSummaryTests(unittest.TestCase):
         self.assertEqual(summary.status, "up")
         self.assertEqual(summary.open_ports, 3)
         self.assertEqual(summary.services, ("http", "unknown"))
-        self.assertEqual(summary.findings, 0)\n        self.assertEqual(summary.severity_counts, ())
+        self.assertEqual(summary.findings, 0)
+        self.assertEqual(summary.severity_counts, ())
 
 
 if __name__ == "__main__":
