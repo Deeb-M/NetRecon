@@ -419,6 +419,41 @@ class EvidenceCollectorTests(unittest.TestCase):
 
 
     @patch("evidence_collector.execute_nmap_command")
+    @patch("evidence_collector.execute_nmap_command")
+    def test_host_plan_continues_after_timed_out_command(
+        self,
+        execute_mock,
+    ) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.141",
+            requests=(
+                EvidenceRequest(445, "tcp", "smb-protocols"),
+                EvidenceRequest(80, "tcp", "http-title"),
+            ),
+        )
+        commands = build_nmap_commands(plan)
+        execute_mock.side_effect = (
+            CollectionResult(
+                commands[0],
+                124,
+                "",
+                "Nmap evidence collection timed out",
+            ),
+            CollectionResult(
+                commands[1],
+                0,
+                "<nmaprun />",
+                "",
+            ),
+        )
+
+        results = execute_host_evidence_plan(plan, timeout=0.001)
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0].returncode, 124)
+        self.assertEqual(results[1].returncode, 0)
+        self.assertEqual(execute_mock.call_count, 2)
+
     def test_empty_host_plan_executes_no_commands(
         self,
         execute_mock,
