@@ -1209,6 +1209,7 @@ class ReporterTests(unittest.TestCase):
                 "status": "complete",
                 "stall_reason": None,
                 "resolved_gaps": 0,
+                "resolved_requirements": [],
                 "remaining_gaps": 0,
                 "next_actions": 0,
                 "repeat_blocked_actions": 0,
