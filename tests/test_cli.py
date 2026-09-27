@@ -1353,5 +1353,91 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), '{"report_type":"investigation_continuation"}')
 
 
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_blocked_discovery_does_not_execute_evidence(
+        self, build_plan_mock, execute_discovery_mock, interpret_mock, snapshot_mock, execute_evidence_mock
+    ) -> None:
+        from investigation_orchestration import InvestigationSnapshot
+        from netrecon import main
+        from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+
+        plan = DiscoveryPlan("192.0.2.10", "baseline", "purpose", ("nmap", "-sV", "-oX", "-", "192.0.2.10"))
+        execution = DiscoveryExecutionResult(plan, 2, "", "failed", False)
+        discovery = DiscoveryResult(execution, False, None, "failed")
+        blocked = InvestigationSnapshot(False, None, (), (), (), "failed")
+        build_plan_mock.return_value = plan
+        execute_discovery_mock.return_value = execution
+        interpret_mock.return_value = discovery
+        snapshot_mock.return_value = blocked
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.10"]):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(), 2)
+
+        execute_evidence_mock.assert_not_called()
+
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_passes_custom_timeout_to_discovery_and_evidence(
+        self, build_plan_mock, execute_discovery_mock, interpret_mock, snapshot_mock, execute_evidence_mock
+    ) -> None:
+        from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
+        from models import Scan
+        from netrecon import main
+        from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+
+        plan = DiscoveryPlan("192.0.2.10", "baseline", "purpose", ("nmap", "-sV", "-oX", "-", "192.0.2.10"))
+        execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
+        scan = Scan(source="discovery.xml")
+        discovery = DiscoveryResult(execution, True, scan, None)
+        snapshot = InvestigationSnapshot(True, scan, (), (), (), None)
+        build_plan_mock.return_value = plan
+        execute_discovery_mock.return_value = execution
+        interpret_mock.return_value = discovery
+        snapshot_mock.return_value = snapshot
+        execute_evidence_mock.return_value = InvestigationContinuationResult((), snapshot)
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.10", "--evidence-timeout", "7"]):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(), 0)
+
+        execute_discovery_mock.assert_called_once_with(plan, timeout=7.0)
+        execute_evidence_mock.assert_called_once_with(snapshot, timeout=7.0)
+
+    @patch("netrecon.execute_approved_evidence_actions")
+    def test_investigate_preview_never_executes_approved_evidence(self, execute_evidence_mock) -> None:
+        from netrecon import main
+
+        with patch("netrecon.build_baseline_discovery_plan") as build_plan_mock, \
+             patch("netrecon.execute_discovery_plan") as execute_discovery_mock, \
+             patch("netrecon.interpret_discovery_execution") as interpret_mock, \
+             patch("netrecon.build_investigation_snapshot") as snapshot_mock, \
+             patch("netrecon.render_investigation_snapshot", return_value="preview"), \
+             patch("sys.argv", ["netrecon", "--investigate", "192.0.2.10"]):
+            from investigation_orchestration import InvestigationSnapshot
+            from models import Scan
+            from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+            plan = DiscoveryPlan("192.0.2.10", "baseline", "purpose", ("nmap", "-sV", "-oX", "-", "192.0.2.10"))
+            execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
+            scan = Scan(source="discovery.xml")
+            discovery = DiscoveryResult(execution, True, scan, None)
+            snapshot = InvestigationSnapshot(True, scan, (), (), (), None)
+            build_plan_mock.return_value = plan
+            execute_discovery_mock.return_value = execution
+            interpret_mock.return_value = discovery
+            snapshot_mock.return_value = snapshot
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(), 0)
+
+        execute_evidence_mock.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
