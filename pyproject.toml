@@ -48,6 +48,6 @@ py-modules = [
     "parser",
     "reporter",
     "scan_diff",
-    "scan_orchestration", "investigation_orchestration",
+    "scan_orchestration", "investigation_orchestration", "investigation_state",
     "service_rules",
 ]
