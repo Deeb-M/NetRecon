@@ -109,6 +109,25 @@ def requirement_state_for_gap(gap: EvidenceGap) -> EvidenceRequirementState | No
     )
 
 
+def requirement_states_for_gaps(
+    gaps: tuple[EvidenceGap, ...],
+) -> tuple[EvidenceRequirementState, ...]:
+    """Return deduplicated endpoint-bound semantic requirements for evidence gaps."""
+    states: dict[tuple[str, int, str, str], EvidenceRequirementState] = {}
+    for gap in gaps:
+        state = requirement_state_for_gap(gap)
+        if state is None:
+            continue
+        key = (
+            state.host,
+            state.port,
+            state.protocol,
+            state.requirement.requirement_id,
+        )
+        states[key] = state
+    return tuple(states[key] for key in sorted(states))
+
+
 def summarize_evidence_gaps(scan: Scan) -> tuple[EvidenceGap, ...]:
     """Describe evidence still requested by the existing planner."""
     gaps: list[EvidenceGap] = []

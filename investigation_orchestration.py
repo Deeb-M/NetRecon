@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
-from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_state_for_gap, summarize_evidence_gaps
+from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_state_for_gap, requirement_states_for_gaps, summarize_evidence_gaps
 from evidence_collector import (
     NmapCommand,
     ParsedCollectionResult,

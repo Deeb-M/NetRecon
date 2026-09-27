@@ -1221,6 +1221,27 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.next_actions, (new_action,))
         self.assertEqual(decision.repeat_blocked_actions, (repeated,))
 
+    def test_requirement_states_for_gaps_deduplicates_per_endpoint_and_requirement(self) -> None:
+        from evidence_gaps import requirement_states_for_gaps
+
+        states = requirement_states_for_gaps(
+            (
+                EvidenceGap("192.0.2.60", 443, "tcp", "http-title", "purpose"),
+                EvidenceGap("192.0.2.60", 443, "tcp", "http-title", "purpose"),
+                EvidenceGap("192.0.2.60", 443, "tcp", "http-methods", "purpose"),
+                EvidenceGap("192.0.2.60", 8443, "tcp", "http-title", "purpose"),
+            )
+        )
+
+        self.assertEqual(
+            [(state.port, state.requirement.requirement_id) for state in states],
+            [
+                (443, "http_identity_context"),
+                (443, "http_supported_methods"),
+                (8443, "http_identity_context"),
+            ],
+        )
+
     def test_requirement_state_normalizes_endpoint_identity(self) -> None:
         from evidence_gaps import requirement_state_for_gap
 
