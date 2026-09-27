@@ -1467,3 +1467,93 @@ Preserve:
 - no fabricated vulnerability conclusions;
 - no arbitrary risk score;
 - no automatic severity ranking of Attention items.
+
+
+## Attention Correlation — FIELD-VALIDATED
+
+NetRecon now has a bounded correlation layer above Analyst Attention. It groups only explicitly supported relationships between existing evidence-backed Attention items; it does not create new findings, assign risk scores, rank severity, or infer vulnerability.
+
+Validated flow:
+
+```text
+Nmap Discovery
+  -> Semantic Evidence Planning
+  -> Targeted Evidence Collection
+  -> Merged Investigation Snapshot
+  -> Evidence-backed Findings
+  -> Analyst Attention
+  -> Explicit Attention Correlation
+  -> Correlated Review
+```
+
+### First bounded correlation rule
+
+The first supported relationship is intentionally narrow:
+
+- `service.smb.exposed`
+- `smb.signing.review`
+- both must belong to the same host.
+
+NetBIOS is not included merely because it is commonly related to SMB. No generic same-host correlation exists. New relationships must be explicit and evidence-defensible.
+
+The resulting correlation is:
+
+- correlation ID: `smb.exposure_and_signing_review`
+- title: `SMB exposure and signing configuration require joint review`
+- source findings are preserved;
+- evidence provenance is preserved;
+- review guidance asks the analyst to assess the observations together without declaring a vulnerability.
+
+### Regression baseline
+
+- Full suite: **686/686 tests passing**.
+- GitHub Actions green.
+- Unit coverage verifies same-host SMB exposure/signing correlation and rejects cross-host correlation.
+- Reporter coverage preserves source Finding IDs and evidence sources in standalone correlation output and in integrated investigation Text/JSON.
+- CLI coverage verifies the chain from final investigation Attention to correlation and reporting.
+
+### Field-discovered contract defect
+
+The first authorized field run produced four valid Attention items but `Correlated Review / Groups: 0`.
+
+The field result exposed a fixture/production identity mismatch:
+- production SMB exposure Finding ID: `service.smb.exposed`
+- the initial correlation implementation and synthetic unit fixture incorrectly used `smb.service.exposed`.
+
+The production correlation rule and regression fixtures were corrected to use the existing canonical Finding ID. No Finding ID was renamed and no evidence logic was weakened to make the test pass.
+
+This is an important testing lesson for future correlation work: synthetic Attention fixtures can drift from production Finding contracts. Prefer regression paths derived from canonical production Findings when practical.
+
+### Real field validation
+
+Authorized Kali lab target: `192.168.227.138`.
+
+After the canonical-ID correction, the repeated bounded investigation produced the same four Attention items, including:
+
+- `service.smb.exposed` from `service:detection`
+- `smb.signing.review` from `nse:smb2-security-mode`
+
+The integrated report then produced:
+
+```text
+Correlated Review
+-----------------
+Groups: 1
+
+SMB exposure and signing configuration require joint review
+  Host: 192.168.227.138
+  Findings: service.smb.exposed, smb.signing.review
+  Evidence Sources: service:detection, nse:smb2-security-mode
+```
+
+The HTTP branch remained independently stalled with `alternative_evidence_incomplete`, demonstrating that correlation does not hide unresolved evidence requirements or alter bounded STOP behavior.
+
+This validates the complete product path:
+
+> **Discovery -> Evidence Need -> Targeted Collection -> Finding -> Analyst Attention -> Correlated Review**
+
+Milestone status: **FIELD-VALIDATED**.
+
+### Next-development rule
+
+Do not expand correlation by accumulating convenient same-host rules. The next intelligence layer should solve a clear analyst problem while preserving canonical Finding identities and provenance. Correlation should remain an explicit semantic relationship over existing Attention items, not become an implicit scoring or vulnerability engine.
