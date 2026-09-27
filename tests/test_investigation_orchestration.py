@@ -1969,7 +1969,7 @@ class RequirementCollectionStrategyTests(unittest.TestCase):
         from requirement_collection import RequirementCollectionStrategy, collection_strategy_for_requirement
 
         requirement = FindingDerivedRequirement(
-            requirement_id="smb_access_control_context",
+            requirement_id="unknown_requirement",
             host="192.0.2.50",
             port=445,
             protocol="tcp",
@@ -1981,7 +1981,7 @@ class RequirementCollectionStrategyTests(unittest.TestCase):
         self.assertEqual(
             collection_strategy_for_requirement(requirement),
             RequirementCollectionStrategy(
-                requirement_id="smb_access_control_context",
+                requirement_id="unknown_requirement",
                 status="unsupported",
                 reason="no_approved_collection_strategy",
             ),
