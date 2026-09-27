@@ -2411,5 +2411,45 @@ class DynamicContinuationEmergenceTests(unittest.TestCase):
         )
 
 
+class DynamicContinuationSemanticTests(unittest.TestCase):
+    def test_new_dynamic_action_prevents_completion_when_primary_gaps_are_resolved(self) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            assess_investigation_continuation,
+        )
+        from models import Scan
+
+        dynamic = EvidenceAction(
+            host="192.0.2.93",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-enum-shares",),
+            purposes=("review SMB access controls in the context of the observed signing configuration",),
+            command=("nmap", "-p", "445", "--script", "smb-enum-shares", "-oX", "-", "192.0.2.93"),
+        )
+        before = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="before.xml"),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+        )
+        after = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="after.xml"),
+            gaps=(),
+            actions=(dynamic,),
+            states=(),
+            error=None,
+        )
+
+        decision = assess_investigation_continuation(before, after)
+
+        self.assertEqual(decision.status, "progressed")
+        self.assertEqual(decision.next_actions, (dynamic,))
+
+
 if __name__ == "__main__":
     unittest.main()
