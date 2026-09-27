@@ -10,7 +10,7 @@ from pathlib import Path
 
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
-from analyst_attention import build_analyst_attention
+from analyst_attention import build_analyst_attention, correlate_analyst_attention
 from evidence_action_plan import build_evidence_action_plan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_gaps import summarize_evidence_gaps
@@ -193,10 +193,11 @@ def main() -> int:
             final_decision = assess_final_investigation_decision(alternative_round)
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
         attention = build_investigation_attention(final_snapshot)
+        correlations = correlate_analyst_attention(attention)
         print(
-            render_investigation_continuation_json(continuation, decision, alternative_round, final_decision, attention)
+            render_investigation_continuation_json(continuation, decision, alternative_round, final_decision, attention, correlations)
             if args.format == "json"
-            else render_investigation_continuation(continuation, decision, alternative_round, final_decision, attention)
+            else render_investigation_continuation(continuation, decision, alternative_round, final_decision, attention, correlations)
         )
         return 0 if updated.ready else 2
 
