@@ -1135,6 +1135,21 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.next_actions, (new_action,))
         self.assertEqual(decision.repeat_blocked_actions, (repeated,))
 
+    def test_http_methods_gap_alone_does_not_offer_identity_alternative(self) -> None:
+        gap = EvidenceGap("192.0.2.60", 5357, "tcp", "http-methods", "review supported HTTP methods")
+        repeated = EvidenceAction(
+            "192.0.2.60", 5357, "tcp", ("http-methods",),
+            ("review supported HTTP methods",),
+            ("nmap", "-p", "5357", "--script", "http-methods", "-oX", "-", "192.0.2.60"),
+        )
+        before = InvestigationSnapshot(True, Scan("before.xml"), (gap,), (repeated,), (), None)
+        after = InvestigationSnapshot(True, Scan("after.xml"), (gap,), (repeated,), (), None)
+
+        decision = assess_investigation_continuation(before, after, (repeated,))
+
+        self.assertEqual(decision.stall_reason, "repeated_actions_exhausted")
+        self.assertEqual(decision.alternative_actions, ())
+
     def test_exhausted_http_action_offers_http_headers_alternative(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 

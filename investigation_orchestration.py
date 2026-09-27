@@ -301,34 +301,25 @@ def _build_alternative_actions(
         (action.host.strip(), action.port, action.protocol.strip().lower())
         for action in repeat_blocked
     }
-    http_endpoints = {
-        (gap.host.strip(), gap.port, gap.protocol.strip().lower())
-        for gap in decision_gaps
-        if gap.script_id.strip().lower() in {"http-title", "http-methods"}
-    }
-    eligible = blocked_endpoints & http_endpoints
+    alternatives: dict[tuple[str, int, str, tuple[str, ...]], EvidenceAction] = {}
 
-    return tuple(
-        EvidenceAction(
-            host=host,
-            port=port,
-            protocol=protocol,
-            script_ids=("http-headers",),
-            purposes=("review HTTP response headers for service identity and context",),
-            command=(
-                "nmap",
-                *(("-sU",) if protocol == "udp" else ()),
-                "-p",
-                str(port),
-                "--script",
-                "http-headers",
-                "-oX",
-                "-",
-                host,
-            ),
+    for gap in decision_gaps:
+        endpoint = (gap.host.strip(), gap.port, gap.protocol.strip().lower())
+        if endpoint not in blocked_endpoints:
+            continue
+        requirement = requirement_for_gap(gap)
+        if requirement is None or not requirement.alternative_script_ids:
+            continue
+        script_ids = tuple(script_id.strip().lower() for script_id in requirement.alternative_script_ids)
+        key = (*endpoint, script_ids)
+        alternatives[key] = EvidenceAction(
+            host=endpoint[0], port=endpoint[1], protocol=endpoint[2],
+            script_ids=script_ids, purposes=(requirement.purpose,),
+            command=("nmap", *(("-sU",) if endpoint[2] == "udp" else ()), "-p", str(endpoint[1]),
+                     "--script", ",".join(script_ids), "-oX", "-", endpoint[0]),
         )
-        for host, port, protocol in sorted(eligible)
-    )
+
+    return tuple(alternatives[key] for key in sorted(alternatives))
 
 
 def assess_investigation_continuation(
