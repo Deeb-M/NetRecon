@@ -5,6 +5,7 @@ import unittest
 
 from analyzer import Finding
 from evidence_gaps import EvidenceGap
+from evidence_action_plan import EvidenceAction
 from evidence_collector import (
     CollectionResult,
     CorrelatedEvidenceResult,
@@ -640,6 +641,86 @@ class ReporterTests(unittest.TestCase):
         payload = json.loads(render_evidence_gaps_json(()))
         self.assertEqual(payload["summary"], {"gaps": 0})
         self.assertEqual(payload["gaps"], [])
+
+
+    def test_renders_evidence_action_plan_as_text(self) -> None:
+        actions = (
+            EvidenceAction(
+                host="192.0.2.10",
+                port=445,
+                protocol="tcp",
+                script_ids=("smb-protocols", "smb2-security-mode"),
+                purposes=(
+                    "review SMB protocol dialect support",
+                    "review SMB signing configuration",
+                ),
+                command=(
+                    "nmap", "-p", "445", "--script",
+                    "smb-protocols,smb2-security-mode",
+                    "-oX", "-", "192.0.2.10",
+                ),
+            ),
+        )
+
+        report = render_evidence_action_plan(actions)
+
+        self.assertIn("Evidence Action Plan", report)
+        self.assertIn("Actions: 1", report)
+        self.assertIn("192.0.2.10:445/tcp", report)
+        self.assertIn("review SMB protocol dialect support", report)
+        self.assertIn("review SMB signing configuration", report)
+        self.assertIn(
+            "nmap -p 445 --script smb-protocols,smb2-security-mode -oX - 192.0.2.10",
+            report,
+        )
+
+    def test_renders_evidence_action_plan_as_json_with_argv_command(self) -> None:
+        actions = (
+            EvidenceAction(
+                host="192.0.2.10",
+                port=445,
+                protocol="tcp",
+                script_ids=("smb-protocols", "smb2-security-mode"),
+                purposes=(
+                    "review SMB protocol dialect support",
+                    "review SMB signing configuration",
+                ),
+                command=(
+                    "nmap", "-p", "445", "--script",
+                    "smb-protocols,smb2-security-mode",
+                    "-oX", "-", "192.0.2.10",
+                ),
+            ),
+        )
+
+        payload = json.loads(render_evidence_action_plan_json(actions))
+
+        self.assertEqual(payload["report_type"], "evidence_action_plan")
+        self.assertEqual(payload["summary"], {"actions": 1})
+        self.assertEqual(
+            payload["actions"][0],
+            {
+                "host": "192.0.2.10",
+                "port": 445,
+                "protocol": "tcp",
+                "script_ids": ["smb-protocols", "smb2-security-mode"],
+                "purposes": [
+                    "review SMB protocol dialect support",
+                    "review SMB signing configuration",
+                ],
+                "command": [
+                    "nmap", "-p", "445", "--script",
+                    "smb-protocols,smb2-security-mode",
+                    "-oX", "-", "192.0.2.10",
+                ],
+            },
+        )
+
+    def test_renders_empty_evidence_action_plan_without_inventing_actions(self) -> None:
+        self.assertIn("Actions: 0", render_evidence_action_plan(()))
+        payload = json.loads(render_evidence_action_plan_json(()))
+        self.assertEqual(payload["summary"], {"actions": 0})
+        self.assertEqual(payload["actions"], [])
 
 
 if __name__ == "__main__":
