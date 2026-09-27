@@ -18,7 +18,7 @@ from host_summary import summarize_hosts
 from models import Host, Port, Scan, ScanScope
 from network_summary import summarize_network, summarize_shared_services
 from scan_diff import ExposureChange
-from scan_orchestration import DiscoveryPlan
+from scan_orchestration import DiscoveryPlan, DiscoveryResult
 
 
 def _format_history_time(timestamp: int) -> str:
@@ -754,6 +754,47 @@ def render_discovery_plan_json(plan: DiscoveryPlan) -> str:
             "profile": plan.profile,
             "purpose": plan.purpose,
             "command": plan.command,
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
+
+def render_discovery_execution(result: DiscoveryResult) -> str:
+    """Render one verified discovery execution with explicit provenance."""
+    execution = result.execution
+    lines = [
+        "Discovery Execution",
+        "-------------------",
+        f"Status: {'success' if result.success else 'failed'}",
+        f"Target: {execution.plan.target}",
+        f"Profile: {execution.plan.profile}",
+        f"Command: {' '.join(execution.plan.command)}",
+    ]
+    if result.success and result.scan is not None:
+        lines.extend(("", render_text(result.scan)))
+    else:
+        lines.append(f"Error: {result.error or 'unknown discovery failure'}")
+    return "\n".join(lines)
+
+
+def render_discovery_execution_json(result: DiscoveryResult) -> str:
+    """Render one discovery execution as structured JSON with provenance."""
+    execution = result.execution
+    scan_payload = json.loads(render_json(result.scan)) if result.scan is not None else None
+    return json.dumps(
+        {
+            "report_type": "discovery_execution",
+            "status": "success" if result.success else "failed",
+            "target": execution.plan.target,
+            "profile": execution.plan.profile,
+            "purpose": execution.plan.purpose,
+            "command": execution.plan.command,
+            "returncode": execution.returncode,
+            "timed_out": execution.timed_out,
+            "error": result.error,
+            "scan": scan_payload,
         },
         indent=2,
         ensure_ascii=False,
