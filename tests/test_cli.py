@@ -412,5 +412,18 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(context.exception.code, 2)
 
 
+    def test_rejects_non_finite_evidence_timeout(self) -> None:
+        parser = build_parser()
+
+        for value in ("nan", "inf", "-inf"):
+            with self.subTest(value=value):
+                with self.assertRaises(SystemExit) as context:
+                    parser.parse_args(
+                        ["scan.xml", "--collect-evidence", "--evidence-timeout", value]
+                    )
+
+                self.assertEqual(context.exception.code, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
