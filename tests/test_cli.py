@@ -36,7 +36,7 @@ class CliTests(unittest.TestCase):
             for option in action.option_strings
         }
         self.assertTrue(
-            {"--analyze", "--diff", "--analysis-diff", "--combined-diff", "--collect-evidence"}
+            {"--analyze", "--diff", "--analysis-diff", "--combined-diff", "--collect-evidence", "--history"}
             <= option_strings
         )
         self.assertTrue(
@@ -49,6 +49,34 @@ class CliTests(unittest.TestCase):
         args = parser.parse_args(["before.xml", "after.xml", "--combined-diff"])
 
         self.assertTrue(args.combined_diff)
+
+
+    def test_accepts_history_with_multiple_scan_files(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["--history", "one.xml", "two.xml", "three.xml"])
+
+        self.assertEqual(
+            [str(path) for path in args.history],
+            ["one.xml", "two.xml", "three.xml"],
+        )
+
+    def test_history_requires_at_least_two_scan_files(self) -> None:
+        parser = build_parser()
+
+        with self.assertRaises(SystemExit) as context:
+            parser.parse_args(["--history", "one.xml"])
+
+        self.assertEqual(context.exception.code, 2)
+
+    def test_rejects_history_with_other_operation_mode(self) -> None:
+        parser = build_parser()
+
+        with self.assertRaises(SystemExit) as context:
+            parser.parse_args(["scan.xml", "--analyze", "--history", "one.xml", "two.xml"])
+
+        self.assertEqual(context.exception.code, 2)
+
 
     def test_rejects_analyze_with_diff(self) -> None:
         parser = build_parser()
