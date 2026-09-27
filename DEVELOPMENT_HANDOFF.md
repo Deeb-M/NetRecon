@@ -723,3 +723,25 @@ Stage C checkpoint decision:
 - The first analyst-facing Host Summary is useful and field-valid on discovery-only evidence.
 - The next meaningful question is whether the same analyst summary remains useful after targeted evidence collection, where richer evidence-backed findings such as SMB signing/protocol findings are available.
 - Do not add a risk score. Keep collection completeness and security severity as separate dimensions.
+
+
+### Stage C Field Validation #2 — correlated evidence workflow
+
+The dedicated field-test checkout was updated through commit `0a43d29`, the installed package was rebuilt, and the authorized Windows lab target `192.168.227.138` was tested with:
+`netrecon stage-a-discovery.xml --collect-evidence`.
+
+Observed output:
+- Evidence collection completed successfully.
+- The correlated Host Summary retained the 4 discovered open ports and normalized services.
+- Findings increased from the discovery-only 4 informational findings to 6 evidence-backed findings.
+- Severity distribution became `medium=1, info=5`.
+- The medium finding was `SMB signing configuration requires review`, backed by real `smb2-security-mode` evidence that message signing was enabled but not required.
+- The additional informational finding recorded the modern SMB dialects returned by `smb-protocols`.
+- The analyst-facing flow is now:
+  `Evidence Collection status -> correlated Host Summary -> prioritized Findings`.
+
+Validation decision:
+- The Host Summary remains useful after targeted evidence collection and accurately reflects the richer correlated evidence.
+- No extra Nmap execution or duplicate analysis is needed to render it; the report reuses the already-correlated host and findings.
+- Keep collection completeness separate from finding severity.
+- The next Stage C design question is multi-host analyst attention: how to make existing per-host evidence and severity distributions easier to triage at network scope without inventing a numeric risk score.
