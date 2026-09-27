@@ -97,5 +97,51 @@ class ExposureHistoryTests(unittest.TestCase):
             summarize_exposure_history((scan,))
 
 
+    def test_duplicate_endpoint_entries_in_one_scan_count_as_one_observation(self) -> None:
+        scan = Scan(source="scan.xml", started_at=100, hosts=(Host(
+            address="192.0.2.10", status="up",
+            ports=(
+                Port(443, "tcp", "open", "https"),
+                Port(443, "TCP", "open", "https"),
+            ),
+        ),))
+
+        history = summarize_exposure_history((scan,))
+
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0].observations, 1)
+
+    def test_started_at_is_preferred_over_finished_at_for_observation_time(self) -> None:
+        scan = Scan(
+            source="scan.xml",
+            started_at=100,
+            finished_at=150,
+            hosts=(Host(
+                address="192.0.2.10", status="up",
+                ports=(Port(22, "tcp", "open", "ssh"),),
+            ),),
+        )
+
+        history = summarize_exposure_history((scan,))
+
+        self.assertEqual(history[0].first_seen, 100)
+        self.assertEqual(history[0].last_seen, 100)
+
+    def test_finished_at_is_used_when_started_at_is_missing(self) -> None:
+        scan = Scan(
+            source="scan.xml",
+            finished_at=150,
+            hosts=(Host(
+                address="192.0.2.10", status="up",
+                ports=(Port(22, "tcp", "open", "ssh"),),
+            ),),
+        )
+
+        history = summarize_exposure_history((scan,))
+
+        self.assertEqual(history[0].first_seen, 150)
+        self.assertEqual(history[0].last_seen, 150)
+
+
 if __name__ == "__main__":
     unittest.main()
