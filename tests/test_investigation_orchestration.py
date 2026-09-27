@@ -852,6 +852,32 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         self.assertEqual(result.verifications[0].status, "incomplete")
 
+    def test_observed_alternative_does_not_satisfy_requirement_on_different_endpoint(self) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            AlternativeEvidenceVerification,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from evidence_gaps import EvidenceGap
+        from models import Scan
+
+        action = EvidenceAction("192.0.2.97", 8080, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        gap = EvidenceGap("192.0.2.97", 5357, "tcp", "http-title", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        round_result = AlternativeEvidenceRoundResult(
+            (),
+            (AlternativeEvidenceVerification("observed", action, ("http-headers",)),),
+            snapshot,
+        )
+
+        decision = assess_final_investigation_decision(round_result)
+
+        self.assertEqual(
+            tuple(r.requirement_id for r in decision.remaining_requirements),
+            ("http_identity_context",),
+        )
+
     def test_observed_http_headers_satisfies_only_http_identity_requirement(self) -> None:
         from investigation_orchestration import (
             AlternativeEvidenceRoundResult,

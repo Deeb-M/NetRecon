@@ -212,27 +212,46 @@ def assess_final_investigation_decision(
     """Stop after the bounded alternative round and explain why."""
     remaining = alternative_round.snapshot.gaps
     requirements: list[EvidenceRequirement] = []
-    seen_requirements: set[str] = set()
-    for gap in remaining:
-        requirement = requirement_for_gap(gap)
-        if requirement is None or requirement.requirement_id in seen_requirements:
-            continue
-        requirements.append(requirement)
-        seen_requirements.add(requirement.requirement_id)
-    observed_alternative_scripts = {
-        script_id.strip().lower()
+    seen_requirements: set[tuple[str, str, int, str]] = set()
+    observed_alternatives = {
+        (
+            verification.action.host.strip(),
+            verification.action.port,
+            verification.action.protocol.strip().lower(),
+            script_id.strip().lower(),
+        )
         for verification in alternative_round.verifications
         if verification.status == "observed"
         for script_id in verification.observed_script_ids
     }
-    remaining_requirements = tuple(
-        requirement
-        for requirement in requirements
-        if not (
-            requirement.alternative_script_ids
-            and set(requirement.alternative_script_ids).issubset(observed_alternative_scripts)
+    for gap in remaining:
+        requirement = requirement_for_gap(gap)
+        if requirement is None:
+            continue
+        endpoint_key = (
+            gap.host.strip(),
+            gap.port,
+            gap.protocol.strip().lower(),
+            requirement.requirement_id,
         )
-    )
+        if endpoint_key in seen_requirements:
+            continue
+        seen_requirements.add(endpoint_key)
+        alternative_ids = {
+            script_id.strip().lower()
+            for script_id in requirement.alternative_script_ids
+        }
+        endpoint_observed_ids = {
+            script_id
+            for host, port, protocol, script_id in observed_alternatives
+            if host == gap.host.strip()
+            and port == gap.port
+            and protocol == gap.protocol.strip().lower()
+        }
+        if alternative_ids and alternative_ids.issubset(endpoint_observed_ids):
+            continue
+        requirements.append(requirement)
+    remaining_requirements = tuple(requirements)
     statuses = {verification.status for verification in alternative_round.verifications}
 
     if not remaining:
