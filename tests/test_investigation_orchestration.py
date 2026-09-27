@@ -1816,7 +1816,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
 class EvidenceDerivedKnowledgeTests(unittest.TestCase):
     def test_derives_nonempty_nse_observation_with_explicit_provenance(self) -> None:
-        from evidence_knowledge import derive_evidence_knowledge
+        from evidence_knowledge import EvidenceDerivedKnowledge, derive_evidence_knowledge
         from models import Host, Port, Scan, ScriptResult
 
         scan = Scan(
