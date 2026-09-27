@@ -1008,5 +1008,46 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+    def test_investigation_continuation_report_preserves_collection_outcomes(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
+        from reporter import render_investigation_continuation
+        from models import Scan
+
+        command = NmapCommand(
+            arguments=(
+                "nmap", "-p", "5357", "--script", "http-title,http-methods",
+                "-oX", "-", "192.0.2.120",
+            )
+        )
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(
+                command=command,
+                returncode=124,
+                stdout="",
+                stderr="Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="discovery.xml"),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+        )
+
+        report = render_investigation_continuation(
+            InvestigationContinuationResult((outcome,), snapshot)
+        )
+
+        self.assertIn("Evidence Collection Outcomes", report)
+        self.assertIn("nmap -p 5357 --script http-title,http-methods -oX - 192.0.2.120", report)
+        self.assertIn("Status: failed", report)
+        self.assertIn("Return Code: 124", report)
+        self.assertIn("Failure: Nmap evidence collection timed out", report)
+
+
 if __name__ == "__main__":
     unittest.main()
