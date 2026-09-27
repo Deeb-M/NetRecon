@@ -595,6 +595,20 @@ class EvidencePlannerTests(unittest.TestCase):
         )
 
 
+    def test_host_plan_rejects_blank_target_address(self) -> None:
+        host = Host(
+            address="   ",
+            status="up",
+            ports=(),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Evidence collection requires a target",
+        ):
+            plan_host_evidence(host)
+
+
     def test_host_plan_requests_nothing_when_supported_evidence_is_complete(self) -> None:
         host = Host(
             address="192.0.2.50",
