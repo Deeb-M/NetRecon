@@ -405,5 +405,85 @@ class InvestigationContinuationContractTests(unittest.TestCase):
         )
 
 
+    def test_re_evaluation_keeps_unknown_for_failed_outcome_beside_valid_evidence(self) -> None:
+        from evidence_collector import (
+            CollectionResult,
+            NmapCommand,
+            ParsedCollectionResult,
+        )
+        from investigation_orchestration import re_evaluate_investigation
+        from models import Host, Port, Scan, ScriptResult
+
+        discovery_scan = Scan(
+            source="discovery.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.90",
+                    status="up",
+                    ports=(
+                        Port(22, "tcp", "open", "ssh"),
+                        Port(445, "tcp", "open", "microsoft-ds"),
+                    ),
+                ),
+            ),
+        )
+        ssh_evidence = ParsedCollectionResult(
+            result=CollectionResult(
+                command=NmapCommand(arguments=("nmap", "-p", "22")),
+                returncode=0,
+                stdout="<nmaprun />",
+                stderr="",
+            ),
+            scan=Scan(
+                source="ssh-evidence.xml",
+                hosts=(
+                    Host(
+                        address="192.0.2.90",
+                        status="up",
+                        ports=(
+                            Port(
+                                22,
+                                "tcp",
+                                "open",
+                                "ssh",
+                                scripts=(ScriptResult("ssh2-enum-algos", "algorithms"),),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        smb_timeout = ParsedCollectionResult(
+            result=CollectionResult(
+                command=NmapCommand(arguments=("nmap", "-p", "445")),
+                returncode=124,
+                stdout="",
+                stderr="Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+
+        snapshot = re_evaluate_investigation(
+            discovery_scan,
+            (ssh_evidence, smb_timeout),
+        )
+
+        self.assertEqual(
+            tuple((gap.port, gap.script_id) for gap in snapshot.gaps),
+            ((445, "smb-protocols"), (445, "smb2-security-mode")),
+        )
+        self.assertEqual(
+            tuple((action.port, action.script_ids) for action in snapshot.actions),
+            ((445, ("smb-protocols", "smb2-security-mode")),),
+        )
+        ssh_state = next(state for state in snapshot.states if state.port == 22)
+        smb_state = next(state for state in snapshot.states if state.port == 445)
+        self.assertEqual(ssh_state.unknown, ())
+        self.assertEqual(
+            tuple(gap.script_id for gap in smb_state.unknown),
+            ("smb-protocols", "smb2-security-mode"),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
