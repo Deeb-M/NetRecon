@@ -1290,7 +1290,8 @@ class CliTests(unittest.TestCase):
         interpret_mock.return_value = discovery
         snapshot_mock.return_value = initial
         execute_evidence_mock.return_value = continuation
-        decision = object()
+        from investigation_orchestration import InvestigationContinuationDecision
+        decision = InvestigationContinuationDecision("complete", (), (), ())
         decision_mock.return_value = decision
         output = StringIO()
 
@@ -1351,7 +1352,8 @@ class CliTests(unittest.TestCase):
         interpret_mock.return_value = discovery
         snapshot_mock.return_value = initial
         execute_evidence_mock.return_value = continuation
-        decision = object()
+        from investigation_orchestration import InvestigationContinuationDecision
+        decision = InvestigationContinuationDecision("complete", (), (), ())
         decision_mock.return_value = decision
         output = StringIO()
 
