@@ -135,6 +135,33 @@ class FindingHistoryTests(unittest.TestCase):
         self.assertEqual(item.observations, 2)
         self.assertEqual(item.opportunities, 2)
 
+    def test_source_less_finding_does_not_count_down_host_as_opportunity(self) -> None:
+        scans = (
+            Scan(
+                source="up.xml",
+                started_at=100,
+                scan_scopes=(ScanScope("tcp", "445"),),
+                hosts=(Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(Port(445, "tcp", "open", ""),),
+                ),),
+            ),
+            Scan(
+                source="down.xml",
+                started_at=200,
+                scan_scopes=(ScanScope("tcp", "445"),),
+                hosts=(Host(address="192.0.2.10", status="down"),),
+            ),
+        )
+        findings = tuple(analyze_scan(scan) for scan in scans)
+
+        history = summarize_finding_history(scans, findings)
+
+        item = next(entry for entry in history if entry.finding_id == "service.smb.exposed")
+        self.assertEqual(item.observations, 1)
+        self.assertEqual(item.opportunities, 1)
+
     def test_missing_timestamp_fails_closed(self) -> None:
         scan = Scan(source="missing.xml")
         with self.assertRaisesRegex(ValueError, "timestamp"):
