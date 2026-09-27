@@ -1668,5 +1668,52 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+
+    def test_attention_correlation_report_preserves_source_findings_and_provenance(self) -> None:
+        from analyst_attention import AnalystAttentionCorrelation
+        from reporter import (
+            render_analyst_attention_correlations,
+            render_analyst_attention_correlations_json,
+        )
+
+        correlations = (
+            AnalystAttentionCorrelation(
+                "smb.exposure_and_signing_review",
+                "192.0.2.70",
+                "SMB exposure and signing configuration require joint review",
+                ("smb.service.exposed", "smb.signing.review"),
+                ("service:detection", "nse:smb2-security-mode"),
+                "Review SMB exposure together with its signing configuration.",
+            ),
+        )
+
+        text_report = render_analyst_attention_correlations(correlations)
+        json_report = json.loads(
+            render_analyst_attention_correlations_json(correlations)
+        )
+
+        self.assertIn("Correlated Review", text_report)
+        self.assertIn(
+            "Findings: smb.service.exposed, smb.signing.review",
+            text_report,
+        )
+        self.assertIn(
+            "Evidence Sources: service:detection, nse:smb2-security-mode",
+            text_report,
+        )
+        self.assertEqual(
+            json_report["report_type"],
+            "analyst_attention_correlations",
+        )
+        self.assertEqual(json_report["summary"], {"groups": 1})
+        self.assertEqual(
+            json_report["groups"][0]["finding_ids"],
+            ["smb.service.exposed", "smb.signing.review"],
+        )
+        self.assertEqual(
+            json_report["groups"][0]["evidence_sources"],
+            ["service:detection", "nse:smb2-security-mode"],
+        )
+
 if __name__ == "__main__":
     unittest.main()
