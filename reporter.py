@@ -10,6 +10,7 @@ from analysis_diff import FindingChange
 from analysis_summary import summarize_analysis
 from evidence_collector import CorrelatedEvidenceResult
 from exposure_history import ExposureHistory
+from evidence_gaps import EvidenceGap
 from finding_history import FindingHistory
 from findings import Finding
 from host_summary import summarize_hosts
@@ -20,6 +21,35 @@ from scan_diff import ExposureChange
 
 def _format_history_time(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+
+def render_evidence_gaps(gaps: tuple[EvidenceGap, ...]) -> str:
+    """Render missing planner-supported evidence for analyst follow-up."""
+    lines = [
+        "Evidence Gaps",
+        "-------------",
+        f"Gaps: {len(gaps)}",
+    ]
+    for gap in gaps:
+        lines.append(
+            f"{gap.host}:{gap.port}/{gap.protocol}  {gap.script_id}"
+        )
+        lines.append(f"  Purpose: {gap.purpose}")
+    return "\n".join(lines)
+
+
+def render_evidence_gaps_json(gaps: tuple[EvidenceGap, ...]) -> str:
+    """Render evidence gaps as a stable machine-readable envelope."""
+    return json.dumps(
+        {
+            "report_type": "evidence_gaps",
+            "summary": {"gaps": len(gaps)},
+            "gaps": [asdict(gap) for gap in gaps],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
 
 
 def render_exposure_history(history: tuple[ExposureHistory, ...]) -> str:
