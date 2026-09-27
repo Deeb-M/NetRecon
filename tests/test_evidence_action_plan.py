@@ -126,5 +126,35 @@ class EvidenceActionPlanTests(unittest.TestCase):
         self.assertEqual(build_evidence_action_plan(scan), ())
 
 
+    def test_multi_host_actions_remain_bound_to_correct_targets(self) -> None:
+        scan = Scan(
+            source="multi.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.50",
+                    status="up",
+                    ports=(Port(port=22, protocol="tcp", state="open", service="ssh"),),
+                ),
+                Host(
+                    address="192.0.2.51",
+                    status="up",
+                    ports=(Port(port=80, protocol="tcp", state="open", service="http"),),
+                ),
+            ),
+        )
+
+        actions = build_evidence_action_plan(scan)
+
+        self.assertEqual(
+            [(a.host, a.port, a.script_ids) for a in actions],
+            [
+                ("192.0.2.50", 22, ("ssh2-enum-algos",)),
+                ("192.0.2.51", 80, ("http-title", "http-methods")),
+            ],
+        )
+        self.assertEqual(actions[0].command[-1], "192.0.2.50")
+        self.assertEqual(actions[1].command[-1], "192.0.2.51")
+
+
 if __name__ == "__main__":
     unittest.main()
