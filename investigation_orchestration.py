@@ -64,19 +64,30 @@ def build_investigation_snapshot(
 def re_evaluate_investigation(
     discovery_scan: Scan,
     outcomes: tuple[ParsedCollectionResult, ...],
+    *,
+    explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
 ) -> InvestigationSnapshot:
-    """Merge collected evidence into discovery and rebuild investigation intelligence."""
+    """Merge collected evidence and rebuild primary plus authorized dynamic actions."""
     merged_hosts = tuple(
         merge_collection_outcomes_into_host(host, outcomes)
         for host in discovery_scan.hosts
     )
     scan = replace(discovery_scan, hosts=merged_hosts)
 
+    primary_actions = build_evidence_action_plan(scan)
+    dynamic_actions = build_dynamic_evidence_actions(
+        scan,
+        explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+    )
+    actions_by_command = {action.command: action for action in primary_actions}
+    for action in dynamic_actions:
+        actions_by_command.setdefault(action.command, action)
+
     return InvestigationSnapshot(
         ready=True,
         scan=scan,
         gaps=summarize_evidence_gaps(scan),
-        actions=build_evidence_action_plan(scan),
+        actions=tuple(actions_by_command.values()),
         states=summarize_investigation_state(scan),
         error=None,
     )
