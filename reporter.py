@@ -407,6 +407,37 @@ def render_analysis_diff_json(changes: tuple[FindingChange, ...], before_scan: S
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
+def render_combined_diff(
+    exposure_changes: tuple[ExposureChange, ...],
+    analysis_changes: tuple[FindingChange, ...],
+    before_scan: Scan,
+    after_scan: Scan,
+) -> str:
+    """Render exposure and analysis changes as one analyst workflow."""
+    return "\n\n".join((
+        render_diff(exposure_changes, before_scan, after_scan),
+        render_analysis_diff(analysis_changes, before_scan, after_scan),
+    ))
+
+
+def render_combined_diff_json(
+    exposure_changes: tuple[ExposureChange, ...],
+    analysis_changes: tuple[FindingChange, ...],
+    before_scan: Scan,
+    after_scan: Scan,
+) -> str:
+    """Render exposure and analysis changes in one machine-readable envelope."""
+    return json.dumps(
+        {
+            "change_type": "combined",
+            "exposure": json.loads(render_diff_json(exposure_changes, before_scan, after_scan)),
+            "analysis": json.loads(render_analysis_diff_json(analysis_changes, before_scan, after_scan)),
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
 def render_findings(findings: tuple[Finding, ...]) -> str:
     """Render analysis findings separately from raw scan observations."""
     if not findings:
