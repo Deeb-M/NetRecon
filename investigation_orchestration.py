@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
-from evidence_gaps import EvidenceGap, summarize_evidence_gaps
+from evidence_gaps import EvidenceGap, EvidenceRequirement, requirement_for_gap, summarize_evidence_gaps
 from evidence_collector import (
     NmapCommand,
     ParsedCollectionResult,
@@ -203,6 +203,7 @@ class FinalInvestigationDecision:
     reason: str
     remaining_gaps: tuple[EvidenceGap, ...]
     further_actions: tuple[EvidenceAction, ...] = ()
+    remaining_requirements: tuple[EvidenceRequirement, ...] = ()
 
 
 def assess_final_investigation_decision(
@@ -210,10 +211,19 @@ def assess_final_investigation_decision(
 ) -> FinalInvestigationDecision:
     """Stop after the bounded alternative round and explain why."""
     remaining = alternative_round.snapshot.gaps
+    requirements: list[EvidenceRequirement] = []
+    seen_requirements: set[str] = set()
+    for gap in remaining:
+        requirement = requirement_for_gap(gap)
+        if requirement is None or requirement.requirement_id in seen_requirements:
+            continue
+        requirements.append(requirement)
+        seen_requirements.add(requirement.requirement_id)
+    remaining_requirements = tuple(requirements)
     statuses = {verification.status for verification in alternative_round.verifications}
 
     if not remaining:
-        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), ())
+        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), ())
 
     if "collection_failed" in statuses:
         reason = "alternative_collection_failed"
@@ -224,7 +234,7 @@ def assess_final_investigation_decision(
     else:
         reason = "no_verified_alternative_evidence"
 
-    return FinalInvestigationDecision("stalled", reason, remaining, ())
+    return FinalInvestigationDecision("stalled", reason, remaining, (), remaining_requirements)
 
 
 @dataclass(frozen=True)
