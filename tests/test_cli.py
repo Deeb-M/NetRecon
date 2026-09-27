@@ -849,5 +849,64 @@ class CliTests(unittest.TestCase):
         self.assertIn("review SMB signing configuration", report)
 
 
+    def test_accepts_evidence_actions_mode(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["scan.xml", "--evidence-actions"])
+
+        self.assertTrue(args.evidence_actions)
+
+    @patch("netrecon.render_evidence_action_plan", return_value="Evidence action plan")
+    @patch("netrecon.build_evidence_action_plan", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_evidence_actions_renders_text(
+        self, parse_mock, build_mock, render_mock
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scan = Scan(source="scan.xml")
+        parse_mock.return_value = scan
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "scan.xml", "--evidence-actions"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        build_mock.assert_called_once_with(scan)
+        render_mock.assert_called_once_with(())
+        self.assertEqual(output.getvalue().strip(), "Evidence action plan")
+
+    @patch(
+        "netrecon.render_evidence_action_plan_json",
+        return_value='{"report_type":"evidence_action_plan"}',
+    )
+    @patch("netrecon.build_evidence_action_plan", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_evidence_actions_honors_json_format(
+        self, parse_mock, build_mock, render_json_mock
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scan = Scan(source="scan.xml")
+        parse_mock.return_value = scan
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "scan.xml", "--evidence-actions", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        build_mock.assert_called_once_with(scan)
+        render_json_mock.assert_called_once_with(())
+        self.assertEqual(
+            output.getvalue().strip(),
+            '{"report_type":"evidence_action_plan"}',
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
