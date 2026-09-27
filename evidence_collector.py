@@ -57,7 +57,11 @@ class ParsedCollectionResult:
         if self.scan is not None:
             return None
         message = self.result.stderr.strip()
-        return message or f"Nmap exited with status {self.result.returncode}"
+        if message:
+            return message
+        if self.result.returncode == 0:
+            return "Nmap returned invalid XML"
+        return f"Nmap exited with status {self.result.returncode}"
 
 
 def _same_host_address(left: str, right: str) -> bool:
