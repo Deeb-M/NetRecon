@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import json
 
 from analysis_diff import FindingChange
-from analyst_attention import AnalystAttentionItem
+from analyst_attention import AnalystAttentionCorrelation, AnalystAttentionItem
 from analysis_summary import summarize_analysis
 from evidence_collector import CorrelatedEvidenceResult
 from exposure_history import ExposureHistory
@@ -60,6 +60,42 @@ def render_analyst_attention_json(items: tuple[AnalystAttentionItem, ...]) -> st
         ensure_ascii=False,
     )
 
+
+
+def render_analyst_attention_correlations(
+    correlations: tuple[AnalystAttentionCorrelation, ...],
+) -> str:
+    """Render evidence-traceable review correlations without ranking."""
+    lines = [
+        "Correlated Review",
+        "-----------------",
+        f"Groups: {len(correlations)}",
+    ]
+    for correlation in correlations:
+        lines.extend([
+            "",
+            correlation.title,
+            f"  Host: {correlation.host}",
+            f"  Findings: {', '.join(correlation.finding_ids)}",
+            f"  Evidence Sources: {', '.join(correlation.evidence_sources) or 'unspecified'}",
+            f"  Review: {correlation.review}",
+        ])
+    return "\n".join(lines)
+
+
+def render_analyst_attention_correlations_json(
+    correlations: tuple[AnalystAttentionCorrelation, ...],
+) -> str:
+    """Render review correlations as a stable machine-readable envelope."""
+    return json.dumps(
+        {
+            "report_type": "analyst_attention_correlations",
+            "summary": {"groups": len(correlations)},
+            "groups": [asdict(correlation) for correlation in correlations],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
 
 def render_evidence_gaps(gaps: tuple[EvidenceGap, ...]) -> str:
     """Render missing planner-supported evidence for analyst follow-up."""
