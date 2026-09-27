@@ -10,6 +10,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from unittest.mock import patch
 
+from evidence_action_plan import EvidenceAction
 from netrecon import build_parser
 
 
