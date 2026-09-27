@@ -1241,5 +1241,67 @@ class CliTests(unittest.TestCase):
         self.assertIn("--discovery-plan TARGET", completed.stdout)
 
 
+    def test_accepts_explicit_investigate_collect_target(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["--investigate-collect", "192.0.2.10"])
+
+        self.assertEqual(args.investigate_collect, "192.0.2.10")
+
+    @patch("netrecon.render_investigation_snapshot", return_value="Updated investigation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_explicitly_executes_planned_evidence_then_renders_updated_snapshot(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        render_mock,
+    ) -> None:
+        from investigation_orchestration import (
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from netrecon import main
+        from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+        from models import Scan
+
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
+        scan = Scan(source="discovery.xml")
+        discovery = DiscoveryResult(execution, True, scan, None)
+        initial = InvestigationSnapshot(True, scan, (), (), (), None)
+        updated = InvestigationSnapshot(True, scan, (), (), (), None)
+        continuation = InvestigationContinuationResult((), updated)
+        build_plan_mock.return_value = plan
+        execute_discovery_mock.return_value = execution
+        interpret_mock.return_value = discovery
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = continuation
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "--investigate-collect", "192.0.2.10"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        snapshot_mock.assert_called_once_with(discovery)
+        execute_evidence_mock.assert_called_once_with(initial, timeout=60.0)
+        render_mock.assert_called_once_with(updated)
+        self.assertEqual(output.getvalue().strip(), "Updated investigation")
+
+
 if __name__ == "__main__":
     unittest.main()
