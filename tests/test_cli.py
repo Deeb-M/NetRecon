@@ -1249,6 +1249,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.investigate_collect, "192.0.2.10")
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
+    @patch("netrecon.assess_investigation_continuation")
     @patch("netrecon.execute_approved_evidence_actions")
     @patch("netrecon.build_investigation_snapshot")
     @patch("netrecon.interpret_discovery_execution")
@@ -1299,11 +1300,13 @@ class CliTests(unittest.TestCase):
 
         snapshot_mock.assert_called_once_with(discovery)
         execute_evidence_mock.assert_called_once_with(initial, timeout=60.0)
-        render_mock.assert_called_once_with(continuation)
+        decision_mock.assert_called_once_with(initial, updated)
+        render_mock.assert_called_once_with(continuation, decision)
         self.assertEqual(output.getvalue().strip(), "Investigation continuation")
 
 
     @patch("netrecon.render_investigation_continuation_json", return_value='{"report_type":"investigation_continuation"}')
+    @patch("netrecon.assess_investigation_continuation")
     @patch("netrecon.execute_approved_evidence_actions")
     @patch("netrecon.build_investigation_snapshot")
     @patch("netrecon.interpret_discovery_execution")
@@ -1349,7 +1352,8 @@ class CliTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
-        render_json_mock.assert_called_once_with(continuation)
+        decision_mock.assert_called_once_with(initial, updated)
+        render_json_mock.assert_called_once_with(continuation, decision)
         self.assertEqual(output.getvalue().strip(), '{"report_type":"investigation_continuation"}')
 
 

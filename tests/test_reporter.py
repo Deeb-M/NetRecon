@@ -1165,5 +1165,54 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(data["updated_investigation"]["summary"]["evidence_gaps"], 2)
 
 
+    def test_investigation_continuation_text_exposes_stalled_decision(self) -> None:
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import render_investigation_continuation
+
+        snapshot = InvestigationSnapshot(True, Scan("test.xml", ()), (), (), (), None)
+        decision = InvestigationContinuationDecision("stalled", (), (), ())
+        report = render_investigation_continuation(
+            InvestigationContinuationResult((), snapshot),
+            decision,
+        )
+
+        self.assertIn("Continuation Decision", report)
+        self.assertIn("Status: stalled", report)
+
+    def test_investigation_continuation_json_exposes_decision_counts(self) -> None:
+        import json
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import render_investigation_continuation_json
+
+        snapshot = InvestigationSnapshot(True, Scan("test.xml", ()), (), (), (), None)
+        decision = InvestigationContinuationDecision("complete", (), (), ())
+        data = json.loads(
+            render_investigation_continuation_json(
+                InvestigationContinuationResult((), snapshot),
+                decision,
+            )
+        )
+
+        self.assertEqual(
+            data["continuation_decision"],
+            {
+                "status": "complete",
+                "resolved_gaps": 0,
+                "remaining_gaps": 0,
+                "next_actions": 0,
+            },
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

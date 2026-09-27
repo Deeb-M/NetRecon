@@ -803,7 +803,7 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
 
 
 
-def render_investigation_continuation(result) -> str:
+def render_investigation_continuation(result, decision=None) -> str:
     """Render collection execution separately from requested-evidence completeness."""
     lines = [
         "Investigation Continuation",
@@ -846,6 +846,15 @@ def render_investigation_continuation(result) -> str:
         if outcome.failure_message is not None:
             lines.append(f"Failure: {outcome.failure_message}")
 
+    if decision is not None:
+        lines.append("")
+        lines.append("Continuation Decision")
+        lines.append("---------------------")
+        lines.append(f"Status: {decision.status}")
+        lines.append(f"Resolved Gaps: {len(decision.resolved_gaps)}")
+        lines.append(f"Remaining Gaps: {len(decision.remaining_gaps)}")
+        lines.append(f"Next Actions: {len(decision.next_actions)}")
+
     lines.append("")
     lines.append(render_investigation_snapshot(result.snapshot))
     return "\n".join(lines)
@@ -887,15 +896,23 @@ def _investigation_continuation_outcomes(result):
     return rendered
 
 
-def render_investigation_continuation_json(result) -> str:
+def render_investigation_continuation_json(result, decision=None) -> str:
     """Render continuation provenance and updated investigation as JSON."""
     updated = json.loads(render_investigation_snapshot_json(result.snapshot))
+    payload = {
+        "report_type": "investigation_continuation",
+        "collection_outcomes": _investigation_continuation_outcomes(result),
+        "updated_investigation": updated,
+    }
+    if decision is not None:
+        payload["continuation_decision"] = {
+            "status": decision.status,
+            "resolved_gaps": len(decision.resolved_gaps),
+            "remaining_gaps": len(decision.remaining_gaps),
+            "next_actions": len(decision.next_actions),
+        }
     return json.dumps(
-        {
-            "report_type": "investigation_continuation",
-            "collection_outcomes": _investigation_continuation_outcomes(result),
-            "updated_investigation": updated,
-        },
+        payload,
         indent=2,
         ensure_ascii=False,
     )
