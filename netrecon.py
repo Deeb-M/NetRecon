@@ -16,7 +16,7 @@ from evidence_gaps import summarize_evidence_gaps
 from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
-from investigation_orchestration import build_investigation_snapshot
+from investigation_orchestration import build_investigation_snapshot, execute_approved_evidence_actions
 from parser import NmapParseError, parse_nmap_xml
 from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json
 from scan_diff import compare_scans
@@ -81,6 +81,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run baseline discovery and show planner-supported next evidence actions",
     )
     mode.add_argument(
+        "--investigate-collect",
+        metavar="TARGET",
+        help="Run baseline discovery, execute the explicitly planned evidence actions, and re-evaluate the investigation",
+    )
+    mode.add_argument(
         "--discovery-plan",
         metavar="TARGET",
         help="Show the transparent baseline discovery plan for a target without running Nmap",
@@ -142,6 +147,36 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.investigate_collect is not None:
+        if args.scan is not None or args.compare_scan is not None:
+            parser.error("--investigate-collect does not accept scan files")
+        try:
+            plan = build_baseline_discovery_plan(args.investigate_collect)
+        except ValueError as exc:
+            print(f"Error: {exc}")
+            return 2
+        execution = execute_discovery_plan(plan, timeout=args.evidence_timeout)
+        discovery = interpret_discovery_execution(execution)
+        snapshot = build_investigation_snapshot(discovery)
+        if not snapshot.ready:
+            print(
+                render_investigation_snapshot_json(snapshot)
+                if args.format == "json"
+                else render_investigation_snapshot(snapshot)
+            )
+            return 2
+        continuation = execute_approved_evidence_actions(
+            snapshot,
+            timeout=args.evidence_timeout,
+        )
+        updated = continuation.snapshot
+        print(
+            render_investigation_snapshot_json(updated)
+            if args.format == "json"
+            else render_investigation_snapshot(updated)
+        )
+        return 0 if updated.ready else 2
 
     if args.investigate is not None:
         if args.scan is not None or args.compare_scan is not None:
@@ -227,7 +262,7 @@ def main() -> int:
         return 0
 
     if args.scan is None:
-        parser.error("a scan file is required unless --investigate, --discover, --discovery-plan, --history, or --finding-history is used")
+        parser.error("a scan file is required unless --investigate, --investigate-collect, --discover, --discovery-plan, --history, or --finding-history is used")
 
     if args.compare_scan is not None and not (args.diff or args.analysis_diff or args.combined_diff):
         parser.error("a second scan file requires --diff, --analysis-diff, or --combined-diff")
