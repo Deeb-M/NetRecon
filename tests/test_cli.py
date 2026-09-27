@@ -2079,7 +2079,7 @@ class CliTests(unittest.TestCase):
 
 
     @patch("netrecon.render_adaptive_investigation_plan", return_value="Adaptive Investigation Plan\nDecision: alternative")
-    @patch("netrecon.build_adaptive_investigation_plan", return_value="adaptive-plan")
+    @patch("netrecon.build_adaptive_investigation_plan")
     @patch("netrecon.correlate_analyst_attention", return_value=())
     @patch("netrecon.build_investigation_attention", return_value=())
     @patch("netrecon.assess_final_investigation_decision", return_value=None)
@@ -2105,6 +2105,7 @@ class CliTests(unittest.TestCase):
         build_adaptive_mock,
         render_adaptive_mock,
     ) -> None:
+        from adaptive_investigation import AdaptiveInvestigationPlan
         from investigation_orchestration import InvestigationContinuationDecision
         from netrecon import main
 
@@ -2128,6 +2129,10 @@ class CliTests(unittest.TestCase):
         snapshot_mock.return_value = snapshot
         execute_approved_mock.return_value = continuation
         assess_continuation_mock.return_value = decision
+        adaptive_plan = AdaptiveInvestigationPlan(
+            "alternative", "supported_alternative_actions_available", (alternative,)
+        )
+        build_adaptive_mock.return_value = adaptive_plan
 
         output = StringIO()
         with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.210", "--adaptive-plan"]):
@@ -2135,7 +2140,7 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(main(), 0)
 
         build_adaptive_mock.assert_called_once_with(decision)
-        render_adaptive_mock.assert_called_once_with("adaptive-plan")
+        render_adaptive_mock.assert_called_once_with(adaptive_plan)
         execute_alternative_mock.assert_called_once_with(
             updated, decision.alternative_actions, timeout=60.0
         )
