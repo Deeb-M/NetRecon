@@ -2147,5 +2147,59 @@ class CliTests(unittest.TestCase):
         self.assertIn("Adaptive Investigation Plan", output.getvalue())
 
 
+    @patch("netrecon.build_adaptive_investigation_plan")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.execute_alternative_evidence_round")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_adaptive_stop_blocks_alternative_execution(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_approved_mock,
+        assess_continuation_mock,
+        execute_alternative_mock,
+        attention_mock,
+        correlations_mock,
+        build_adaptive_mock,
+    ) -> None:
+        from adaptive_investigation import AdaptiveInvestigationPlan
+        from investigation_orchestration import InvestigationContinuationDecision
+        from netrecon import main
+
+        snapshot = unittest.mock.MagicMock(ready=True, actions=())
+        updated = unittest.mock.MagicMock(ready=True)
+        alternative = EvidenceAction(
+            "192.0.2.211", 5357, "tcp", ("http-headers",), ("review HTTP identity",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.211"),
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled", (), (), (), (), "repeated_actions_exhausted", (alternative,)
+        )
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = snapshot
+        execute_approved_mock.return_value = unittest.mock.MagicMock(snapshot=updated)
+        assess_continuation_mock.return_value = decision
+        build_adaptive_mock.return_value = AdaptiveInvestigationPlan(
+            "stop", "no_supported_next_step", (alternative,)
+        )
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.211"]):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(), 0)
+
+        execute_alternative_mock.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
