@@ -777,12 +777,10 @@ class EvidenceCollectorTests(unittest.TestCase):
             ("nmap", "-p", "443", "192.0.2.112"),
         )
 
-        with self.assertRaisesRegex(
-            EvidenceCollectionError,
-            "Nmap evidence collection timed out",
-        ):
-            execute_nmap_command(command, timeout=30)
+        result = execute_nmap_command(command, timeout=30)
 
+        self.assertEqual(result.returncode, 124)
+        self.assertIn("Nmap evidence collection timed out", result.stderr)
         run_mock.assert_called_once_with(
             command.arguments,
             capture_output=True,
@@ -793,7 +791,6 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
-    @patch("evidence_collector.execute_nmap_command")
     @patch("evidence_collector.subprocess.run")
     def test_timeout_is_preserved_as_failed_collection_result(self, run_mock) -> None:
         command = NmapCommand(("nmap", "-p", "445", "192.0.2.140"))
@@ -812,6 +809,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertIn("partial stderr", result.stderr)
         self.assertIn("Nmap evidence collection timed out", result.stderr)
 
+    @patch("evidence_collector.execute_nmap_command")
     def test_host_plan_propagates_collection_timeout(
         self,
         execute_mock,
