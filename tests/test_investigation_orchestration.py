@@ -125,5 +125,39 @@ class InvestigationOrchestrationTests(unittest.TestCase):
             build_investigation_snapshot(discovery)
 
 
+class InvestigationStateContractTests(unittest.TestCase):
+    def test_state_separates_observed_endpoint_facts_from_planner_unknowns(self) -> None:
+        from investigation_state import EndpointInvestigationState, summarize_investigation_state
+        from models import Host, Port, Scan
+
+        scan = Scan(source="scan.xml", hosts=(Host(address="192.0.2.10", status="up", ports=(Port(445, "tcp", "open", "microsoft-ds", product="Windows SMB", version="10"),)),))
+        state = summarize_investigation_state(scan)[0]
+
+        self.assertIsInstance(state, EndpointInvestigationState)
+        self.assertEqual((state.host, state.port, state.protocol), ("192.0.2.10", 445, "tcp"))
+        self.assertEqual(state.known, ("state=open", "service=microsoft-ds", "product=Windows SMB", "version=10"))
+        self.assertEqual(tuple(gap.script_id for gap in state.unknown), ("smb-protocols", "smb2-security-mode"))
+
+    def test_state_omits_unobserved_optional_metadata_from_known_facts(self) -> None:
+        from investigation_state import summarize_investigation_state
+        from models import Host, Port, Scan
+
+        scan = Scan(source="scan.xml", hosts=(Host(address="192.0.2.20", status="up", ports=(Port(22, "tcp", "open", "ssh"),)),))
+        state = summarize_investigation_state(scan)[0]
+
+        self.assertEqual(state.known, ("state=open", "service=ssh"))
+        self.assertEqual(tuple(gap.script_id for gap in state.unknown), ("ssh2-enum-algos",))
+
+    def test_unsupported_open_service_keeps_observed_facts_without_inventing_unknowns(self) -> None:
+        from investigation_state import summarize_investigation_state
+        from models import Host, Port, Scan
+
+        scan = Scan(source="scan.xml", hosts=(Host(address="192.0.2.30", status="up", ports=(Port(5432, "tcp", "open", "postgresql"),)),))
+        state = summarize_investigation_state(scan)[0]
+
+        self.assertEqual(state.known, ("state=open", "service=postgresql"))
+        self.assertEqual(state.unknown, ())
+
+
 if __name__ == "__main__":
     unittest.main()
