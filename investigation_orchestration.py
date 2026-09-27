@@ -119,6 +119,7 @@ class InvestigationContinuationDecision:
     resolved_gaps: tuple[EvidenceGap, ...]
     remaining_gaps: tuple[EvidenceGap, ...]
     next_actions: tuple[EvidenceAction, ...]
+    repeat_blocked_actions: tuple[EvidenceAction, ...] = ()
 
 
 def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
@@ -134,14 +135,15 @@ def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
 def assess_investigation_continuation(
     before: InvestigationSnapshot,
     after: InvestigationSnapshot,
+    attempted_actions: tuple[EvidenceAction, ...] = (),
 ) -> InvestigationContinuationDecision:
     """Classify re-evaluation without executing another collection round.
 
     A continuation is complete when no planner-supported gaps remain. It is
-    progressed only when at least one previous gap was resolved and further
-    planner-supported actions remain. If gaps remain but none were resolved,
-    the investigation is stalled so callers do not blindly repeat identical
-    evidence collection.
+    progressed only when at least one previous gap was resolved and a further
+    planner-supported action remains that was not already attempted. Repeated
+    actions are blocked from next_actions so callers do not blindly retry
+    collection that already failed to resolve the requested evidence.
     """
     if not before.ready or not after.ready:
         raise ValueError("Continuation assessment requires ready investigations")
@@ -151,9 +153,17 @@ def assess_investigation_continuation(
         gap for gap in before.gaps if _gap_identity(gap) not in after_ids
     )
 
+    attempted_commands = {action.command for action in attempted_actions}
+    repeat_blocked = tuple(
+        action for action in after.actions if action.command in attempted_commands
+    )
+    safe_next_actions = tuple(
+        action for action in after.actions if action.command not in attempted_commands
+    )
+
     if not after.gaps:
         status = "complete"
-    elif resolved and after.actions:
+    elif resolved and safe_next_actions:
         status = "progressed"
     else:
         status = "stalled"
@@ -162,5 +172,6 @@ def assess_investigation_continuation(
         status=status,
         resolved_gaps=resolved,
         remaining_gaps=after.gaps,
-        next_actions=after.actions,
+        next_actions=safe_next_actions,
+        repeat_blocked_actions=repeat_blocked,
     )

@@ -697,6 +697,63 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.remaining_gaps, (gap,))
         self.assertEqual(decision.next_actions, (action,))
 
+    def test_continuation_stalls_when_only_remaining_action_was_already_attempted(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        resolved = EvidenceGap("192.0.2.40", 445, "tcp", "smb-protocols", "purpose")
+        remaining = EvidenceGap("192.0.2.40", 5357, "tcp", "http-title", "purpose")
+        attempted_http = EvidenceAction(
+            host="192.0.2.40",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-title",),
+            purposes=("purpose",),
+            command=("nmap", "-p", "5357", "--script", "http-title"),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot((resolved, remaining), (attempted_http,)),
+            self._snapshot((remaining,), (attempted_http,)),
+            attempted_actions=(attempted_http,),
+        )
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.resolved_gaps, (resolved,))
+        self.assertEqual(decision.next_actions, ())
+        self.assertEqual(decision.repeat_blocked_actions, (attempted_http,))
+
+    def test_continuation_keeps_new_action_when_another_action_is_repeat_blocked(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        resolved = EvidenceGap("192.0.2.50", 445, "tcp", "smb-protocols", "purpose")
+        remaining = EvidenceGap("192.0.2.50", 5357, "tcp", "http-title", "purpose")
+        repeated = EvidenceAction(
+            host="192.0.2.50",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-title",),
+            purposes=("purpose",),
+            command=("nmap", "-p", "5357", "--script", "http-title"),
+        )
+        new_action = EvidenceAction(
+            host="192.0.2.50",
+            port=443,
+            protocol="tcp",
+            script_ids=("ssl-cert",),
+            purposes=("purpose",),
+            command=("nmap", "-p", "443", "--script", "ssl-cert"),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot((resolved, remaining), (repeated,)),
+            self._snapshot((remaining,), (repeated, new_action)),
+            attempted_actions=(repeated,),
+        )
+
+        self.assertEqual(decision.status, "progressed")
+        self.assertEqual(decision.next_actions, (new_action,))
+        self.assertEqual(decision.repeat_blocked_actions, (repeated,))
+
     def test_continuation_assessment_rejects_unready_snapshot(self) -> None:
         from investigation_orchestration import (
             InvestigationSnapshot,
