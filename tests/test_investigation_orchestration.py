@@ -624,7 +624,10 @@ class InvestigationContinuationContractTests(unittest.TestCase):
 
 class InvestigationContinuationDecisionTests(unittest.TestCase):
     def _snapshot(self, gaps, actions=()):
-        from investigation_orchestration import InvestigationSnapshot
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            assess_investigation_continuation,
+        )
         from models import Scan
 
         return InvestigationSnapshot(
