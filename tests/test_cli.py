@@ -1012,5 +1012,47 @@ class CliTests(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(), '{"report_type":"discovery_plan"}')
 
 
+    def test_discovery_plan_integration_from_target_to_text_output(self) -> None:
+        from netrecon import main
+
+        output = StringIO()
+        with patch("sys.argv", ["netrecon", "--discovery-plan", "192.0.2.10"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        report = output.getvalue()
+        self.assertIn("Discovery Plan", report)
+        self.assertIn("Target: 192.0.2.10", report)
+        self.assertIn("Profile: baseline", report)
+        self.assertIn(
+            "Purpose: discover open TCP services with version detection",
+            report,
+        )
+        self.assertIn(
+            "Suggested discovery: nmap -sV -oX - 192.0.2.10",
+            report,
+        )
+
+    def test_discovery_plan_integration_from_target_to_json_output(self) -> None:
+        from netrecon import main
+
+        output = StringIO()
+        with patch(
+            "sys.argv",
+            ["netrecon", "--discovery-plan", "192.0.2.10", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(payload["report_type"], "discovery_plan")
+        self.assertEqual(payload["target"], "192.0.2.10")
+        self.assertEqual(payload["profile"], "baseline")
+        self.assertEqual(
+            payload["command"],
+            ["nmap", "-sV", "-oX", "-", "192.0.2.10"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
