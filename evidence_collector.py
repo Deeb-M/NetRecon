@@ -408,6 +408,8 @@ def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]
     grouped: dict[tuple[int, str], list[str]] = {}
 
     for request in plan.requests:
+        if request.port < 1 or request.port > 65535:
+            raise ValueError(f"Invalid collection port: {request.port}")
         protocol = request.protocol.strip().lower()
         if protocol not in {"tcp", "udp"}:
             raise ValueError(f"Unsupported collection protocol: {protocol or 'blank'}")
