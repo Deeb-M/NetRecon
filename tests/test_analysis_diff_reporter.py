@@ -6,7 +6,7 @@ import unittest
 from analysis_diff import FindingChange
 from findings import Finding
 from models import Scan, ScanScope
-from reporter import render_analysis_diff, render_analysis_diff_json
+from reporter import render_analysis_diff, render_analysis_diff_json, render_combined_diff, render_combined_diff_json
 
 
 class AnalysisDiffReporterTests(unittest.TestCase):
@@ -104,6 +104,36 @@ class AnalysisDiffReporterTests(unittest.TestCase):
         self.assertIn("Newly Scanned: none", output)
         self.assertIn("No Longer Scanned: tcp/80", output)
         self.assertIn("Changes: none", output)
+
+
+    def test_combined_diff_keeps_exposure_and_analysis_separate(self) -> None:
+        from scan_diff import ExposureChange
+
+        before = Scan("before.xml", scan_scopes=(ScanScope("tcp", "22"),))
+        after = Scan("after.xml", scan_scopes=(ScanScope("tcp", "22,23"),))
+        exposure = (
+            ExposureChange("new", "192.0.2.10", 23, "tcp", after_service="telnet"),
+        )
+        finding = Finding(
+            "service.telnet.exposed", "transport", "192.0.2.10", 23, "tcp",
+            "medium", "Telnet service exposed", "23/tcp is open.", "Review exposure",
+        )
+        analysis = (FindingChange("newly_observed", finding),)
+
+        output = render_combined_diff(exposure, analysis, before, after)
+        payload = json.loads(render_combined_diff_json(exposure, analysis, before, after))
+
+        self.assertIn("Exposure Changes", output)
+        self.assertIn("Analysis Changes", output)
+        self.assertEqual(payload["change_type"], "combined")
+        self.assertEqual(payload["exposure"]["summary"], {"new": 1})
+        self.assertEqual(payload["analysis"]["summary"], {"newly_observed": 1})
+        self.assertEqual(payload["exposure"]["changes"][0]["port"], 23)
+        self.assertEqual(
+            payload["analysis"]["changes"][0]["finding"]["finding_id"],
+            "service.telnet.exposed",
+        )
+
 
 
 if __name__ == "__main__":
