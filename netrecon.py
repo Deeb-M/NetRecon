@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 import argparse
 from importlib.metadata import version
 from pathlib import Path
@@ -19,8 +20,8 @@ from scan_diff import compare_scans
 def positive_timeout(value: str) -> float:
     """Parse a strictly positive evidence collection timeout."""
     timeout = float(value)
-    if timeout <= 0:
-        raise argparse.ArgumentTypeError("evidence timeout must be greater than zero")
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise argparse.ArgumentTypeError("evidence timeout must be a finite number greater than zero")
     return timeout
 
 
