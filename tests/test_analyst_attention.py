@@ -29,5 +29,58 @@ class AnalystAttentionTests(unittest.TestCase):
         items = build_analyst_attention(findings)
         self.assertEqual(tuple(item.finding_id for item in items), ("a", "b"))
 
+
+    def test_correlates_smb_exposure_and_signing_on_same_host(self) -> None:
+        from analyst_attention import AnalystAttentionItem, correlate_analyst_attention
+
+        items = (
+            AnalystAttentionItem(
+                "smb.service.exposed", "exposure", "192.0.2.60", 445, "tcp",
+                "SMB service exposed", "445/tcp is open.", "Review SMB exposure.",
+                "service:detection",
+            ),
+            AnalystAttentionItem(
+                "smb.signing.review", "configuration", "192.0.2.60", 445, "tcp",
+                "SMB signing configuration requires review",
+                "Message signing enabled but not required.", "Review signing policy.",
+                "nse:smb2-security-mode",
+            ),
+        )
+
+        correlations = correlate_analyst_attention(items)
+
+        self.assertEqual(len(correlations), 1)
+        self.assertEqual(
+            correlations[0].correlation_id,
+            "smb.exposure_and_signing_review",
+        )
+        self.assertEqual(
+            correlations[0].finding_ids,
+            ("smb.service.exposed", "smb.signing.review"),
+        )
+        self.assertEqual(
+            correlations[0].evidence_sources,
+            ("service:detection", "nse:smb2-security-mode"),
+        )
+
+    def test_does_not_correlate_smb_items_across_hosts(self) -> None:
+        from analyst_attention import AnalystAttentionItem, correlate_analyst_attention
+
+        items = (
+            AnalystAttentionItem(
+                "smb.service.exposed", "exposure", "192.0.2.61", 445, "tcp",
+                "SMB service exposed", "445/tcp is open.", "Review SMB exposure.",
+                "service:detection",
+            ),
+            AnalystAttentionItem(
+                "smb.signing.review", "configuration", "192.0.2.62", 445, "tcp",
+                "SMB signing configuration requires review",
+                "Message signing enabled but not required.", "Review signing policy.",
+                "nse:smb2-security-mode",
+            ),
+        )
+
+        self.assertEqual(correlate_analyst_attention(items), ())
+
 if __name__ == "__main__":
     unittest.main()
