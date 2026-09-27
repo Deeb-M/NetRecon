@@ -2249,5 +2249,88 @@ class DynamicEvidenceActionDerivationTests(unittest.TestCase):
         self.assertEqual(actions[0].port, 445)
 
 
+class DynamicReevaluationIntegrationTests(unittest.TestCase):
+    def test_reevaluation_does_not_surface_unapproved_dynamic_action(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import re_evaluate_investigation
+        from models import Host, Port, Scan, ScriptResult
+
+        discovery = Scan(
+            source="discovery",
+            hosts=(Host(
+                address="192.0.2.90",
+                status="up",
+                ports=(Port(port=445, protocol="tcp", state="open", service="microsoft-ds"),),
+            ),),
+        )
+        collected = Scan(
+            source="evidence",
+            hosts=(Host(
+                address="192.0.2.90",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(
+                        script_id="smb2-security-mode",
+                        output="Message signing enabled but not required",
+                    ),),
+                ),),
+            ),),
+        )
+        outcome = ParsedCollectionResult(
+            CollectionResult(NmapCommand(("nmap",)), 0, "", ""),
+            collected,
+        )
+
+        snapshot = re_evaluate_investigation(discovery, (outcome,))
+        self.assertNotIn(("smb-enum-shares",), tuple(a.script_ids for a in snapshot.actions))
+
+    def test_reevaluation_surfaces_approved_dynamic_action(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import re_evaluate_investigation
+        from models import Host, Port, Scan, ScriptResult
+
+        discovery = Scan(
+            source="discovery",
+            hosts=(Host(
+                address="192.0.2.91",
+                status="up",
+                ports=(Port(port=445, protocol="tcp", state="open", service="microsoft-ds"),),
+            ),),
+        )
+        collected = Scan(
+            source="evidence",
+            hosts=(Host(
+                address="192.0.2.91",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(ScriptResult(
+                        script_id="smb2-security-mode",
+                        output="Message signing enabled but not required",
+                    ),),
+                ),),
+            ),),
+        )
+        outcome = ParsedCollectionResult(
+            CollectionResult(NmapCommand(("nmap",)), 0, "", ""),
+            collected,
+        )
+
+        snapshot = re_evaluate_investigation(
+            discovery,
+            (outcome,),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )
+        dynamic = tuple(a for a in snapshot.actions if a.script_ids == ("smb-enum-shares",))
+        self.assertEqual(len(dynamic), 1)
+        self.assertEqual(dynamic[0].host, "192.0.2.91")
+        self.assertEqual(dynamic[0].port, 445)
+
+
 if __name__ == "__main__":
     unittest.main()
