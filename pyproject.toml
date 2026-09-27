@@ -32,6 +32,7 @@ netrecon = "netrecon:main"
 py-modules = [
     "analysis_diff",
     "analysis_summary",
+    "analyst_attention",
     "analyzer",
     "evidence_action_plan",
     "evidence_collector",
