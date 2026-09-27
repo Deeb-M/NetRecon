@@ -10,6 +10,7 @@ from pathlib import Path
 
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
+from analyst_attention import build_analyst_attention
 from evidence_action_plan import build_evidence_action_plan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_gaps import summarize_evidence_gaps
@@ -18,7 +19,7 @@ from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
 from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json
 from scan_diff import compare_scans
 from scan_orchestration import build_baseline_discovery_plan, execute_discovery_plan, interpret_discovery_execution
 
@@ -94,6 +95,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--analyze",
         action="store_true",
         help="Add conservative evidence-based findings",
+    )
+    mode.add_argument(
+        "--attention",
+        action="store_true",
+        help="Show evidence-based findings that warrant analyst review without ranking them",
     )
     mode.add_argument(
         "--diff",
@@ -367,6 +373,15 @@ def main() -> int:
             render_analysis_diff_json(changes, scan, compare_scan)
             if args.format == "json"
             else render_analysis_diff(changes, scan, compare_scan)
+        )
+        return 0
+
+    if args.attention:
+        attention = build_analyst_attention(analyze_scan(scan))
+        print(
+            render_analyst_attention_json(attention)
+            if args.format == "json"
+            else render_analyst_attention(attention)
         )
         return 0
 
