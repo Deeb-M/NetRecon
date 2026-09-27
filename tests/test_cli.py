@@ -2201,5 +2201,81 @@ class CliTests(unittest.TestCase):
         execute_alternative_mock.assert_not_called()
 
 
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.execute_selected_evidence_actions")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_executes_one_adaptive_continue_round(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_approved_mock,
+        assess_continuation_mock,
+        execute_selected_mock,
+        attention_mock,
+        correlations_mock,
+        render_mock,
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+
+        scan = Scan(source="discovery.xml")
+        initial_action = EvidenceAction(
+            "192.0.2.220", 445, "tcp", ("smb-protocols",), ("review SMB dialects",),
+            ("nmap", "-p", "445", "--script", "smb-protocols", "-oX", "-", "192.0.2.220"),
+        )
+        next_action = EvidenceAction(
+            "192.0.2.220", 443, "tcp", ("ssl-cert",), ("review TLS certificate",),
+            ("nmap", "-p", "443", "--script", "ssl-cert", "-oX", "-", "192.0.2.220"),
+        )
+        initial = InvestigationSnapshot(True, scan, (), (initial_action,), (), None)
+        updated = InvestigationSnapshot(True, scan, (), (next_action,), (), None)
+        continued = InvestigationSnapshot(True, scan, (), (), (), None)
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = initial
+        execute_approved_mock.return_value = InvestigationContinuationResult((), updated)
+        first_decision = InvestigationContinuationDecision(
+            "progressed", (), (), (next_action,)
+        )
+        second_decision = InvestigationContinuationDecision(
+            "complete", (), (), ()
+        )
+        assess_continuation_mock.side_effect = (first_decision, second_decision)
+        execute_selected_mock.return_value = InvestigationContinuationResult((), continued)
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.220"]):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(), 0)
+
+        execute_selected_mock.assert_called_once_with(
+            updated,
+            (next_action,),
+            timeout=60.0,
+        )
+        self.assertEqual(assess_continuation_mock.call_count, 2)
+        assess_continuation_mock.assert_any_call(
+            updated,
+            continued,
+            attempted_actions=(initial_action, next_action),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
