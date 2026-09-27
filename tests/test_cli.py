@@ -2473,12 +2473,17 @@ class CliTests(unittest.TestCase):
         first_round = InvestigationContinuationResult((), updated)
         second_round = InvestigationContinuationResult((), final)
         progressed = InvestigationContinuationDecision(
-            "progressed",
-            (),
-            (dynamic,),
-            (),
+            status="progressed",
+            resolved_gaps=(),
+            remaining_gaps=(),
+            next_actions=(dynamic,),
         )
-        complete = InvestigationContinuationDecision("complete", (), (), ())
+        complete = InvestigationContinuationDecision(
+            status="complete",
+            resolved_gaps=(),
+            remaining_gaps=(),
+            next_actions=(),
+        )
 
         build_plan_mock.return_value = object()
         execute_discovery_mock.return_value = object()
