@@ -785,3 +785,21 @@ Validation decision:
 - The field result exactly matches the previously validated text workflow: 4 open ports, 6 findings, `medium=1, info=5`.
 - The summary does not create severity from collection state; evidence completeness and security findings remain independent dimensions.
 - Do not add more summary layers merely to repeat existing severity counts. Future Stage C work should be driven by a distinct analyst workflow need.
+
+
+### Stage C SSH field-validation checkpoint
+
+A controlled local field validation confirmed the SSH evidence workflow against the Kali host.
+
+Observed behavior:
+- A real service-discovery XML identified one open SSH service on localhost.
+- NetRecon selected and collected the SSH algorithm inventory required by the existing evidence plan.
+- Evidence collection completed successfully.
+- Host Summary reported one open SSH port and three informational findings: platform context, application context, and SSH algorithm inventory.
+- The newly added legacy-KEX review finding was not emitted because the configured SSH service did not offer either of the two KEX methods covered by that rule.
+- This validates the negative path against real service output and demonstrates that the new rule does not flag the tested modern configuration.
+
+Validation decision:
+- The SSH workflow is now field-validated through discovery, evidence planning, collection, parsing, correlation, analysis, and Host Summary.
+- Keep the first SSH intelligence rule deliberately narrow; do not generalize it into a broad vulnerability claim.
+- Development regression baseline is 511/511 tests passing locally on Kali.
