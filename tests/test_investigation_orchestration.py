@@ -2105,5 +2105,79 @@ class FindingCollectionPlannerTests(unittest.TestCase):
         self.assertEqual(plans[0].authorization.reason, "explicitly_approved")
 
 
+class FindingCollectionEvidenceActionTests(unittest.TestCase):
+    def test_blocked_finding_collection_plan_cannot_become_evidence_action(self) -> None:
+        from finding_collection_planner import (
+            build_finding_collection_plans,
+            evidence_action_for_finding_collection_plan,
+        )
+        from findings import Finding
+
+        finding = Finding(
+            finding_id="smb.signing.review",
+            category="configuration",
+            host="192.0.2.70",
+            port=445,
+            protocol="tcp",
+            severity="medium",
+            title="SMB signing configuration requires review",
+            evidence="Message signing enabled but not required",
+            recommendation="Review SMB signing configuration",
+            evidence_source="nse:smb2-security-mode",
+        )
+
+        plan = build_finding_collection_plans((finding,))[0]
+        self.assertIsNone(evidence_action_for_finding_collection_plan(plan))
+
+    def test_explicitly_approved_finding_plan_uses_standard_evidence_action_builder(self) -> None:
+        from finding_collection_planner import (
+            build_finding_collection_plans,
+            evidence_action_for_finding_collection_plan,
+        )
+        from findings import Finding
+
+        finding = Finding(
+            finding_id="smb.signing.review",
+            category="configuration",
+            host="192.0.2.71",
+            port=445,
+            protocol="tcp",
+            severity="medium",
+            title="SMB signing configuration requires review",
+            evidence="Message signing enabled but not required",
+            recommendation="Review SMB signing configuration",
+            evidence_source="nse:smb2-security-mode",
+        )
+
+        plan = build_finding_collection_plans(
+            (finding,),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )[0]
+        action = evidence_action_for_finding_collection_plan(plan)
+
+        self.assertIsNotNone(action)
+        self.assertEqual(action.host, "192.0.2.71")
+        self.assertEqual(action.port, 445)
+        self.assertEqual(action.protocol, "tcp")
+        self.assertEqual(action.script_ids, ("smb-enum-shares",))
+        self.assertEqual(
+            action.purposes,
+            ("review SMB access controls in the context of the observed signing configuration",),
+        )
+        self.assertEqual(
+            action.command,
+            (
+                "nmap",
+                "-p",
+                "445",
+                "--script",
+                "smb-enum-shares",
+                "-oX",
+                "-",
+                "192.0.2.71",
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
