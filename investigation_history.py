@@ -76,3 +76,17 @@ def load_investigation_history(path: str) -> tuple[InvestigationHistoryRecord, .
             if payload:
                 records.append(parse_investigation_history_record_json(payload))
     return tuple(records)
+
+
+def latest_investigation_for_target(
+    records: tuple[InvestigationHistoryRecord, ...],
+    target: str,
+) -> InvestigationHistoryRecord | None:
+    """Return the latest stored investigation for the exact normalized target."""
+    normalized_target = target.strip()
+    matches = (
+        record
+        for record in records
+        if record.target.strip() == normalized_target
+    )
+    return max(matches, key=lambda record: record.observed_at, default=None)
