@@ -9,6 +9,7 @@ import time
 from importlib.metadata import version
 from pathlib import Path
 
+from adaptive_investigation import build_adaptive_investigation_plan
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
 from analyst_attention import build_analyst_attention, correlate_analyst_attention
@@ -28,7 +29,7 @@ from investigation_history import (
     load_investigation_history,
 )
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json, render_investigation_synthesis, render_investigation_synthesis_json, render_investigation_memory, render_investigation_memory_json
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json, render_investigation_synthesis, render_investigation_synthesis_json, render_investigation_memory, render_investigation_memory_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json
 from scan_diff import compare_scans
 from scan_orchestration import build_baseline_discovery_plan, execute_discovery_plan, interpret_discovery_execution
 
@@ -200,6 +201,7 @@ def main() -> int:
             updated,
             attempted_actions=snapshot.actions,
         )
+        adaptive_plan = build_adaptive_investigation_plan(decision)
         alternative_round = None
         final_decision = None
         if decision.alternative_actions:
@@ -254,8 +256,13 @@ def main() -> int:
             report = render_investigation_continuation_json(
                 continuation, decision, alternative_round, final_decision, attention, correlations
             )
+            import json
+            payload = json.loads(report)
+            payload["adaptive_investigation_plan"] = json.loads(
+                render_adaptive_investigation_plan_json(adaptive_plan)
+            )
+            report = json.dumps(payload, indent=2, ensure_ascii=False)
             if synthesis is not None:
-                import json
                 payload = json.loads(report)
                 payload["investigation_synthesis"] = json.loads(
                     render_investigation_synthesis_json(synthesis)
@@ -269,6 +276,7 @@ def main() -> int:
             report = render_investigation_continuation(
                 continuation, decision, alternative_round, final_decision, attention, correlations
             )
+            report += "\n\n" + render_adaptive_investigation_plan(adaptive_plan)
             if synthesis is not None:
                 report += "\n\n" + render_investigation_synthesis(synthesis)
             if investigation_memory is not None:
