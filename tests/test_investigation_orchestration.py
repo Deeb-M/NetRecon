@@ -1442,5 +1442,75 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertNotIn("smb.protocol.modern_only", [item.finding_id for item in attention])
 
 
+    def test_investigation_synthesis_reflects_existing_outputs_without_new_conclusions(self) -> None:
+        from analyst_attention import AnalystAttentionCorrelation, AnalystAttentionItem
+        from evidence_gaps import requirement_state_for_gap
+        from investigation_orchestration import FinalInvestigationDecision
+        from investigation_synthesis import build_investigation_synthesis
+
+        remaining = requirement_state_for_gap(
+            EvidenceGap(
+                "192.0.2.70",
+                5357,
+                "tcp",
+                "http-title",
+                "review HTTP service identity and exposed content context",
+            )
+        )
+        self.assertIsNotNone(remaining)
+        final_decision = FinalInvestigationDecision(
+            status="stalled",
+            reason="alternative_evidence_incomplete",
+            remaining_gaps=(),
+            remaining_requirements=(remaining,),
+        )
+        attention = (
+            AnalystAttentionItem(
+                "service.smb.exposed",
+                "exposure",
+                "192.0.2.70",
+                445,
+                "tcp",
+                "SMB service exposed",
+                "445/tcp is open.",
+                "Review SMB exposure.",
+                "service:detection",
+            ),
+            AnalystAttentionItem(
+                "smb.signing.review",
+                "configuration",
+                "192.0.2.70",
+                445,
+                "tcp",
+                "SMB signing configuration requires review",
+                "Message signing enabled but not required",
+                "Review the SMB signing policy.",
+                "nse:smb2-security-mode",
+            ),
+        )
+        correlations = (
+            AnalystAttentionCorrelation(
+                "smb.exposure_and_signing_review",
+                "192.0.2.70",
+                "SMB exposure and signing configuration require joint review",
+                ("service.smb.exposed", "smb.signing.review"),
+                ("service:detection", "nse:smb2-security-mode"),
+                "Review the observations together.",
+            ),
+        )
+
+        synthesis = build_investigation_synthesis(
+            final_decision,
+            attention,
+            correlations,
+        )
+
+        self.assertEqual(synthesis.status, "stalled")
+        self.assertEqual(synthesis.reason, "alternative_evidence_incomplete")
+        self.assertEqual(synthesis.attention_items, 2)
+        self.assertEqual(synthesis.correlated_review_groups, 1)
+        self.assertEqual(synthesis.remaining_requirements, (remaining,))
+
+
 if __name__ == "__main__":
     unittest.main()
