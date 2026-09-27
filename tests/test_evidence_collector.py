@@ -1080,6 +1080,44 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_collection_outcomes_merge_host_level_nse_evidence(self) -> None:
+        discovered = Host(
+            address="192.0.2.121",
+            status="up",
+            ports=(Port(port=445, protocol="tcp", state="open", service="microsoft-ds"),),
+        )
+        smb_protocols = ScriptResult(
+            "smb-protocols",
+            "dialects: 2.0.2 2.1 3.0 3.0.2 3.1.1",
+        )
+        smb_signing = ScriptResult(
+            "smb2-security-mode",
+            "3.1.1: Message signing enabled but not required",
+        )
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(
+                command=NmapCommand(("nmap",)),
+                returncode=0,
+                stdout="<xml/>",
+                stderr="",
+            ),
+            scan=Scan(
+                source="nmap stdout",
+                hosts=(
+                    Host(
+                        address="192.0.2.121",
+                        status="up",
+                        scripts=(smb_protocols, smb_signing),
+                        ports=(Port(port=445, protocol="tcp", state="open"),),
+                    ),
+                ),
+            ),
+        )
+
+        merged = merge_collection_outcomes_into_host(discovered, (outcome,))
+
+        self.assertEqual(merged.scripts, (smb_protocols, smb_signing))
+
     def test_collection_outcomes_ignore_evidence_from_different_host(self) -> None:
         discovered = Host(
             address="192.0.2.119",
