@@ -1760,5 +1760,59 @@ class ReporterTests(unittest.TestCase):
             ["service:detection", "nse:smb2-security-mode"],
         )
 
+
+    def test_investigation_synthesis_report_preserves_factual_state(self) -> None:
+        from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
+        from investigation_synthesis import InvestigationSynthesis
+        from reporter import (
+            render_investigation_synthesis,
+            render_investigation_synthesis_json,
+        )
+
+        remaining = EvidenceRequirementState(
+            "192.0.2.90",
+            5357,
+            "tcp",
+            EvidenceRequirement(
+                "http_supported_methods",
+                "review supported HTTP methods",
+                ("http-methods",),
+            ),
+        )
+        synthesis = InvestigationSynthesis(
+            status="stalled",
+            reason="alternative_evidence_incomplete",
+            attention_items=4,
+            correlated_review_groups=1,
+            remaining_requirements=(remaining,),
+        )
+
+        text_report = render_investigation_synthesis(synthesis)
+        json_report = json.loads(render_investigation_synthesis_json(synthesis))
+
+        self.assertIn("Investigation Synthesis", text_report)
+        self.assertIn("Status: stalled", text_report)
+        self.assertIn("Reason: alternative_evidence_incomplete", text_report)
+        self.assertIn("Attention Items: 4", text_report)
+        self.assertIn("Correlated Review Groups: 1", text_report)
+        self.assertIn("Remaining Requirements: 1", text_report)
+        self.assertIn("http_supported_methods", text_report)
+        self.assertEqual(json_report["report_type"], "investigation_synthesis")
+        self.assertEqual(json_report["status"], "stalled")
+        self.assertEqual(json_report["reason"], "alternative_evidence_incomplete")
+        self.assertEqual(
+            json_report["summary"],
+            {
+                "attention_items": 4,
+                "correlated_review_groups": 1,
+                "remaining_requirements": 1,
+            },
+        )
+        self.assertEqual(
+            json_report["remaining_requirements"][0]["requirement"]["requirement_id"],
+            "http_supported_methods",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
