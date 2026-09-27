@@ -1397,7 +1397,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
     def test_investigation_attention_uses_merged_nse_evidence(self) -> None:
         from investigation_orchestration import InvestigationSnapshot, build_investigation_attention
-        from models import Host, Port, Scan, Script
+        from models import Host, Port, Scan, ScriptResult
 
         scan = Scan(
             source="merged investigation",
@@ -1412,8 +1412,8 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
                             "open",
                             "microsoft-ds",
                             scripts=(
-                                Script("smb-protocols", "2:1:0, 3:0:2, 3:1:1"),
-                                Script(
+                                ScriptResult("smb-protocols", "2:1:0, 3:0:2, 3:1:1"),
+                                ScriptResult(
                                     "smb2-security-mode",
                                     "Message signing enabled but not required",
                                 ),
