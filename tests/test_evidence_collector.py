@@ -203,6 +203,25 @@ class EvidenceCollectorTests(unittest.TestCase):
             build_collection_specs(plan)
 
 
+    def test_normalizes_target_before_building_collection_specs(self) -> None:
+        plan = HostEvidencePlan(
+            target=" 192.0.2.32 ",
+            requests=(EvidenceRequest(443, "tcp", "ssl-cert"),),
+        )
+
+        self.assertEqual(
+            build_collection_specs(plan),
+            (
+                CollectionSpec(
+                    "192.0.2.32",
+                    443,
+                    "tcp",
+                    ("ssl-cert",),
+                ),
+            ),
+        )
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
