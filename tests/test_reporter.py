@@ -451,6 +451,31 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(payload["failures"], ["permission denied"])
 
 
+    def test_renders_timeout_as_partial_evidence_collection_json(self) -> None:
+        command = NmapCommand(("nmap", "-p", "445", "192.0.2.144"))
+        timed_out = ParsedCollectionResult(
+            result=CollectionResult(
+                command,
+                124,
+                "",
+                "Nmap evidence collection timed out",
+            ),
+            scan=None,
+        )
+        result = CorrelatedEvidenceResult(
+            outcomes=(timed_out,),
+            host=Host(address="192.0.2.144", status="up"),
+            findings=(),
+        )
+
+        payload = json.loads(render_evidence_collection_json(result))
+
+        self.assertEqual(payload["status"], "partial")
+        self.assertEqual(
+            payload["failures"],
+            ["Nmap evidence collection timed out"],
+        )
+
     def test_renders_multiple_evidence_collections_as_one_json_document(self) -> None:
         first = CorrelatedEvidenceResult(
             outcomes=(),
