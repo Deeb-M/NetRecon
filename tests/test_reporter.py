@@ -4,6 +4,7 @@ import json
 import unittest
 
 from analyzer import Finding
+from evidence_gaps import EvidenceGap
 from evidence_collector import (
     CollectionResult,
     CorrelatedEvidenceResult,
@@ -11,7 +12,7 @@ from evidence_collector import (
     ParsedCollectionResult,
 )
 from models import Host, Port, Scan, ScriptResult
-from reporter import render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_findings, render_host_summaries, render_text
+from reporter import render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text
 
 
 class ReporterTests(unittest.TestCase):
@@ -587,6 +588,58 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("  Severity: high=1, medium=1, info=1", report)
         self.assertIn("192.0.2.20 — 0 open ports — no open services — 0 findings", report)
         self.assertIn("  Severity: none", report)
+
+
+    def test_renders_evidence_gaps_as_text(self) -> None:
+        gaps = (
+            EvidenceGap(
+                host="192.0.2.10",
+                port=445,
+                protocol="tcp",
+                script_id="smb2-security-mode",
+                purpose="review SMB signing configuration",
+            ),
+        )
+
+        report = render_evidence_gaps(gaps)
+
+        self.assertIn("Evidence Gaps", report)
+        self.assertIn("Gaps: 1", report)
+        self.assertIn("192.0.2.10:445/tcp", report)
+        self.assertIn("smb2-security-mode", report)
+        self.assertIn("review SMB signing configuration", report)
+
+    def test_renders_evidence_gaps_as_json(self) -> None:
+        gaps = (
+            EvidenceGap(
+                host="192.0.2.10",
+                port=445,
+                protocol="tcp",
+                script_id="smb2-security-mode",
+                purpose="review SMB signing configuration",
+            ),
+        )
+
+        payload = json.loads(render_evidence_gaps_json(gaps))
+
+        self.assertEqual(payload["report_type"], "evidence_gaps")
+        self.assertEqual(payload["summary"], {"gaps": 1})
+        self.assertEqual(
+            payload["gaps"][0],
+            {
+                "host": "192.0.2.10",
+                "port": 445,
+                "protocol": "tcp",
+                "script_id": "smb2-security-mode",
+                "purpose": "review SMB signing configuration",
+            },
+        )
+
+    def test_renders_empty_evidence_gaps_without_inventing_actions(self) -> None:
+        self.assertIn("Gaps: 0", render_evidence_gaps(()))
+        payload = json.loads(render_evidence_gaps_json(()))
+        self.assertEqual(payload["summary"], {"gaps": 0})
+        self.assertEqual(payload["gaps"], [])
 
 
 if __name__ == "__main__":
