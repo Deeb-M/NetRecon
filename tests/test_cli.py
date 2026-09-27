@@ -1055,5 +1055,80 @@ class CliTests(unittest.TestCase):
         )
 
 
+    def test_accepts_discover_target(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["--discover", "192.0.2.10"])
+
+        self.assertEqual(args.discover, "192.0.2.10")
+
+    @patch("netrecon.render_discovery_execution", return_value="Discovery execution report")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_discover_executes_only_the_built_plan_and_renders_text(
+        self, build_mock, execute_mock, interpret_mock, render_mock
+    ) -> None:
+        from netrecon import main
+        from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 0, "<nmaprun/>", "", False)
+        result = DiscoveryResult(execution, True, None, None)
+        build_mock.return_value = plan
+        execute_mock.return_value = execution
+        interpret_mock.return_value = result
+        output = StringIO()
+
+        with patch("sys.argv", ["netrecon", "--discover", "192.0.2.10"]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        build_mock.assert_called_once_with("192.0.2.10")
+        execute_mock.assert_called_once_with(plan, timeout=60.0)
+        interpret_mock.assert_called_once_with(execution)
+        render_mock.assert_called_once_with(result)
+        self.assertEqual(output.getvalue().strip(), "Discovery execution report")
+
+    @patch("netrecon.render_discovery_execution_json", return_value='{"status":"failed"}')
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_discover_returns_two_for_failed_execution_and_honors_json(
+        self, build_mock, execute_mock, interpret_mock, render_mock
+    ) -> None:
+        from netrecon import main
+        from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
+
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 2, "", "nmap failed", False)
+        result = DiscoveryResult(execution, False, None, "nmap failed")
+        build_mock.return_value = plan
+        execute_mock.return_value = execution
+        interpret_mock.return_value = result
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "--discover", "192.0.2.10", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 2)
+
+        execute_mock.assert_called_once_with(plan, timeout=60.0)
+        render_mock.assert_called_once_with(result)
+        self.assertEqual(output.getvalue().strip(), '{"status":"failed"}')
+
+
 if __name__ == "__main__":
     unittest.main()
