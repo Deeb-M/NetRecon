@@ -408,7 +408,8 @@ def build_collection_specs(plan: HostEvidencePlan) -> tuple[CollectionSpec, ...]
     grouped: dict[tuple[int, str], list[str]] = {}
 
     for request in plan.requests:
-        key = (request.port, request.protocol)
+        protocol = request.protocol.strip().lower()
+        key = (request.port, protocol)
         grouped.setdefault(key, []).append(request.script_id)
 
     return tuple(
