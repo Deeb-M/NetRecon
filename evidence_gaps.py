@@ -42,6 +42,16 @@ class EvidenceRequirement:
     alternative_script_ids: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class EvidenceRequirementState:
+    """One unresolved semantic analyst need bound to a network endpoint."""
+
+    host: str
+    port: int
+    protocol: str
+    requirement: EvidenceRequirement
+
+
 EVIDENCE_REQUIREMENTS: dict[str, EvidenceRequirement] = {
     "http-title": EvidenceRequirement(
         "http_identity_context",

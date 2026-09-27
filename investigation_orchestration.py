@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
-from evidence_gaps import EvidenceGap, EvidenceRequirement, requirement_for_gap, summarize_evidence_gaps
+from evidence_gaps import EvidenceGap, EvidenceRequirementState, requirement_for_gap, summarize_evidence_gaps
 from evidence_collector import (
     NmapCommand,
     ParsedCollectionResult,
@@ -203,7 +203,7 @@ class FinalInvestigationDecision:
     reason: str
     remaining_gaps: tuple[EvidenceGap, ...]
     further_actions: tuple[EvidenceAction, ...] = ()
-    remaining_requirements: tuple[EvidenceRequirement, ...] = ()
+    remaining_requirements: tuple[EvidenceRequirementState, ...] = ()
 
 
 def assess_final_investigation_decision(
@@ -211,7 +211,7 @@ def assess_final_investigation_decision(
 ) -> FinalInvestigationDecision:
     """Stop after the bounded alternative round and explain why."""
     remaining = alternative_round.snapshot.gaps
-    requirements: list[EvidenceRequirement] = []
+    requirements: list[EvidenceRequirementState] = []
     seen_requirements: set[tuple[str, str, int, str]] = set()
     observed_alternatives = {
         (
@@ -250,7 +250,7 @@ def assess_final_investigation_decision(
         }
         if alternative_ids and alternative_ids.issubset(endpoint_observed_ids):
             continue
-        requirements.append(requirement)
+        requirements.append(EvidenceRequirementState(gap.host.strip(), gap.port, gap.protocol.strip().lower(), requirement))
     remaining_requirements = tuple(requirements)
     statuses = {verification.status for verification in alternative_round.verifications}
 

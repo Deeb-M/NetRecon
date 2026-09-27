@@ -941,6 +941,32 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             ("http_identity_context", "http_supported_methods"),
         )
 
+    def test_remaining_semantic_requirements_preserve_endpoint_identity(self) -> None:
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from models import Scan
+
+        gaps = (
+            EvidenceGap("192.0.2.70", 80, "tcp", "http-title", "purpose"),
+            EvidenceGap("192.0.2.70", 8080, "tcp", "http-title", "purpose"),
+        )
+        snapshot = InvestigationSnapshot(True, Scan("after.xml"), gaps, (), (), None)
+        decision = assess_final_investigation_decision(
+            AlternativeEvidenceRoundResult((), (), snapshot)
+        )
+
+        self.assertEqual(
+            [(state.host, state.port, state.protocol, state.requirement.requirement_id)
+             for state in decision.remaining_requirements],
+            [
+                ("192.0.2.70", 80, "tcp", "http_identity_context"),
+                ("192.0.2.70", 8080, "tcp", "http_identity_context"),
+            ],
+        )
+
     def test_final_decision_stops_when_alternative_evidence_is_incomplete(self) -> None:
         from investigation_orchestration import (
             AlternativeEvidenceRoundResult,
