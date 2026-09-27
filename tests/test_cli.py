@@ -78,6 +78,70 @@ class CliTests(unittest.TestCase):
         self.assertEqual(context.exception.code, 2)
 
 
+
+    @patch("netrecon.render_exposure_history", return_value="History report")
+    @patch("netrecon.summarize_exposure_history", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_history_parses_all_scans_and_renders_text(
+        self,
+        parse_mock,
+        summarize_mock,
+        render_mock,
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scans = (
+            Scan(source="one.xml"),
+            Scan(source="two.xml"),
+            Scan(source="three.xml"),
+        )
+        parse_mock.side_effect = scans
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "--history", "one.xml", "two.xml", "three.xml"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        self.assertEqual(parse_mock.call_count, 3)
+        summarize_mock.assert_called_once_with(scans)
+        render_mock.assert_called_once_with(())
+        self.assertEqual(output.getvalue().strip(), "History report")
+
+    @patch("netrecon.render_exposure_history_json", return_value='{"report_type":"exposure_history"}')
+    @patch("netrecon.summarize_exposure_history", return_value=())
+    @patch("netrecon.parse_nmap_xml")
+    def test_history_honors_json_format(
+        self,
+        parse_mock,
+        summarize_mock,
+        render_json_mock,
+    ) -> None:
+        from models import Scan
+        from netrecon import main
+
+        scans = (Scan(source="one.xml"), Scan(source="two.xml"))
+        parse_mock.side_effect = scans
+        output = StringIO()
+
+        with patch(
+            "sys.argv",
+            ["netrecon", "--history", "one.xml", "two.xml", "--format", "json"],
+        ):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        summarize_mock.assert_called_once_with(scans)
+        render_json_mock.assert_called_once_with(())
+        self.assertEqual(
+            output.getvalue().strip(),
+            '{"report_type":"exposure_history"}',
+        )
+
+
     def test_rejects_analyze_with_diff(self) -> None:
         parser = build_parser()
 
