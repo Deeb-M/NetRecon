@@ -877,7 +877,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         decision = assess_final_investigation_decision(round_result)
 
         self.assertEqual(
-            tuple(r.requirement_id for r in decision.remaining_requirements),
+            tuple(r.requirement.requirement_id for r in decision.remaining_requirements),
             ("http_identity_context",),
         )
 
@@ -906,7 +906,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         decision = assess_final_investigation_decision(round_result)
 
         self.assertEqual(
-            tuple(r.requirement_id for r in decision.remaining_requirements),
+            tuple(r.requirement.requirement_id for r in decision.remaining_requirements),
             ("http_supported_methods",),
         )
         self.assertEqual(decision.remaining_gaps, gaps)
@@ -937,7 +937,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         decision = assess_final_investigation_decision(round_result)
 
         self.assertEqual(
-            tuple(r.requirement_id for r in decision.remaining_requirements),
+            tuple(r.requirement.requirement_id for r in decision.remaining_requirements),
             ("http_identity_context", "http_supported_methods"),
         )
 
