@@ -401,9 +401,10 @@ def assess_investigation_continuation(
 ) -> InvestigationContinuationDecision:
     """Classify re-evaluation without executing another collection round.
 
-    A continuation is complete when no planner-supported gaps remain. It is
-    progressed only when at least one previous gap was resolved and a further
-    planner-supported action remains that was not already attempted. Repeated
+    A continuation is complete when no planner-supported gaps and no new safe
+    actions remain. It is progressed when resolved primary evidence exposes a
+    further supported action, including an authorized finding-derived action
+    that remains after all primary gaps are resolved. Repeated
     actions are blocked from next_actions so callers do not blindly retry
     collection that already failed to resolve the requested evidence.
     """
@@ -424,10 +425,10 @@ def assess_investigation_continuation(
     )
 
     stall_reason = None
-    if not after.gaps:
-        status = "complete"
-    elif resolved and safe_next_actions:
+    if safe_next_actions and (resolved or not after.gaps):
         status = "progressed"
+    elif not after.gaps:
+        status = "complete"
     else:
         status = "stalled"
         if repeat_blocked and not safe_next_actions:
