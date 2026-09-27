@@ -3,7 +3,7 @@
 import unittest
 
 from exposure_history import summarize_exposure_history
-from models import Host, Port, Scan
+from models import Host, Port, Scan, ScanScope
 
 
 class ExposureHistoryTests(unittest.TestCase):
@@ -86,6 +86,54 @@ class ExposureHistoryTests(unittest.TestCase):
         ),))
 
         self.assertEqual(summarize_exposure_history((scan,)), ())
+
+
+    def test_counts_only_scoped_up_host_scans_as_observation_opportunities(self) -> None:
+        scans = (
+            Scan(
+                source="open.xml",
+                started_at=100,
+                scan_scopes=(ScanScope("tcp", "80"),),
+                hosts=(Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(Port(80, "tcp", "open", "http"),),
+                ),),
+            ),
+            Scan(
+                source="filtered.xml",
+                started_at=200,
+                scan_scopes=(ScanScope("tcp", "80"),),
+                hosts=(Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(Port(80, "tcp", "filtered", "http"),),
+                ),),
+            ),
+            Scan(
+                source="out-of-scope.xml",
+                started_at=300,
+                scan_scopes=(ScanScope("tcp", "443"),),
+                hosts=(Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(Port(443, "tcp", "open", "https"),),
+                ),),
+            ),
+            Scan(
+                source="host-down.xml",
+                started_at=400,
+                scan_scopes=(ScanScope("tcp", "80"),),
+                hosts=(Host(address="192.0.2.10", status="down"),),
+            ),
+        )
+
+        history = summarize_exposure_history(scans)
+
+        http = next(item for item in history if item.port == 80)
+        self.assertEqual(http.observations, 1)
+        self.assertEqual(http.opportunities, 2)
+
 
     def test_missing_scan_timestamp_fails_closed(self) -> None:
         scan = Scan(source="scan.xml", hosts=(Host(
