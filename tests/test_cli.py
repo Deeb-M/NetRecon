@@ -36,12 +36,19 @@ class CliTests(unittest.TestCase):
             for option in action.option_strings
         }
         self.assertTrue(
-            {"--analyze", "--diff", "--analysis-diff", "--collect-evidence"}
+            {"--analyze", "--diff", "--analysis-diff", "--combined-diff", "--collect-evidence"}
             <= option_strings
         )
         self.assertTrue(
             any(action.dest == "compare_scan" for action in parser._actions)
         )
+
+    def test_accepts_combined_diff_mode(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args(["before.xml", "after.xml", "--combined-diff"])
+
+        self.assertTrue(args.combined_diff)
 
     def test_rejects_analyze_with_diff(self) -> None:
         parser = build_parser()
