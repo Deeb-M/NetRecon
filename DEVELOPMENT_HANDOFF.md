@@ -745,3 +745,43 @@ Validation decision:
 - No extra Nmap execution or duplicate analysis is needed to render it; the report reuses the already-correlated host and findings.
 - Keep collection completeness separate from finding severity.
 - The next Stage C design question is multi-host analyst attention: how to make existing per-host evidence and severity distributions easier to triage at network scope without inventing a numeric risk score.
+
+
+### Stage C checkpoint — analyst attention ordering and evidence JSON parity
+
+The Stage C host intelligence contract has been extended without introducing a numeric risk score.
+
+Validated development baseline:
+- **510/510 tests passing locally on Kali**.
+- Multi-host Host Summary ordering is deterministic and driven only by the highest observed finding severity:
+  `critical -> high -> medium -> low -> info -> no findings`.
+- Hosts at the same attention level are ordered by host address; finding count is deliberately not used as hidden risk weighting.
+- Analysis JSON `host_summaries` preserves the same analyst-attention ordering as the text/model path.
+- A proposed separate Network Attention Summary was not added because the existing Analysis Summary already carries network-level finding counts and severity distribution; duplicating those numbers would not add analyst value.
+
+Evidence Collection JSON parity:
+- Evidence Collection JSON now includes a `host_summary` built from the already-correlated host and findings.
+- The JSON summary exposes host status, open-port count, normalized services, finding count, and severity counts.
+- This reuses the same `summarize_hosts()` logic as the analyst-facing text/analysis JSON rather than creating a parallel intelligence implementation.
+- Collection status (`complete` / `partial`) remains separate from finding severity.
+
+### Stage C Field Validation #3 — Evidence Collection JSON
+
+The dedicated field-test checkout was updated through commit `f464aa4`, reinstalled, and tested against the existing authorized Windows lab target `192.168.227.138` with:
+`netrecon stage-a-discovery.xml --collect-evidence --format json`.
+
+Observed real output:
+- collection `status: complete`
+- `failures: []`
+- correlated `host_summary` reported 4 open ports
+- normalized services: `http`, `microsoft-ds`, `msrpc`, `netbios-ssn`
+- 6 findings
+- severity distribution: `medium=1, info=5`
+- `smb.signing.review` remained the medium finding and was explicitly backed by `nse:smb2-security-mode` evidence that SMB signing was enabled but not required.
+- `smb.protocol.modern_only` remained backed by `nse:smb-protocols`.
+
+Validation decision:
+- Text and JSON evidence-collection workflows now expose the same correlated host intelligence.
+- The field result exactly matches the previously validated text workflow: 4 open ports, 6 findings, `medium=1, info=5`.
+- The summary does not create severity from collection state; evidence completeness and security findings remain independent dimensions.
+- Do not add more summary layers merely to repeat existing severity counts. Future Stage C work should be driven by a distinct analyst workflow need.
