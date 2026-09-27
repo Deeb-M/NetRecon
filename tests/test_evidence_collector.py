@@ -222,6 +222,19 @@ class EvidenceCollectorTests(unittest.TestCase):
         )
 
 
+    def test_rejects_invalid_protocol_before_building_collection_specs(self) -> None:
+        plan = HostEvidencePlan(
+            target="192.0.2.33",
+            requests=(EvidenceRequest(443, "sctp", "ssl-cert"),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Unsupported collection protocol: sctp",
+        ):
+            build_collection_specs(plan)
+
+
     def test_empty_host_plan_produces_no_collection_specs(self) -> None:
         plan = HostEvidencePlan(target="192.0.2.30", requests=())
 
