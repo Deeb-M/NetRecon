@@ -16,6 +16,7 @@ class InvestigationHistoryRecord:
     observed_at: int
     target: str
     synthesis: InvestigationSynthesis
+    schema_version: int = 1
 
 
 def render_investigation_history_record_json(record: InvestigationHistoryRecord) -> str:
@@ -26,6 +27,11 @@ def render_investigation_history_record_json(record: InvestigationHistoryRecord)
 def parse_investigation_history_record_json(payload: str) -> InvestigationHistoryRecord:
     """Restore one history record from its portable JSON representation."""
     data = json.loads(payload)
+    schema_version = data.get("schema_version")
+    if schema_version != 1:
+        raise ValueError(
+            f"Unsupported investigation history schema version: {schema_version!r}"
+        )
     synthesis_data = data["synthesis"]
     requirements = tuple(
         EvidenceRequirementState(
@@ -54,6 +60,7 @@ def parse_investigation_history_record_json(payload: str) -> InvestigationHistor
         observed_at=data["observed_at"],
         target=data["target"],
         synthesis=synthesis,
+        schema_version=schema_version,
     )
 
 
