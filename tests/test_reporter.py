@@ -7,7 +7,7 @@ from adaptive_investigation import AdaptiveInvestigationPlan
 from analyzer import Finding
 from evidence_gaps import EvidenceGap
 from evidence_action_plan import EvidenceAction
-from investigation_orchestration import InvestigationSnapshot
+from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
 from investigation_state import EndpointInvestigationState
 from evidence_collector import (
     CollectionResult,
@@ -17,7 +17,7 @@ from evidence_collector import (
 )
 from models import Host, Port, Scan, ScriptResult
 from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
-from reporter import render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json
+from reporter import render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_dynamic_evidence_round
 
 
 class ReporterTests(unittest.TestCase):
@@ -1930,6 +1930,38 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(payload["reason"], "supported_alternative_actions_available")
         self.assertEqual(len(payload["actions"]), 1)
         self.assertEqual(payload["actions"][0]["script_ids"], ["http-headers"])
+
+
+    def test_renders_dynamic_evidence_round_command_provenance(self) -> None:
+        command = NmapCommand((
+            "nmap", "-p", "445", "--script", "smb-enum-shares",
+            "-oX", "-", "192.0.2.138",
+        ))
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(command, 0, "<nmaprun />", ""),
+            scan=Scan(source="nmap stdout"),
+        )
+        result = InvestigationContinuationResult(
+            outcomes=(outcome,),
+            snapshot=InvestigationSnapshot(
+                ready=True,
+                scan=Scan(source="updated.xml"),
+                gaps=(),
+                actions=(),
+                states=(),
+                error=None,
+            ),
+        )
+
+        report = render_dynamic_evidence_round(result)
+
+        self.assertIn("Dynamic Evidence Round", report)
+        self.assertIn(
+            "Command: nmap -p 445 --script smb-enum-shares -oX - 192.0.2.138",
+            report,
+        )
+        self.assertIn("Collection Status: success", report)
+        self.assertIn("Return Code: 0", report)
 
 
 if __name__ == "__main__":
