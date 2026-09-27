@@ -1516,5 +1516,76 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+
+    def test_continuation_report_summarizes_semantic_requirement_progress(self) -> None:
+        from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import (
+            render_investigation_continuation,
+            render_investigation_continuation_json,
+        )
+
+        primary = EvidenceRequirementState(
+            "192.0.2.116", 445, "tcp",
+            EvidenceRequirement(
+                "smb_protocol_support",
+                "review SMB protocol dialect support",
+                ("smb-protocols",),
+            ),
+        )
+        remaining = EvidenceRequirementState(
+            "192.0.2.116", 5357, "tcp",
+            EvidenceRequirement(
+                "http_supported_methods",
+                "review supported HTTP methods",
+                ("http-methods",),
+            ),
+        )
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (), (), (), None)
+        decision = InvestigationContinuationDecision(
+            status="stalled",
+            resolved_gaps=(),
+            remaining_gaps=(),
+            next_actions=(),
+            resolved_requirements=(primary,),
+        )
+        final = FinalInvestigationDecision(
+            status="stalled",
+            reason="alternative_evidence_partially_satisfied_requirements",
+            remaining_gaps=(),
+            remaining_requirements=(remaining,),
+            satisfied_requirements=(primary,),
+        )
+        result = InvestigationContinuationResult((), snapshot)
+
+        text_report = render_investigation_continuation(
+            result, decision, final_decision=final
+        )
+        json_report = json.loads(
+            render_investigation_continuation_json(
+                result, decision, final_decision=final
+            )
+        )
+
+        self.assertIn("Semantic Requirement Progress", text_report)
+        self.assertIn("Resolved by Primary: 1", text_report)
+        self.assertIn("Satisfied by Alternative: 1", text_report)
+        self.assertIn("Remaining: 1", text_report)
+        self.assertEqual(
+            json_report["semantic_requirement_progress"],
+            {
+                "resolved_by_primary": 1,
+                "satisfied_by_alternative": 1,
+                "remaining": 1,
+            },
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
