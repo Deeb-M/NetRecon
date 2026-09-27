@@ -127,6 +127,41 @@ def execute_approved_evidence_actions(
     )
 
 
+
+
+@dataclass(frozen=True)
+class AlternativeEvidenceVerification:
+    """Verified evidence outcome for one explicitly selected alternative action."""
+
+    status: str
+    action: EvidenceAction
+    observed_script_ids: tuple[str, ...]
+
+
+def verify_alternative_evidence(
+    action: EvidenceAction,
+    outcome: ParsedCollectionResult,
+) -> AlternativeEvidenceVerification:
+    """Verify non-empty requested NSE output on the action's exact endpoint."""
+    if outcome.scan is None:
+        return AlternativeEvidenceVerification("collection_failed", action, ())
+
+    requested = {script_id.strip().lower() for script_id in action.script_ids}
+    observed: list[str] = []
+    for host in outcome.scan.hosts:
+        if host.address.strip() != action.host.strip():
+            continue
+        for port in host.ports:
+            if port.port != action.port or port.protocol.strip().lower() != action.protocol.strip().lower():
+                continue
+            for script in port.scripts:
+                script_id = script.script_id.strip().lower()
+                if script_id in requested and script.output.strip() and script_id not in observed:
+                    observed.append(script_id)
+
+    status = "observed" if requested and requested.issubset(observed) else "incomplete"
+    return AlternativeEvidenceVerification(status, action, tuple(observed))
+
 @dataclass(frozen=True)
 class InvestigationContinuationDecision:
     """Describe whether a re-evaluated investigation can safely continue."""

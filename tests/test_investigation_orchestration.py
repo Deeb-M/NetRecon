@@ -676,6 +676,87 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(len(result.outcomes), 1)
         self.assertTrue(result.snapshot.ready)
 
+    def test_alternative_verification_requires_non_empty_script_output_on_exact_endpoint(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import verify_alternative_evidence
+        from models import Host, Port, Scan, ScriptResult
+
+        action = EvidenceAction(
+            host="192.0.2.80",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-headers",),
+            purposes=("purpose",),
+            command=("nmap",),
+        )
+        scan = Scan(
+            source="alternative.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.80",
+                    status="up",
+                    ports=(
+                        Port(
+                            port=5357,
+                            protocol="tcp",
+                            state="open",
+                            service="http",
+                            scripts=(ScriptResult("http-headers", "Server: Microsoft-HTTPAPI/2.0"),),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        outcome = ParsedCollectionResult(CollectionResult(NmapCommand(("nmap",)), 0, "<xml/>", ""), scan)
+
+        verification = verify_alternative_evidence(action, outcome)
+
+        self.assertEqual(verification.status, "observed")
+        self.assertEqual(verification.observed_script_ids, ("http-headers",))
+
+    def test_alternative_verification_rejects_empty_script_output(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import verify_alternative_evidence
+        from models import Host, Port, Scan, ScriptResult
+
+        action = EvidenceAction("192.0.2.81", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        scan = Scan(
+            source="alternative.xml",
+            hosts=(Host("192.0.2.81", "up", ports=(Port(5357, "tcp", "open", "http", scripts=(ScriptResult("http-headers", "   "),)),)),),
+        )
+        outcome = ParsedCollectionResult(CollectionResult(NmapCommand(("nmap",)), 0, "<xml/>", ""), scan)
+
+        verification = verify_alternative_evidence(action, outcome)
+
+        self.assertEqual(verification.status, "incomplete")
+        self.assertEqual(verification.observed_script_ids, ())
+
+    def test_alternative_verification_rejects_evidence_from_other_endpoint(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import verify_alternative_evidence
+        from models import Host, Port, Scan, ScriptResult
+
+        action = EvidenceAction("192.0.2.82", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        scan = Scan(
+            source="alternative.xml",
+            hosts=(Host("192.0.2.82", "up", ports=(Port(80, "tcp", "open", "http", scripts=(ScriptResult("http-headers", "Server: example"),)),)),),
+        )
+        outcome = ParsedCollectionResult(CollectionResult(NmapCommand(("nmap",)), 0, "<xml/>", ""), scan)
+
+        self.assertEqual(verify_alternative_evidence(action, outcome).status, "incomplete")
+
+    def test_alternative_verification_distinguishes_collection_failure(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import verify_alternative_evidence
+
+        action = EvidenceAction("192.0.2.83", 5357, "tcp", ("http-headers",), ("purpose",), ("nmap",))
+        outcome = ParsedCollectionResult(CollectionResult(NmapCommand(("nmap",)), 1, "", "failed"), None)
+
+        verification = verify_alternative_evidence(action, outcome)
+
+        self.assertEqual(verification.status, "collection_failed")
+        self.assertEqual(verification.observed_script_ids, ())
+
     def test_continuation_is_complete_when_no_gaps_remain(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 
