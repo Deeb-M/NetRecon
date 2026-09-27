@@ -32,7 +32,14 @@ def parse_investigation_history_record_json(payload: str) -> InvestigationHistor
             host=state["host"],
             port=state["port"],
             protocol=state["protocol"],
-            requirement=EvidenceRequirement(**state["requirement"]),
+            requirement=EvidenceRequirement(
+                requirement_id=state["requirement"]["requirement_id"],
+                purpose=state["requirement"]["purpose"],
+                primary_script_ids=tuple(state["requirement"]["primary_script_ids"]),
+                alternative_script_ids=tuple(
+                    state["requirement"]["alternative_script_ids"]
+                ),
+            ),
         )
         for state in synthesis_data["remaining_requirements"]
     )
