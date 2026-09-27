@@ -924,3 +924,49 @@ Final regression baseline: **530/530 tests passing**, with GitHub CI green throu
 
 Next-development rule:
 Do not extend History merely to add more metrics. Select the next milestone by identifying a distinct analyst task that NetRecon can remove through evidence-backed correlation, orchestration, interpretation, or workflow without inventing risk or certainty.
+
+
+### Stage C Finding History milestone — CLOSED
+
+Finding History is now a completed Stage C milestone on `main`.
+
+Validated behavior:
+- Stateless history across two or more timestamped Nmap XML scans through `--finding-history`.
+- Finding identity reuses the analysis identity: stable finding ID + normalized host + port + protocol.
+- `first_seen` / `last_seen` remain integer Unix timestamps in the model/JSON contract; human-readable text uses `first_observed` / `last_observed`.
+- `observations` counts supplied scan documents in which the finding was actually emitted, deduplicated per finding identity within each scan.
+- `opportunities` counts only scans where the matching host was observed `up` and the finding's required evidence source was actually available.
+- NSE-backed opportunities support both port-level and host-level Nmap script placement. This matters for SMB scripts such as `smb-protocols` and `smb2-security-mode`, which real Nmap output may place under host-level scripts even though the resulting finding is scoped to `445/tcp`.
+- A scan that covers a service port but did not collect the required NSE script is not a valid opportunity for an NSE-backed finding.
+- A valid negative evidence result contributes an opportunity without contributing an observation.
+- Source-less fallback findings do not count scans where the matching host is absent or not observed `up` as opportunities.
+- Nmap `started_at` is preferred; `finished_at` is the fallback; missing timestamps fail closed.
+- Input order does not determine first/last observation.
+- No database, persistence claim, duration, continuity inference, vulnerability persistence claim, or risk score was introduced.
+
+Real field validation used:
+- `windows-smb.xml`
+- `windows-smb-detail.xml`
+
+Both scans target `192.168.227.140` and contain real host-level `smb-protocols` and `smb2-security-mode` evidence. Final installed-CLI text validation reported:
+- `service.smb.exposed` on `445/tcp`: `observations=2`, `opportunities=2`.
+- `smb.protocol.modern_only` on `445/tcp`: `observations=2`, `opportunities=2`.
+- `smb.signing.review` on `445/tcp`: `observations=2`, `opportunities=2`.
+- Findings supported only in the first scan remained `observations=1`, `opportunities=1`.
+
+JSON field validation preserved the same five finding-history records, counts, and integer timestamps.
+
+The field test exposed two semantic gaps before closure:
+1. Host-level NSE evidence was initially not counted as an opportunity for a port-scoped finding, producing incorrect `0/2` opportunities for the SMB findings. A regression test reproduced the real Nmap structure before the Finding History-specific fallback was added.
+2. Findings with `evidence_source=None` could initially count a later down host as an opportunity. A regression test reproduced the case before Finding History was hardened to require the matching host to be observed `up` for every opportunity.
+
+These fixes were deliberately scoped to Finding History; Analysis Diff semantics were not changed as part of this milestone.
+
+Documentation:
+- README exposes `--finding-history` in the feature list and Quick Start, documents text/JSON use and evidence-aware opportunity semantics, and lists `finding_history.py` in Architecture.
+- The public `v0.1.0` tag remains immutable; Finding History is post-release development on `main`.
+
+Final regression baseline before documentation: **546/546 tests passing**, with GitHub CI green after both field-discovered regression fixes.
+
+Next-development rule:
+Do not extend Finding History merely to add percentages or persistence labels. Choose the next milestone by identifying another distinct analyst task that can be removed through explicit evidence, correlation, orchestration, or workflow without inventing risk or certainty.
