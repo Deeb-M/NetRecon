@@ -40,7 +40,8 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 - Flag whether scan coverage changed and explain the difference with `Newly Scanned` and `No Longer Scanned` protocol/port entries; large coverage sets are summarized in text while full detail remains available in JSON
 - Keep coverage changes separate from exposure or finding changes: a port that was not scanned is not treated as closed or resolved
 - Summarize scan-to-scan changes by type before listing individual changes
-- Produce machine-readable JSON for both Exposure Changes and Analysis Changes, including change summaries
+- Produce machine-readable JSON for Exposure Changes and Analysis Changes, including change summaries
+- Combine both comparison views in one analyst workflow with `--combined-diff` while keeping exposure and finding changes explicitly separate
 - Run automated tests with GitHub Actions
 
 ## Installation
@@ -120,6 +121,18 @@ Return analysis changes as JSON, including finding evidence provenance:
 netrecon before.xml after.xml --analysis-diff --format json
 ```
 
+Review exposure and evidence-based finding changes together without merging their semantics:
+
+```bash
+netrecon before.xml after.xml --combined-diff
+```
+
+Return the combined workflow as JSON with separate `exposure` and `analysis` objects:
+
+```bash
+netrecon before.xml after.xml --combined-diff --format json
+```
+
 Try the included safe sample:
 
 ```bash
@@ -138,6 +151,12 @@ To see how improved service evidence changes the analysis on `main`:
 
 ```bash
 netrecon examples/before.xml examples/after.xml --analysis-diff
+```
+
+To review both exposure and analysis changes in one workflow on `main`:
+
+```bash
+netrecon examples/before.xml examples/after.xml --combined-diff
 ```
 
 Run all tests:
