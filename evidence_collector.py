@@ -216,7 +216,10 @@ def execute_nmap_command(
     except subprocess.TimeoutExpired as exc:
         stdout = exc.stdout.decode(errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
         stderr = exc.stderr.decode(errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-        timeout_message = "Nmap evidence collection timed out"
+        timeout_message = (
+            "Nmap evidence collection timed out: "
+            + " ".join(command.arguments)
+        )
         stderr = f"{stderr.rstrip()}\n{timeout_message}".strip()
         return CollectionResult(
             command=command,
