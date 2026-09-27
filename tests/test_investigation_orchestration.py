@@ -1938,5 +1938,30 @@ class FindingDerivedRequirementTests(unittest.TestCase):
         self.assertEqual(derive_finding_requirements((finding,)), ())
 
 
+class RequirementCollectionStrategyTests(unittest.TestCase):
+    def test_unmapped_requirement_is_explicitly_unsupported(self) -> None:
+        from finding_requirements import FindingDerivedRequirement
+        from requirement_collection import RequirementCollectionStrategy, collection_strategy_for_requirement
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.50",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls in the context of the observed signing configuration",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+
+        self.assertEqual(
+            collection_strategy_for_requirement(requirement),
+            RequirementCollectionStrategy(
+                requirement_id="smb_access_control_context",
+                status="unsupported",
+                reason="no_approved_collection_strategy",
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
