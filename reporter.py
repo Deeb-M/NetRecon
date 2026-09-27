@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import json
 
 from analysis_diff import FindingChange
+from analyst_attention import AnalystAttentionItem
 from analysis_summary import summarize_analysis
 from evidence_collector import CorrelatedEvidenceResult
 from exposure_history import ExposureHistory
@@ -25,6 +26,39 @@ from investigation_orchestration import InvestigationSnapshot
 def _format_history_time(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
+
+
+
+def render_analyst_attention(items: tuple[AnalystAttentionItem, ...]) -> str:
+    """Render traceable analyst-review items without ranking them."""
+    lines = ["Analyst Attention", "-----------------", f"Items: {len(items)}"]
+    for item in items:
+        location = item.host
+        if item.port is not None:
+            location += f":{item.port}/{item.protocol or 'unknown'}"
+        lines.extend([
+            "",
+            item.title,
+            f"  Category: {item.category}",
+            f"  Location: {location}",
+            f"  Evidence: {item.evidence}",
+            f"  Evidence Source: {item.evidence_source or 'unspecified'}",
+            f"  Review: {item.recommendation}",
+        ])
+    return "\n".join(lines)
+
+
+def render_analyst_attention_json(items: tuple[AnalystAttentionItem, ...]) -> str:
+    """Render analyst-review items as a stable machine-readable envelope."""
+    return json.dumps(
+        {
+            "report_type": "analyst_attention",
+            "summary": {"items": len(items)},
+            "items": [asdict(item) for item in items],
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
 
 
 def render_evidence_gaps(gaps: tuple[EvidenceGap, ...]) -> str:
