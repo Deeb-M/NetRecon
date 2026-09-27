@@ -30,6 +30,63 @@ class EvidenceGap:
     purpose: str
 
 
+
+
+@dataclass(frozen=True)
+class EvidenceRequirement:
+    """Semantic analyst need kept separate from its collection mechanism."""
+
+    requirement_id: str
+    purpose: str
+    primary_script_ids: tuple[str, ...]
+    alternative_script_ids: tuple[str, ...] = ()
+
+
+EVIDENCE_REQUIREMENTS: dict[str, EvidenceRequirement] = {
+    "http-title": EvidenceRequirement(
+        "http_identity_context",
+        "review HTTP service identity and exposed content context",
+        ("http-title",),
+        ("http-headers",),
+    ),
+    "http-methods": EvidenceRequirement(
+        "http_supported_methods",
+        "review supported HTTP methods",
+        ("http-methods",),
+    ),
+    "ssh2-enum-algos": EvidenceRequirement(
+        "ssh_algorithm_configuration",
+        "review SSH algorithm configuration",
+        ("ssh2-enum-algos",),
+    ),
+    "ssl-cert": EvidenceRequirement(
+        "tls_certificate_identity",
+        "review TLS certificate identity and validity",
+        ("ssl-cert",),
+    ),
+    "ssl-enum-ciphers": EvidenceRequirement(
+        "tls_protocol_cipher_configuration",
+        "review TLS protocol and cipher configuration",
+        ("ssl-enum-ciphers",),
+    ),
+    "smb-protocols": EvidenceRequirement(
+        "smb_protocol_support",
+        "review SMB protocol dialect support",
+        ("smb-protocols",),
+    ),
+    "smb2-security-mode": EvidenceRequirement(
+        "smb_signing_configuration",
+        "review SMB signing configuration",
+        ("smb2-security-mode",),
+    ),
+}
+
+
+def requirement_for_gap(gap: EvidenceGap) -> EvidenceRequirement | None:
+    """Return the semantic analyst requirement represented by a script-specific gap."""
+    return EVIDENCE_REQUIREMENTS.get(gap.script_id.strip().lower())
+
+
 def summarize_evidence_gaps(scan: Scan) -> tuple[EvidenceGap, ...]:
     """Describe evidence still requested by the existing planner."""
     gaps: list[EvidenceGap] = []

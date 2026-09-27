@@ -7,6 +7,35 @@ from models import Host, Port, Scan, ScriptResult
 
 
 class EvidenceGapTests(unittest.TestCase):
+    def test_http_title_gap_maps_to_identity_requirement_with_headers_alternative(self) -> None:
+        from evidence_gaps import requirement_for_gap
+
+        gap = EvidenceGap("192.0.2.50", 5357, "tcp", "http-title", "purpose")
+        requirement = requirement_for_gap(gap)
+
+        self.assertIsNotNone(requirement)
+        self.assertEqual(requirement.requirement_id, "http_identity_context")
+        self.assertEqual(requirement.primary_script_ids, ("http-title",))
+        self.assertEqual(requirement.alternative_script_ids, ("http-headers",))
+
+    def test_http_methods_remains_distinct_requirement_without_headers_alternative(self) -> None:
+        from evidence_gaps import requirement_for_gap
+
+        gap = EvidenceGap("192.0.2.51", 5357, "tcp", "http-methods", "purpose")
+        requirement = requirement_for_gap(gap)
+
+        self.assertIsNotNone(requirement)
+        self.assertEqual(requirement.requirement_id, "http_supported_methods")
+        self.assertEqual(requirement.primary_script_ids, ("http-methods",))
+        self.assertEqual(requirement.alternative_script_ids, ())
+
+    def test_unknown_gap_has_no_semantic_requirement(self) -> None:
+        from evidence_gaps import requirement_for_gap
+
+        gap = EvidenceGap("192.0.2.52", 9999, "tcp", "custom-script", "purpose")
+
+        self.assertIsNone(requirement_for_gap(gap))
+
     def test_missing_smb_evidence_becomes_explained_gaps(self) -> None:
         scan = Scan(
             source="scan.xml",
