@@ -970,3 +970,43 @@ Final regression baseline before documentation: **546/546 tests passing**, with 
 
 Next-development rule:
 Do not extend Finding History merely to add percentages or persistence labels. Choose the next milestone by identifying another distinct analyst task that can be removed through explicit evidence, correlation, orchestration, or workflow without inventing risk or certainty.
+
+### Stage C Evidence Gaps milestone — CLOSED
+
+Evidence Gaps is now a completed Stage C milestone on `main`.
+
+Validated behavior:
+- `netrecon scan.xml --evidence-gaps` reports planner-supported evidence that is missing from an existing Nmap XML scan without running Nmap.
+- `--format json` exposes the same gaps in a stable `evidence_gaps` envelope.
+- The existing Evidence Planner remains the single source of truth for what evidence should be collected; Evidence Gaps adds analyst-facing purpose text rather than a second service-detection or collection decision engine.
+- Each gap contains normalized host, port, protocol, script ID, and a fixed conservative purpose.
+- Existing matching NSE evidence suppresses the gap whether Nmap stored the script under the port or at host level.
+- Partial evidence produces only the still-missing sources.
+- Unsupported services do not create speculative gaps.
+- Multi-host gaps remain bound to the correct host and endpoint.
+- `Gaps: 0` means only that no evidence supported by the current planner is missing from the supplied scan. It does not mean the host is safe, fully assessed, or free of vulnerabilities.
+- No Nmap execution, automatic collection, vulnerability inference, risk score, or severity claim is introduced by `--evidence-gaps`.
+
+Implementation:
+- `evidence_gaps.py` derives `EvidenceGap` records directly from `plan_evidence_requests()`.
+- `reporter.py` provides text and JSON renderers.
+- `netrecon.py` exposes the operation as a mutually exclusive single-scan CLI mode.
+- `evidence_gaps.py` is included in the package module list so installed CLI behavior matches repository tests.
+- A no-mock CLI integration test validates XML -> Parser -> Planner -> Evidence Gaps -> Reporter -> CLI using an SMB discovery fixture.
+
+Real field validation:
+- `stage-a-discovery.xml` on `192.168.227.138` produced exactly four expected gaps:
+  - `445/tcp`: `smb-protocols` — review SMB protocol dialect support.
+  - `445/tcp`: `smb2-security-mode` — review SMB signing configuration.
+  - `5357/tcp`: `http-title` — review HTTP service identity and exposed content context.
+  - `5357/tcp`: `http-methods` — review supported HTTP methods.
+- `windows-smb-detail.xml` produced `Gaps: 0`, validating suppression from real host-level SMB NSE evidence.
+- JSON field validation on `stage-a-discovery.xml` preserved exactly the same four gaps and all host/port/protocol/script/purpose fields.
+
+A prerequisite planner regression was discovered before CLI exposure: host-level SMB NSE evidence did not originally suppress port-scoped planner requests. The behavior was reproduced by test first, then fixed in the planner so both collection planning and Evidence Gaps share the corrected semantics.
+
+The public `v0.1.0` tag remains immutable; Evidence Gaps is post-release development on `main`.
+
+Next-development rule:
+Do not turn Evidence Gaps into speculative vulnerability advice or a duplicate scanner. Future work should build on the separation between discovery, evidence planning, collection, and interpretation, and should only automate another analyst task when the required evidence and semantics are explicit.
+
