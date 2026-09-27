@@ -2332,5 +2332,80 @@ class DynamicReevaluationIntegrationTests(unittest.TestCase):
         self.assertEqual(dynamic[0].port, 445)
 
 
+class DynamicContinuationEmergenceTests(unittest.TestCase):
+    def test_new_approved_finding_action_emerges_as_continuation_next_action(self) -> None:
+        from unittest.mock import patch
+        from evidence_action_plan import EvidenceAction
+        from evidence_collector import CollectionResult
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            assess_investigation_continuation,
+            execute_selected_evidence_actions,
+        )
+        from investigation_state import summarize_investigation_state
+        from evidence_gaps import summarize_evidence_gaps
+        from models import Host, Port, Scan
+
+        scan = Scan(
+            source="discovery",
+            hosts=(Host(
+                address="192.0.2.92",
+                status="up",
+                ports=(Port(port=445, protocol="tcp", state="open", service="microsoft-ds"),),
+            ),),
+        )
+        primary = EvidenceAction(
+            host="192.0.2.92",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb2-security-mode",),
+            purposes=("review SMB signing configuration",),
+            command=("nmap", "-p", "445", "--script", "smb2-security-mode", "-oX", "-", "192.0.2.92"),
+        )
+        before = InvestigationSnapshot(
+            ready=True,
+            scan=scan,
+            gaps=summarize_evidence_gaps(scan),
+            actions=(primary,),
+            states=summarize_investigation_state(scan),
+            error=None,
+        )
+        xml = """<?xml version="1.0"?>
+<nmaprun scanner="nmap">
+<host><status state="up"/><address addr="192.0.2.92" addrtype="ipv4"/>
+<ports><port protocol="tcp" portid="445"><state state="open"/>
+<script id="smb2-security-mode" output="Message signing enabled but not required"/>
+</port></ports></host>
+<runstats><finished time="0"/><hosts up="1" down="0" total="1"/></runstats>
+</nmaprun>"""
+
+        with patch(
+            "investigation_orchestration.execute_nmap_command",
+            return_value=CollectionResult(
+                command=type("Command", (), {"arguments": primary.command})(),
+                returncode=0,
+                stdout=xml,
+                stderr="",
+            ),
+        ):
+            round_result = execute_selected_evidence_actions(
+                before,
+                (primary,),
+                explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+            )
+
+        decision = assess_investigation_continuation(
+            before,
+            round_result.snapshot,
+            attempted_actions=(primary,),
+        )
+
+        self.assertEqual(decision.status, "progressed")
+        self.assertEqual(
+            tuple(action.script_ids for action in decision.next_actions),
+            (("smb-enum-shares",),),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
