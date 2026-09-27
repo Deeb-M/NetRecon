@@ -78,15 +78,27 @@ def merge_collection_outcomes_into_host(
     except ValueError as exc:
         raise ValueError("Cannot correlate evidence for an invalid discovery host address") from exc
 
-    collected_ports = tuple(
-        port
+    matching_hosts = tuple(
+        host
         for outcome in outcomes
         if outcome.scan is not None
         for host in outcome.scan.hosts
         if _same_host_address(host.address, discovered.address)
+    )
+    collected_ports = tuple(
+        port
+        for host in matching_hosts
         for port in host.ports
     )
-    return merge_host_evidence(discovered, collected_ports)
+    merged = merge_host_evidence(discovered, collected_ports)
+
+    scripts = list(merged.scripts)
+    for host in matching_hosts:
+        for script in host.scripts:
+            if script not in scripts:
+                scripts.append(script)
+
+    return replace(merged, scripts=tuple(scripts))
 
 
 def merge_host_evidence(
