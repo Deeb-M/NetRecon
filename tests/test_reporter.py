@@ -1587,5 +1587,41 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+
+    def test_analyst_attention_report_preserves_provenance_and_order(self) -> None:
+        from analyst_attention import AnalystAttentionItem
+        from reporter import render_analyst_attention, render_analyst_attention_json
+
+        items = (
+            AnalystAttentionItem(
+                "visibility.first", "visibility", "192.0.2.30", 80, "tcp",
+                "Visibility review", "First evidence.", "Review first.",
+                "service:detection",
+            ),
+            AnalystAttentionItem(
+                "configuration.second", "configuration", "192.0.2.30", 443, "tcp",
+                "Configuration review", "Second evidence.", "Review second.",
+                "nse:example",
+            ),
+        )
+
+        text_report = render_analyst_attention(items)
+        json_report = json.loads(render_analyst_attention_json(items))
+
+        self.assertIn("Analyst Attention", text_report)
+        self.assertIn("Evidence Source: service:detection", text_report)
+        self.assertIn("Evidence Source: nse:example", text_report)
+        self.assertLess(
+            text_report.index("Visibility review"),
+            text_report.index("Configuration review"),
+        )
+        self.assertEqual(json_report["report_type"], "analyst_attention")
+        self.assertEqual(json_report["summary"], {"items": 2})
+        self.assertEqual(
+            [item["finding_id"] for item in json_report["items"]],
+            ["visibility.first", "configuration.second"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
