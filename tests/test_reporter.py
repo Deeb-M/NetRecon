@@ -1103,5 +1103,67 @@ class ReporterTests(unittest.TestCase):
         self.assertNotIn("\nStatus: success\n", f"\n{report}\n")
 
 
+    def test_investigation_continuation_json_preserves_collection_and_evidence_status(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
+        from reporter import render_investigation_continuation_json
+        from models import Scan
+
+        command = NmapCommand(
+            arguments=(
+                "nmap", "-p", "5357", "--script", "http-title,http-methods",
+                "-oX", "-", "192.0.2.120",
+            )
+        )
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(command=command, returncode=0, stdout="<nmaprun/>", stderr=""),
+            scan=Scan(source="<collection>"),
+        )
+        remaining_title = EvidenceGap(
+            host="192.0.2.120", port=5357, protocol="tcp",
+            script_id="http-title",
+            purpose="review HTTP service identity and exposed content context",
+        )
+        remaining_methods = EvidenceGap(
+            host="192.0.2.120", port=5357, protocol="tcp",
+            script_id="http-methods",
+            purpose="review supported HTTP methods",
+        )
+        action = EvidenceAction(
+            host="192.0.2.120", port=5357, protocol="tcp",
+            script_ids=("http-title", "http-methods"),
+            purposes=(
+                "review HTTP service identity and exposed content context",
+                "review supported HTTP methods",
+            ),
+            command=command.arguments,
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="discovery.xml"),
+            gaps=(remaining_title, remaining_methods),
+            actions=(action,),
+            states=(),
+            error=None,
+        )
+
+        data = json.loads(
+            render_investigation_continuation_json(
+                InvestigationContinuationResult((outcome,), snapshot)
+            )
+        )
+
+        self.assertEqual(data["report_type"], "investigation_continuation")
+        self.assertEqual(data["collection_outcomes"][0]["argv"], list(command.arguments))
+        self.assertEqual(data["collection_outcomes"][0]["collection_status"], "success")
+        self.assertEqual(data["collection_outcomes"][0]["requested_evidence"], "incomplete")
+        self.assertEqual(
+            data["collection_outcomes"][0]["missing_evidence"],
+            ["http-title", "http-methods"],
+        )
+        self.assertEqual(data["collection_outcomes"][0]["returncode"], 0)
+        self.assertEqual(data["updated_investigation"]["summary"]["evidence_gaps"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()
