@@ -815,6 +815,15 @@ def render_investigation_snapshot(snapshot: InvestigationSnapshot) -> str:
         lines.append(f"Error: {snapshot.error or 'unknown investigation failure'}")
         return "\n".join(lines)
 
+    if snapshot.states:
+        lines.append("Investigation State")
+        for state in snapshot.states:
+            lines.append(f"{state.host}:{state.port}/{state.protocol}")
+            for fact in state.known:
+                lines.append(f"  Known: {fact}")
+            for gap in state.unknown:
+                lines.append(f"  Unknown: {gap.script_id} — {gap.purpose}")
+
     for gap in snapshot.gaps:
         lines.append(
             f"Gap: {gap.host}:{gap.port}/{gap.protocol}  {gap.script_id}"
@@ -839,9 +848,11 @@ def render_investigation_snapshot_json(snapshot: InvestigationSnapshot) -> str:
             "summary": {
                 "evidence_gaps": len(snapshot.gaps),
                 "proposed_actions": len(snapshot.actions),
+                "investigation_states": len(snapshot.states),
             },
             "error": snapshot.error,
             "gaps": [asdict(gap) for gap in snapshot.gaps],
+            "states": [asdict(state) for state in snapshot.states],
             "actions": [asdict(action) for action in snapshot.actions],
         },
         indent=2,
