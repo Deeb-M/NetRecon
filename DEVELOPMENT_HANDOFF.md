@@ -868,3 +868,24 @@ Evidence-first semantic decision:
 - History therefore complements Diff rather than replacing it: Diff describes supported state changes between selected scans; History summarizes repeated open observations across multiple scans.
 
 Regression baseline before field validation: **529/529 tests passing**, GitHub CI green through commit `73ad41e`.
+
+
+### Exposure History observation-opportunity checkpoint
+
+Exposure History now distinguishes an open observation from a valid opportunity to observe the endpoint.
+
+Semantics:
+- `observations` counts supplied scan documents in which the endpoint was actually observed `open`.
+- `opportunities` counts supplied scans in which the same normalized host was observed `up` and the endpoint's port/protocol was explicitly included in Nmap scan scope.
+- A filtered or closed in-scope endpoint can therefore contribute an opportunity without contributing an open observation.
+- An out-of-scope port or a host not observed `up` does not contribute an opportunity.
+- Only endpoints observed open at least once are emitted by Exposure History.
+- No uptime percentage, availability score, continuous-exposure claim, or inferred open/close interval is calculated.
+
+Regression baseline after implementation: **530/530 tests passing locally on Kali**.
+
+Real text field validation reused `lab-multi.xml`, `lab-multi-after.xml`, and `lab-multi-restored.xml`:
+- `192.168.227.128:80/tcp`: `observations=2`, `opportunities=3`. The endpoint was open in the first and third scans and filtered in the middle scan.
+- `192.168.227.140:135/tcp`, `:139/tcp`, `:445/tcp`, and `:5357/tcp`: each `observations=3`, `opportunities=3`.
+
+This preserves the evidence-first distinction between “observed open” and “had a valid measurement opportunity”.
