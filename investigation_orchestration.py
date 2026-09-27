@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
 from evidence_gaps import EvidenceGap, summarize_evidence_gaps
+from investigation_state import EndpointInvestigationState, summarize_investigation_state
 from models import Scan
 from scan_orchestration import DiscoveryResult
 
@@ -18,6 +19,7 @@ class InvestigationSnapshot:
     scan: Scan | None
     gaps: tuple[EvidenceGap, ...]
     actions: tuple[EvidenceAction, ...]
+    states: tuple[EndpointInvestigationState, ...]
     error: str | None
 
 
@@ -31,6 +33,7 @@ def build_investigation_snapshot(
             scan=None,
             gaps=(),
             actions=(),
+            states=(),
             error=discovery.error,
         )
 
@@ -42,5 +45,6 @@ def build_investigation_snapshot(
         scan=discovery.scan,
         gaps=summarize_evidence_gaps(discovery.scan),
         actions=build_evidence_action_plan(discovery.scan),
+        states=summarize_investigation_state(discovery.scan),
         error=None,
     )
