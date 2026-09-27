@@ -1347,5 +1347,45 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+    def test_semantic_complete_report_preserves_raw_gap_provenance(self) -> None:
+        from evidence_gaps import EvidenceGap
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import (
+            render_investigation_continuation,
+            render_investigation_continuation_json,
+        )
+
+        gap = EvidenceGap("192.0.2.113", 5357, "tcp", "http-title", "purpose")
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (gap,), (), (), None)
+        final = FinalInvestigationDecision(
+            "complete",
+            "all_semantic_requirements_satisfied",
+            (gap,),
+            (),
+            (),
+        )
+        result = InvestigationContinuationResult((), snapshot)
+
+        text_report = render_investigation_continuation(result, None, None, final)
+        json_report = json.loads(
+            render_investigation_continuation_json(result, None, None, final)
+        )
+        final_json = json_report["final_investigation_decision"]
+
+        self.assertIn("Status: complete", text_report)
+        self.assertIn("Reason: all_semantic_requirements_satisfied", text_report)
+        self.assertIn("Remaining Gaps: 1", text_report)
+        self.assertIn("Remaining Requirements: 0", text_report)
+        self.assertEqual(final_json["status"], "complete")
+        self.assertEqual(final_json["reason"], "all_semantic_requirements_satisfied")
+        self.assertEqual(final_json["remaining_gaps"], 1)
+        self.assertEqual(final_json["remaining_requirements"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
