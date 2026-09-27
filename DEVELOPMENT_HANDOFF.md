@@ -1091,3 +1091,29 @@ The public `v0.1.0` tag remains immutable; Scan Orchestration development is pos
 
 Next-development rule:
 Preserve the transparent chain `Target -> Discovery Plan -> exact Nmap argv -> Executor -> raw outcome -> validation/parsing -> verified Scan`. The next orchestration step should build on the verified discovery result and existing Evidence Planner / Evidence Gaps / Evidence Action Plan layers rather than introducing a second scanner, hiding Nmap actions, or automatically escalating scan aggressiveness.
+
+
+## Investigation Orchestration POC — Text field validation
+
+Validated on the authorized Kali lab target `192.168.227.138` using the installed-package checkout:
+
+```bash
+netrecon --investigate 192.168.227.138
+```
+
+Observed result:
+- Investigation status: `ready`.
+- 4 planner-supported evidence gaps were identified.
+- 2 transparent evidence collection actions were proposed.
+- SMB action: port 445 with `smb-protocols,smb2-security-mode`.
+- HTTP action: port 5357 with `http-title,http-methods`.
+- Exact proposed Nmap argv was visible to the analyst.
+- Evidence actions were not executed automatically.
+
+This validates the first end-to-end analyst-review path:
+
+```text
+Target -> Baseline Discovery -> Verified Scan -> Evidence Gaps -> Evidence Action Plan -> Analyst Review
+```
+
+The orchestration remains deliberately bounded: discovery executes, while follow-up evidence collection is proposed only.
