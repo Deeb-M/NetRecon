@@ -804,7 +804,7 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
 
 
 def render_investigation_continuation(result) -> str:
-    """Render evidence collection provenance followed by the updated investigation."""
+    """Render collection execution separately from requested-evidence completeness."""
     lines = [
         "Investigation Continuation",
         "--------------------------",
@@ -813,10 +813,35 @@ def render_investigation_continuation(result) -> str:
     if not result.outcomes:
         lines.append("None")
 
+    remaining = {
+        (gap.host, gap.port, gap.protocol, gap.script_id)
+        for gap in result.snapshot.gaps
+    }
+
     for outcome in result.outcomes:
         collection = outcome.result
-        lines.append(f"Command: {' '.join(collection.command.arguments)}")
-        lines.append(f"Status: {'success' if outcome.scan is not None else 'failed'}")
+        arguments = collection.command.arguments
+        lines.append(f"Command: {' '.join(arguments)}")
+        collection_status = "success" if outcome.scan is not None else "failed"
+        lines.append(f"Collection Status: {collection_status}")
+
+        missing_scripts = []
+        for action in result.snapshot.actions:
+            if action.command == arguments:
+                missing_scripts.extend(
+                    script_id
+                    for script_id in action.script_ids
+                    if (action.host, action.port, action.protocol, script_id) in remaining
+                )
+
+        if missing_scripts:
+            lines.append("Requested Evidence: incomplete")
+            lines.append(f"Missing Evidence: {', '.join(missing_scripts)}")
+        elif outcome.scan is not None:
+            lines.append("Requested Evidence: observed")
+        else:
+            lines.append("Requested Evidence: not observed")
+
         lines.append(f"Return Code: {collection.returncode}")
         if outcome.failure_message is not None:
             lines.append(f"Failure: {outcome.failure_message}")
@@ -824,7 +849,6 @@ def render_investigation_continuation(result) -> str:
     lines.append("")
     lines.append(render_investigation_snapshot(result.snapshot))
     return "\n".join(lines)
-
 
 def render_investigation_snapshot(snapshot: InvestigationSnapshot) -> str:
     """Render the current evidence-aware investigation state for analyst review."""
