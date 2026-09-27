@@ -1049,5 +1049,59 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Failure: Nmap evidence collection timed out", report)
 
 
+    def test_investigation_continuation_distinguishes_collection_success_from_missing_requested_evidence(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+        from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
+        from reporter import render_investigation_continuation
+        from models import Scan
+
+        command = NmapCommand(
+            arguments=(
+                "nmap", "-p", "5357", "--script", "http-title,http-methods",
+                "-oX", "-", "192.0.2.120",
+            )
+        )
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(command=command, returncode=0, stdout="<nmaprun/>", stderr=""),
+            scan=Scan(source="<collection>"),
+        )
+        remaining_title = EvidenceGap(
+            host="192.0.2.120", port=5357, protocol="tcp",
+            script_id="http-title",
+            purpose="review HTTP service identity and exposed content context",
+        )
+        remaining_methods = EvidenceGap(
+            host="192.0.2.120", port=5357, protocol="tcp",
+            script_id="http-methods",
+            purpose="review supported HTTP methods",
+        )
+        action = EvidenceAction(
+            host="192.0.2.120", port=5357, protocol="tcp",
+            script_ids=("http-title", "http-methods"),
+            purposes=(
+                "review HTTP service identity and exposed content context",
+                "review supported HTTP methods",
+            ),
+            command=command.arguments,
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="discovery.xml"),
+            gaps=(remaining_title, remaining_methods),
+            actions=(action,),
+            states=(),
+            error=None,
+        )
+
+        report = render_investigation_continuation(
+            InvestigationContinuationResult((outcome,), snapshot)
+        )
+
+        self.assertIn("Collection Status: success", report)
+        self.assertIn("Requested Evidence: incomplete", report)
+        self.assertIn("Missing Evidence: http-title, http-methods", report)
+        self.assertNotIn("Status: success", report)
+
+
 if __name__ == "__main__":
     unittest.main()
