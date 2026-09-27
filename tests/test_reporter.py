@@ -1466,5 +1466,51 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+
+    def test_continuation_report_exposes_resolved_semantic_requirement(self) -> None:
+        from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+
+        state = EvidenceRequirementState(
+            "192.0.2.115",
+            445,
+            "tcp",
+            EvidenceRequirement(
+                "smb_protocol_support",
+                "review SMB protocol dialect support",
+                ("smb-protocols",),
+            ),
+        )
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (), (), (), None)
+        decision = InvestigationContinuationDecision(
+            status="progressed",
+            resolved_gaps=(),
+            remaining_gaps=(),
+            next_actions=(),
+            resolved_requirements=(state,),
+        )
+        result = InvestigationContinuationResult((), snapshot)
+
+        text_report = render_investigation_continuation(result, decision)
+        json_report = json.loads(
+            render_investigation_continuation_json(result, decision)
+        )["continuation_decision"]
+
+        self.assertIn("Resolved Requirements: 1", text_report)
+        self.assertIn(
+            "Resolved: 192.0.2.115:445/tcp  smb_protocol_support",
+            text_report,
+        )
+        self.assertEqual(
+            json_report["resolved_requirements"][0]["requirement_id"],
+            "smb_protocol_support",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
