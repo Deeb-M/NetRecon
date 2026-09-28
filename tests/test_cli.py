@@ -2068,7 +2068,19 @@ class CliTests(unittest.TestCase):
         synthesis_mock.return_value = current
         load_history_mock.return_value = (previous,)
         latest_mock.return_value = previous
-        compare_mock.return_value = object()
+        from investigation_memory import InvestigationMemory
+        compare_mock.return_value = InvestigationMemory(
+            True,
+            "stalled",
+            "complete",
+            True,
+            "no_supported_actions",
+            "all_gaps_resolved",
+            0,
+            0,
+            (),
+            (),
+        )
 
         with tempfile.TemporaryDirectory() as tmp:
             history_path = Path(tmp) / "history.jsonl"
