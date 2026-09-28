@@ -310,6 +310,12 @@ def main() -> int:
                 continuation, decision, alternative_round, final_decision, attention, correlations,
                 final_snapshot=final_snapshot,
             )
+            import json
+            payload = json.loads(report)
+            payload["investigation_explanation"] = json.loads(
+                render_investigation_explanation_json(explanation)
+            )
+            report = json.dumps(payload, indent=2, ensure_ascii=False)
             if args.adaptive_plan:
                 import json
                 payload = json.loads(report)
