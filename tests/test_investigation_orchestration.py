@@ -3883,6 +3883,8 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         )
         self.assertEqual(decision.remaining_finding_requirements, (state,))
         self.assertEqual(decision.stall_reason, "finding_requirement_unsatisfied")
+        self.assertEqual(decision.remaining_gaps, ())
+        self.assertEqual(decision.resolved_requirements, ())
         self.assertIs(decision.remaining_finding_requirements[0], state)
 
     def test_alternative_incomplete_preserves_pending_finding_requirement(self) -> None:
