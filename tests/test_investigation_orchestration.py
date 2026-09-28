@@ -3822,6 +3822,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         final = finalize_continuation_decision(decision)
 
+        self.assertIsNot(final, decision)
         self.assertEqual(final.status, "stalled")
         self.assertEqual(final.reason, "explicit_approval_required")
         self.assertEqual(final.remaining_finding_requirements, (state,))
