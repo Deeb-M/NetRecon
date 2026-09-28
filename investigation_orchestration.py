@@ -510,6 +510,11 @@ def assess_investigation_continuation(
             and plan.authorization.reason == "explicit_approval_required"
         )
     )
+    unsatisfied_finding_requirements = tuple(
+        state
+        for state in after.finding_requirement_states
+        if state.status == "attempted_unsatisfied"
+    )
 
     stall_reason = None
     if safe_next_actions and (resolved or not after.gaps):
@@ -521,7 +526,9 @@ def assess_investigation_continuation(
         status = "complete"
     else:
         status = "stalled"
-        if repeat_blocked and not safe_next_actions:
+        if unsatisfied_finding_requirements and not safe_next_actions:
+            stall_reason = "finding_requirement_unsatisfied"
+        elif repeat_blocked and not safe_next_actions:
             stall_reason = "repeated_actions_exhausted"
         elif not after.actions:
             stall_reason = "no_supported_actions"
