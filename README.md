@@ -195,6 +195,31 @@ Run all tests:
 python -m unittest discover -s tests -v
 ```
 
+
+## Investigation workflow (development main)
+
+The development `main` branch can run a bounded investigation directly against an authorized target. Nmap remains the discovery and evidence-collection engine; NetRecon plans supported evidence, verifies what was actually observed, re-plans only when justified, and produces one terminal decision.
+
+Plan the first supported evidence actions without collecting them:
+
+```bash
+netrecon --investigate <authorized-target>
+```
+
+Run the bounded collection workflow:
+
+```bash
+netrecon --investigate-collect <authorized-target>
+```
+
+Include the adaptive decision trail when reviewing why NetRecon continued, tried one supported alternative, or stopped:
+
+```bash
+netrecon --investigate-collect <authorized-target> --adaptive-plan
+```
+
+Use `--format json` for machine-readable output. A completed command can end with either a complete or stalled investigation; a stalled result is a valid bounded outcome, not a claim that the target is safe or that evidence was resolved. Explicit-approval requirements remain blocked until approved, attempted-but-unsatisfied requirements are not silently retried, and the final report preserves the terminal decision, explanation, synthesis, evidence provenance, and remaining requirement lifecycle.
+
 ## Architecture
 
 - `netrecon.py` — CLI entry point
