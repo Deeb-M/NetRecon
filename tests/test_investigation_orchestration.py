@@ -3524,6 +3524,36 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             "http_identity_context",
         )
 
+    def test_finalize_preserves_pending_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.242",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement=requirement,
+            status="pending_approval",
+            authorization_reason="explicit_approval_required",
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled",
+            (),
+            (),
+            (),
+            stall_reason="explicit_approval_required",
+            remaining_finding_requirements=(state,),
+        )
+
+        final = finalize_continuation_decision(decision)
+
+        self.assertEqual(final.remaining_finding_requirements, (state,))
+
     def test_finalize_continuation_accepts_controller_stop_reason(self) -> None:
         decision = InvestigationContinuationDecision("progressed", (), (), ())
         final = finalize_continuation_decision(
