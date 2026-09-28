@@ -304,7 +304,8 @@ def main() -> int:
                 return 2
         if args.format == "json":
             report = render_investigation_continuation_json(
-                continuation, decision, alternative_round, final_decision, attention, correlations
+                continuation, decision, alternative_round, final_decision, attention, correlations,
+                final_snapshot=final_snapshot,
             )
             if args.adaptive_plan:
                 import json
@@ -326,7 +327,8 @@ def main() -> int:
                 report = json.dumps(payload, indent=2, ensure_ascii=False)
         else:
             report = render_investigation_continuation(
-                continuation, decision, alternative_round, final_decision, attention, correlations
+                continuation, decision, alternative_round, final_decision, attention, correlations,
+                final_snapshot=final_snapshot,
             )
             if dynamic_round is not None:
                 report += "\n\n" + render_dynamic_evidence_round(dynamic_round)
