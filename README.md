@@ -234,6 +234,11 @@ Use `--format json` for machine-readable output. A completed command can end wit
 - `exposure_history.py` — descriptive open-endpoint history across timestamped scans
 - `finding_history.py` — evidence-aware finding history across timestamped scans
 - `evidence_gaps.py` — planner-derived missing-evidence guidance for analyst follow-up
+- `investigation_orchestration.py` — bounded investigation controller, continuation assessment, authorization-aware collection, verification, and canonical final decisions
+- `adaptive_investigation.py` — bounded continue/alternative/stop projection from controller state
+- `investigation_explanation.py` — analyst-facing Known / Unresolved / Blocked / Next explanation
+- `investigation_synthesis.py` — terminal investigation synthesis from final decision and analyst attention
+- `investigation_memory.py` — evidence-aware comparison of investigation syntheses across runs
 - `reporter.py` — text and JSON rendering
 - `tests/` — automated tests
 - `examples/` — safe example input
