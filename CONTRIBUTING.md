@@ -60,7 +60,9 @@ netrecon examples/sample.xml
 
 ## Security and authorization
 
-NetRecon is intended for analysis of Nmap XML produced from systems and networks you are authorized to test.
+NetRecon can passively analyze existing Nmap XML and can also invoke Nmap for bounded discovery and evidence collection. Changes to live-collection behavior must preserve targeted actions, deterministic bounds, explicit authorization gates where required, evidence provenance, and conservative stop semantics.
+
+NetRecon's internal explicit-approval mechanism is a workflow control; it does not grant permission to test a target. Development and field validation must use systems and networks the tester is authorized to assess.
 
 Do not submit examples containing credentials, private keys, secrets, personal information, or sensitive scan data from systems you do not have permission to disclose.
 
