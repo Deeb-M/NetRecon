@@ -385,7 +385,9 @@ def main() -> int:
             if investigation_memory is not None:
                 report += "\n\n" + render_investigation_memory(investigation_memory)
         print(report)
-        return 0 if updated.ready else 2
+        # A stalled investigation is a valid bounded outcome, not a CLI failure.
+        # Non-zero remains reserved for discovery/processing failures handled above.
+        return 0
 
     if args.investigate is not None:
         if args.scan is not None or args.compare_scan is not None:
