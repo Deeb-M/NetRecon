@@ -667,7 +667,7 @@ class InvestigationContinuationContractTests(unittest.TestCase):
 
 
 class InvestigationContinuationDecisionTests(unittest.TestCase):
-    def _snapshot(self, gaps, actions=()):
+    def _snapshot(self, gaps, actions=(), finding_collection_plans=()):
         from investigation_orchestration import (
             InvestigationSnapshot,
             assess_investigation_continuation,
@@ -681,6 +681,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             actions=actions,
             states=(),
             error=None,
+            finding_collection_plans=finding_collection_plans,
         )
 
     @patch("investigation_orchestration.execute_nmap_command")
@@ -1157,6 +1158,42 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.status, "complete")
         self.assertEqual(decision.resolved_gaps, (gap,))
         self.assertEqual(decision.remaining_gaps, ())
+        self.assertEqual(decision.next_actions, ())
+
+    def test_continuation_waits_for_explicit_approval_instead_of_completing(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        plan = FindingCollectionPlan(
+            requirement=requirement,
+            strategy=RequirementCollectionStrategy(
+                requirement_id="smb_access_control_context",
+                status="supported",
+                script_ids=("smb-enum-shares",),
+                risk_class="intrusive",
+                authorization="requires_approval",
+            ),
+            authorization=CollectionAuthorizationDecision(
+                allowed=False,
+                reason="explicit_approval_required",
+            ),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot(()),
+            self._snapshot((), finding_collection_plans=(plan,)),
+        )
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.stall_reason, "explicit_approval_required")
         self.assertEqual(decision.next_actions, ())
 
     def test_continuation_is_progressed_when_some_gaps_resolve_and_actions_remain(self) -> None:
