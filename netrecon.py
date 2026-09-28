@@ -230,7 +230,14 @@ def main() -> int:
         adaptive_plan = build_adaptive_investigation_plan(decision)
         adaptive_actions = select_adaptive_actions(adaptive_plan)
         dynamic_round = None
-        if adaptive_plan.decision == "continue" and adaptive_actions:
+        attempted_adaptive_actions: tuple = ()
+        max_adaptive_rounds = 8
+        adaptive_round_count = 0
+        while (
+            adaptive_plan.decision == "continue"
+            and adaptive_actions
+            and adaptive_round_count < max_adaptive_rounds
+        ):
             if approved_requirement_ids:
                 continued = execute_selected_evidence_actions(
                     updated,
@@ -245,14 +252,16 @@ def main() -> int:
                     timeout=args.evidence_timeout,
                 )
             dynamic_round = continued
+            attempted_adaptive_actions += adaptive_actions
             decision = assess_investigation_continuation(
                 updated,
                 continued.snapshot,
-                attempted_actions=snapshot.actions + adaptive_actions,
+                attempted_actions=snapshot.actions + attempted_adaptive_actions,
             )
             updated = continued.snapshot
             adaptive_plan = build_adaptive_investigation_plan(decision)
             adaptive_actions = select_adaptive_actions(adaptive_plan)
+            adaptive_round_count += 1
         alternative_round = None
         final_decision = None
         if adaptive_plan.decision == "alternative" and adaptive_actions:
