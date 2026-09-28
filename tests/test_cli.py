@@ -2847,7 +2847,23 @@ class CliTests(unittest.TestCase):
         )
 
 
-    @patch("netrecon.render_adaptive_investigation_plan", return_value="Adaptive Investigation Plan\nDecision: alternative")
+
+    def test_adaptive_plan_requires_investigate_collect(self) -> None:
+        from netrecon import main
+
+        stderr = StringIO()
+        with patch("sys.argv", ["netrecon", "--adaptive-plan"]):
+            with redirect_stderr(stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    main()
+
+        self.assertEqual(raised.exception.code, 2)
+        self.assertIn(
+            "--adaptive-plan requires --investigate-collect",
+            stderr.getvalue(),
+        )
+
+@patch("netrecon.render_adaptive_investigation_plan", return_value="Adaptive Investigation Plan\nDecision: alternative")
     @patch("netrecon.build_adaptive_investigation_plan")
     @patch("netrecon.correlate_analyst_attention", return_value=())
     @patch("netrecon.build_investigation_attention", return_value=())
