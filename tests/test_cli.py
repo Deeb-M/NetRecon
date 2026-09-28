@@ -2591,6 +2591,18 @@ class CliTests(unittest.TestCase):
             synthesis_mock.call_args.args[2],
             (),
         )
+        self.assertIs(
+            render_continuation_mock.call_args.kwargs["final_snapshot"],
+            final_snapshot,
+        )
+        self.assertIs(
+            render_continuation_mock.call_args.args[2],
+            alternative_result,
+        )
+        self.assertIs(
+            render_continuation_mock.call_args.args[3],
+            final_decision,
+        )
 
 
 
