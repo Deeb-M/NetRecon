@@ -175,19 +175,19 @@ netrecon examples/sample.xml
 
 The following safe comparison examples are included in the current `v0.2.0` release:
 
-To see an exposure change on `main`:
+To see an exposure change:
 
 ```bash
 netrecon examples/before.xml examples/after.xml --diff
 ```
 
-To see how improved service evidence changes the analysis on `main`:
+To see how improved service evidence changes the analysis:
 
 ```bash
 netrecon examples/before.xml examples/after.xml --analysis-diff
 ```
 
-To review both exposure and analysis changes in one workflow on `main`:
+To review both exposure and analysis changes in one workflow:
 
 ```bash
 netrecon examples/before.xml examples/after.xml --combined-diff
@@ -280,7 +280,7 @@ For NSE-derived findings, `NEW` means the same NSE evidence source was collected
 
 ## Evidence Gaps
 
-On development `main`, `--evidence-gaps` turns the existing Evidence Planner into an analyst-facing next-action view without running Nmap:
+`--evidence-gaps` turns the Evidence Planner into an analyst-facing next-action view without running Nmap:
 
 ```bash
 netrecon scan.xml --evidence-gaps
@@ -305,7 +305,7 @@ Created and maintained by Deeb Mzareb.
 
 ## Evidence Action Plan
 
-On development `main`, `--evidence-actions` turns planner-supported missing evidence into grouped, transparent collection actions without running Nmap:
+`--evidence-actions` turns planner-supported missing evidence into grouped, transparent collection actions without running Nmap:
 
 ```bash
 netrecon scan.xml --evidence-actions
