@@ -298,12 +298,14 @@ def execute_alternative_evidence_round(
     actions: tuple[EvidenceAction, ...],
     *,
     timeout: float | None = None,
+    explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
 ) -> AlternativeEvidenceRoundResult:
     """Execute selected alternatives once, verify them, and re-evaluate once."""
     continuation = execute_selected_evidence_actions(
         snapshot,
         actions,
         timeout=timeout,
+        explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
     )
     verifications = tuple(
         verify_alternative_evidence(action, outcome)
