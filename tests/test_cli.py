@@ -1796,6 +1796,20 @@ class CliTests(unittest.TestCase):
 
 
 
+    def test_terminal_adaptive_plan_projection_matches_final_decision_reason(self) -> None:
+        from adaptive_investigation import AdaptiveInvestigationPlan
+        from investigation_orchestration import FinalInvestigationDecision
+
+        final_decision = FinalInvestigationDecision(
+            "stalled", "alternative_evidence_incomplete", ()
+        )
+        reported_plan = AdaptiveInvestigationPlan("stop", final_decision.reason)
+
+        self.assertEqual(reported_plan.decision, "stop")
+        self.assertEqual(reported_plan.reason, final_decision.reason)
+        self.assertEqual(reported_plan.actions, ())
+
+
     def test_investigation_history_path_is_not_a_standalone_mode(self) -> None:
         from netrecon import build_parser
 
