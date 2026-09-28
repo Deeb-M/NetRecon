@@ -4,7 +4,7 @@ NetRecon is a Python CLI for turning Nmap XML output into structured, analyst-fr
 
 ## Status
 
-**v0.1.0 — Alpha. Core functionality is stable and covered by automated tests; the Intelligence layer remains under active development.** NetRecon reliably ingests Nmap XML, preserves scan context, and adds conservative evidence-based findings for analyst review.
+**v0.2.0 — Alpha release candidate on `main`.** NetRecon now combines evidence-aware Nmap XML analysis with bounded investigation orchestration, targeted evidence collection, explicit authorization boundaries, terminal synthesis, and investigation history/memory. The existing `v0.1.0` tag remains the immutable first public Alpha release.
 
 ## Core v0
 
