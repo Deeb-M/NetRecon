@@ -1153,6 +1153,9 @@ def render_dynamic_evidence_round(result) -> str:
             lines.append(
                 "Observed Evidence: " + ", ".join(verification.observed_script_ids)
             )
+        elif verification.status == "unsatisfied":
+            lines.append("Outcome: requested evidence was not observed")
+            lines.append("Next Step: no automatic retry or unsupported alternative")
     return "\n".join(lines)
 
 
