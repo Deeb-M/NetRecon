@@ -1399,6 +1399,7 @@ class CliTests(unittest.TestCase):
             FinalInvestigationDecision("complete", "all_gaps_resolved", (), ()),
             (),
             (),
+            final_snapshot=updated,
         )
 
     @patch("netrecon.render_investigation_continuation_json", return_value='{"report_type":"investigation_continuation"}')
@@ -1663,6 +1664,7 @@ class CliTests(unittest.TestCase):
             final_decision,
             ("attention-item",),
             ("correlation-item",),
+            final_snapshot=final_snapshot,
         )
 
 
