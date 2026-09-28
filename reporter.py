@@ -1002,7 +1002,7 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
 
 
 
-def render_investigation_continuation(result, decision=None, alternative_round=None, final_decision=None, attention=None, correlations=None) -> str:
+def render_investigation_continuation(result, decision=None, alternative_round=None, final_decision=None, attention=None, correlations=None, final_snapshot=None) -> str:
     """Render collection execution separately from requested-evidence completeness."""
     lines = [
         "Investigation Continuation",
@@ -1112,7 +1112,9 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
 
     lines.append("")
     lines.append(render_investigation_snapshot(
-        alternative_round.snapshot if alternative_round is not None else result.snapshot
+        final_snapshot
+        if final_snapshot is not None
+        else (alternative_round.snapshot if alternative_round is not None else result.snapshot)
     ))
     if attention is not None:
         lines.append("")
@@ -1195,10 +1197,14 @@ def _investigation_continuation_outcomes(result):
     return rendered
 
 
-def render_investigation_continuation_json(result, decision=None, alternative_round=None, final_decision=None, attention=None, correlations=None) -> str:
+def render_investigation_continuation_json(result, decision=None, alternative_round=None, final_decision=None, attention=None, correlations=None, final_snapshot=None) -> str:
     """Render continuation provenance and updated investigation as JSON."""
-    final_snapshot = alternative_round.snapshot if alternative_round is not None else result.snapshot
-    updated = json.loads(render_investigation_snapshot_json(final_snapshot))
+    rendered_snapshot = (
+        final_snapshot
+        if final_snapshot is not None
+        else (alternative_round.snapshot if alternative_round is not None else result.snapshot)
+    )
+    updated = json.loads(render_investigation_snapshot_json(rendered_snapshot))
     payload = {
         "report_type": "investigation_continuation",
         "collection_outcomes": _investigation_continuation_outcomes(result),
