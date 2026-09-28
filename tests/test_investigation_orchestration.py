@@ -2694,6 +2694,67 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             tuple(action.script_ids for action in snapshot.actions),
         )
 
+    def test_reevaluation_does_not_regenerate_satisfied_dynamic_action(self) -> None:
+        from finding_collection_planner import FindingRequirementVerification
+        from investigation_orchestration import re_evaluate_investigation
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.97",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        verification = FindingRequirementVerification(
+            requirement=requirement,
+            status="satisfied",
+            observed_script_ids=("smb-enum-shares",),
+        )
+        scan = Scan(
+            source="discovery.xml",
+            hosts=(Host(
+                address="192.0.2.97",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    service="microsoft-ds",
+                    scripts=(
+                        ScriptResult(
+                            "smb2-security-mode",
+                            "Message signing enabled but not required",
+                        ),
+                        ScriptResult("smb-enum-shares", "account_used: guest"),
+                    ),
+                ),),
+            ),),
+        )
+
+        snapshot = re_evaluate_investigation(
+            scan,
+            (),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+            prior_finding_requirement_verifications=(verification,),
+        )
+
+        self.assertEqual(
+            snapshot.finding_requirement_verifications,
+            (verification,),
+        )
+        self.assertTrue(
+            any(
+                plan.requirement.requirement_id == "smb_access_control_context"
+                for plan in snapshot.finding_collection_plans
+            )
+        )
+        self.assertNotIn(
+            ("smb-enum-shares",),
+            tuple(action.script_ids for action in snapshot.actions),
+        )
+
     def test_finding_requirement_verification_requires_nonempty_requested_evidence(self) -> None:
         requirement = FindingDerivedRequirement(
             requirement_id="smb_access_control_context",
