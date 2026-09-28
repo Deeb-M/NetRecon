@@ -3320,6 +3320,18 @@ class CliTests(unittest.TestCase):
             decision_mock.call_args_list[1].kwargs["attempted_actions"],
             initial.actions + progressed.next_actions,
         )
+        self.assertIs(
+            execute_selected_mock.call_args.args[0],
+            updated,
+        )
+        self.assertIs(
+            decision_mock.call_args_list[1].args[0],
+            updated,
+        )
+        self.assertIs(
+            decision_mock.call_args_list[1].args[1],
+            final,
+        )
 
 
 if __name__ == "__main__":
