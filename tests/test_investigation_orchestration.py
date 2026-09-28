@@ -1053,6 +1053,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "finding_requirement_unsatisfied")
+        self.assertEqual(decision.remaining_finding_requirements, (state,))
 
     def test_final_decision_does_not_complete_with_pending_approval_requirement(self) -> None:
         from finding_collection_planner import FindingRequirementState
@@ -1092,6 +1093,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "explicit_approval_required")
+        self.assertEqual(decision.remaining_finding_requirements, (state,))
 
     def test_final_decision_can_complete_with_satisfied_finding_requirement(self) -> None:
         from finding_collection_planner import FindingRequirementState
