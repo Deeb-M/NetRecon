@@ -24,6 +24,7 @@ classifiers = [
 [project.urls]
 Repository = "https://github.com/Deeb-M/NetRecon"
 Issues = "https://github.com/Deeb-M/NetRecon/issues"
+Changelog = "https://github.com/Deeb-M/NetRecon/releases"
 
 [project.scripts]
 netrecon = "netrecon:main"
