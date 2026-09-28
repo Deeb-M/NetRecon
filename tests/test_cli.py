@@ -1390,6 +1390,7 @@ class CliTests(unittest.TestCase):
             updated,
             (alternative,),
             timeout=7.0,
+            explicitly_approved_requirement_ids=frozenset(),
         )
         from investigation_orchestration import FinalInvestigationDecision
         render_mock.assert_called_once_with(
@@ -2150,7 +2151,10 @@ class CliTests(unittest.TestCase):
         build_adaptive_mock.assert_called_once_with(decision)
         render_adaptive_mock.assert_called_once_with(adaptive_plan)
         execute_alternative_mock.assert_called_once_with(
-            updated, decision.alternative_actions, timeout=60.0
+            updated,
+            decision.alternative_actions,
+            timeout=60.0,
+            explicitly_approved_requirement_ids=frozenset(),
         )
         self.assertIn("Adaptive Investigation Plan", output.getvalue())
 
