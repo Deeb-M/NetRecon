@@ -2895,7 +2895,10 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(main(), 0)
 
         build_adaptive_mock.assert_called_once_with(decision)
-        render_adaptive_mock.assert_called_once_with(adaptive_plan)
+        rendered_plan = render_adaptive_mock.call_args.args[0]
+        self.assertEqual(rendered_plan.decision, "stop")
+        self.assertEqual(rendered_plan.reason, "repeated_actions_exhausted")
+        self.assertEqual(rendered_plan.actions, ())
         execute_alternative_mock.assert_called_once_with(
             updated,
             decision.alternative_actions,
