@@ -1826,6 +1826,68 @@ class CliTests(unittest.TestCase):
         self.assertEqual(record.schema_version, 1)
         self.assertEqual(record.synthesis.remaining_finding_requirements, ())
 
+    def test_investigation_history_v2_round_trip_preserves_finding_requirements(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_history import (
+            InvestigationHistoryRecord,
+            parse_investigation_history_record_json,
+            render_investigation_history_record_json,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.251",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement,
+            "pending_approval",
+            "explicit_approval_required",
+            ("smb2-security-mode",),
+        )
+        original = InvestigationHistoryRecord(
+            123,
+            "192.0.2.251",
+            InvestigationSynthesis(
+                "stalled",
+                "explicit_approval_required",
+                1,
+                0,
+                (),
+                (state,),
+            ),
+        )
+
+        restored = parse_investigation_history_record_json(
+            render_investigation_history_record_json(original)
+        )
+
+        self.assertEqual(restored.schema_version, 2)
+        self.assertEqual(restored.synthesis.remaining_finding_requirements, (state,))
+
+    def test_investigation_history_rejects_unknown_schema_version(self) -> None:
+        import json
+        from investigation_history import parse_investigation_history_record_json
+
+        payload = json.dumps({
+            "schema_version": 3,
+            "observed_at": 1,
+            "target": "192.0.2.252",
+            "synthesis": {},
+        })
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Unsupported investigation history schema version: 3",
+        ):
+            parse_investigation_history_record_json(payload)
+
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.load_investigation_history", return_value=())
     @patch("netrecon.build_investigation_synthesis")
