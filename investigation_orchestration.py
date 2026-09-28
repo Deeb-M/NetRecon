@@ -196,12 +196,31 @@ def execute_selected_evidence_actions(
             and action.command in selected_commands
         )
     )
+    verification_by_key = {
+        (
+            verification.requirement.requirement_id,
+            verification.requirement.host,
+            verification.requirement.port,
+            verification.requirement.protocol,
+        ): verification
+        for verification in snapshot.finding_requirement_verifications
+    }
+    for verification in finding_verifications:
+        verification_by_key[
+            (
+                verification.requirement.requirement_id,
+                verification.requirement.host,
+                verification.requirement.port,
+                verification.requirement.protocol,
+            )
+        ] = verification
+    merged_finding_verifications = tuple(verification_by_key.values())
     updated_snapshot = replace(
         updated_snapshot,
-        finding_requirement_verifications=finding_verifications,
+        finding_requirement_verifications=merged_finding_verifications,
         finding_requirement_states=finding_requirement_states(
             updated_snapshot.finding_collection_plans,
-            finding_verifications,
+            merged_finding_verifications,
         ),
     )
     return InvestigationContinuationResult(
