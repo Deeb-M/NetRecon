@@ -3864,6 +3864,10 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "alternative_evidence_incomplete")
         self.assertEqual(decision.remaining_finding_requirements, (pending,))
+        self.assertEqual(
+            tuple(state.status for state in decision.remaining_finding_requirements),
+            ("pending_approval",),
+        )
 
     def test_finalize_continuation_accepts_controller_stop_reason(self) -> None:
         decision = InvestigationContinuationDecision("progressed", (), (), ())
