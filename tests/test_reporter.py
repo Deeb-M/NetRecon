@@ -868,6 +868,50 @@ class ReporterTests(unittest.TestCase):
             report,
         )
 
+    def test_renders_approval_blocked_finding_requirement(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        plan = FindingCollectionPlan(
+            requirement=requirement,
+            strategy=RequirementCollectionStrategy(
+                requirement_id="smb_access_control_context",
+                status="supported",
+                script_ids=("smb-enum-shares",),
+                risk_class="intrusive",
+                authorization="requires_approval",
+            ),
+            authorization=CollectionAuthorizationDecision(
+                allowed=False,
+                reason="explicit_approval_required",
+            ),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml"),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_collection_plans=(plan,),
+        )
+
+        report = render_investigation_snapshot(snapshot)
+
+        self.assertIn("Pending Approval: 192.0.2.10:445/tcp", report)
+        self.assertIn("Requirement: smb_access_control_context", report)
+        self.assertIn("Finding: smb.signing.review", report)
+        self.assertIn("Evidence Source: nse:smb2-security-mode", report)
+        self.assertIn("Proposed collection: smb-enum-shares", report)
+        self.assertIn("Risk: intrusive", report)
+        self.assertIn("Authorization: explicit approval required", report)
+
     def test_renders_blocked_investigation_snapshot_without_actions(self) -> None:
         snapshot = InvestigationSnapshot(
             ready=False,
