@@ -2887,7 +2887,10 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         from evidence_action_plan import EvidenceAction
         from evidence_collector import CollectionResult
         from finding_collection_planner import FindingRequirementVerification
-        from investigation_orchestration import execute_selected_evidence_actions
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            execute_selected_evidence_actions,
+        )
 
         requirement = FindingDerivedRequirement(
             requirement_id="smb_access_control_context",
