@@ -8,7 +8,7 @@ from analyzer import Finding
 from evidence_gaps import EvidenceGap
 from evidence_action_plan import EvidenceAction
 from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
-from finding_collection_planner import FindingCollectionPlan, FindingRequirementVerification
+from finding_collection_planner import FindingCollectionPlan, FindingRequirementState, FindingRequirementVerification
 from finding_requirements import FindingDerivedRequirement
 from requirement_collection import CollectionAuthorizationDecision, RequirementCollectionStrategy
 from investigation_state import EndpointInvestigationState
@@ -957,6 +957,42 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(pending["script_ids"], ["smb-enum-shares"])
         self.assertEqual(pending["risk_class"], "intrusive")
         self.assertEqual(pending["reason"], "explicit_approval_required")
+
+    def test_renders_finding_requirement_lifecycle_states(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.20",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement=requirement,
+            status="attempted_unsatisfied",
+            authorization_reason="explicitly_approved",
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml"),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_requirement_states=(state,),
+        )
+
+        report = render_investigation_snapshot(snapshot)
+
+        self.assertIn("Finding Requirement Lifecycle", report)
+        self.assertIn(
+            "Requirement State: 192.0.2.20:445/tcp  smb_access_control_context — attempted_unsatisfied",
+            report,
+        )
+        self.assertIn("Finding: smb.signing.review", report)
+        self.assertIn("Evidence Source: nse:smb2-security-mode", report)
+        self.assertIn("Authorization: explicitly_approved", report)
 
     def test_renders_blocked_investigation_snapshot_without_actions(self) -> None:
         snapshot = InvestigationSnapshot(
