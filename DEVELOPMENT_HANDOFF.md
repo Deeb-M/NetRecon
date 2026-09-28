@@ -45,6 +45,8 @@ After the current product audit, update it manually in GitHub repository setting
 
 This is public metadata only; it does not block CI, packaging, or product behavior.
 
+Also verify manually in GitHub repository security settings that **Private Vulnerability Reporting** is enabled. `SECURITY.md` directs vulnerability reporters to that channel, but the available repository API used during the audit did not expose the setting state. If it is disabled, enable it or revise the reporting instructions before treating the public security workflow as complete.
+
 ## v0.1.0 readiness completed
 
 The first public release milestone includes:
