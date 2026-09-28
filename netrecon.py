@@ -20,6 +20,7 @@ from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
 from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_attention, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions, execute_selected_evidence_actions
+from investigation_explanation import build_investigation_explanation
 from investigation_synthesis import build_investigation_synthesis
 from investigation_memory import compare_investigation_syntheses
 from investigation_history import (
@@ -29,7 +30,7 @@ from investigation_history import (
     load_investigation_history,
 )
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json, render_investigation_synthesis, render_investigation_synthesis_json, render_investigation_memory, render_investigation_memory_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_dynamic_evidence_round
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json, render_investigation_explanation, render_investigation_explanation_json, render_investigation_synthesis, render_investigation_synthesis_json, render_investigation_memory, render_investigation_memory_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_dynamic_evidence_round
 from scan_diff import compare_scans
 from scan_orchestration import build_baseline_discovery_plan, execute_discovery_plan, interpret_discovery_execution
 
@@ -263,6 +264,7 @@ def main() -> int:
             )
             final_decision = assess_final_investigation_decision(alternative_round)
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
+        explanation = build_investigation_explanation(final_snapshot)
         attention = build_investigation_attention(final_snapshot)
         correlations = correlate_analyst_attention(attention)
         synthesis = (
@@ -331,6 +333,7 @@ def main() -> int:
                 continuation, decision, alternative_round, final_decision, attention, correlations,
                 final_snapshot=final_snapshot,
             )
+            report += "\n\n" + render_investigation_explanation(explanation)
             if dynamic_round is not None:
                 report += "\n\n" + render_dynamic_evidence_round(dynamic_round)
             if args.adaptive_plan:
