@@ -495,11 +495,34 @@ def assess_investigation_continuation(
     )
 
     attempted_commands = {action.command for action in attempted_actions}
+    terminal_finding_requirement_keys = {
+        (
+            state.requirement.requirement_id,
+            state.requirement.host,
+            state.requirement.port,
+            state.requirement.protocol,
+        )
+        for state in after.finding_requirement_states
+        if state.status in {"satisfied", "attempted_unsatisfied"}
+    }
+    terminal_finding_commands = {
+        action.command
+        for plan in after.finding_collection_plans
+        for action in (evidence_action_for_finding_collection_plan(plan),)
+        if action is not None
+        and (
+            plan.requirement.requirement_id,
+            plan.requirement.host,
+            plan.requirement.port,
+            plan.requirement.protocol,
+        ) in terminal_finding_requirement_keys
+    }
+    blocked_commands = attempted_commands | terminal_finding_commands
     repeat_blocked = tuple(
-        action for action in after.actions if action.command in attempted_commands
+        action for action in after.actions if action.command in blocked_commands
     )
     safe_next_actions = tuple(
-        action for action in after.actions if action.command not in attempted_commands
+        action for action in after.actions if action.command not in blocked_commands
     )
 
     approval_blocked_plans = tuple(
