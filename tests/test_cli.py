@@ -3298,7 +3298,11 @@ class CliTests(unittest.TestCase):
         )
         self.assertIs(
             decision_mock.call_args_list[-1].args[0],
-            second_round,
+            updated,
+        )
+        self.assertIs(
+            decision_mock.call_args_list[-1].args[1],
+            final,
         )
 
 
