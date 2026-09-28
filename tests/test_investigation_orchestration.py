@@ -2755,6 +2755,70 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             tuple(action.script_ids for action in snapshot.actions),
         )
 
+    def test_finding_requirement_states_project_full_lifecycle(self) -> None:
+        from finding_collection_planner import (
+            FindingRequirementVerification,
+            finding_requirement_states,
+        )
+
+        def plan(host, allowed, reason):
+            requirement = FindingDerivedRequirement(
+                requirement_id="smb_access_control_context",
+                host=host,
+                port=445,
+                protocol="tcp",
+                purpose="review SMB access controls",
+                finding_id="smb.signing.review",
+                evidence_source="nse:smb2-security-mode",
+            )
+            return FindingCollectionPlan(
+                requirement=requirement,
+                strategy=RequirementCollectionStrategy(
+                    requirement_id="smb_access_control_context",
+                    status="supported",
+                    script_ids=("smb-enum-shares",),
+                    risk_class="intrusive",
+                    authorization="requires_approval",
+                ),
+                authorization=CollectionAuthorizationDecision(allowed, reason),
+            )
+
+        pending = plan("192.0.2.101", False, "explicit_approval_required")
+        authorized = plan("192.0.2.102", True, "explicitly_approved")
+        satisfied = plan("192.0.2.103", True, "explicitly_approved")
+        unsatisfied = plan("192.0.2.104", True, "explicitly_approved")
+        verifications = (
+            FindingRequirementVerification(
+                satisfied.requirement, "satisfied", ("smb-enum-shares",)
+            ),
+            FindingRequirementVerification(
+                unsatisfied.requirement, "unsatisfied", ()
+            ),
+        )
+
+        states = finding_requirement_states(
+            (pending, authorized, satisfied, unsatisfied),
+            verifications,
+        )
+
+        self.assertEqual(
+            tuple(state.status for state in states),
+            (
+                "pending_approval",
+                "authorized_pending",
+                "satisfied",
+                "attempted_unsatisfied",
+            ),
+        )
+        self.assertEqual(
+            tuple(state.requirement.host for state in states),
+            ("192.0.2.101", "192.0.2.102", "192.0.2.103", "192.0.2.104"),
+        )
+        self.assertEqual(
+            states[2].observed_script_ids,
+            ("smb-enum-shares",),
+        )
+
     def test_finding_requirement_verification_requires_nonempty_requested_evidence(self) -> None:
         requirement = FindingDerivedRequirement(
             requirement_id="smb_access_control_context",
