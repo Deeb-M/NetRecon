@@ -3217,6 +3217,10 @@ class CliTests(unittest.TestCase):
             render_mock.call_args.args[3].remaining_finding_requirements,
             assess_continuation_mock.return_value.remaining_finding_requirements,
         )
+        self.assertEqual(
+            render_mock.call_args.args[3].remaining_requirements,
+            (),
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
