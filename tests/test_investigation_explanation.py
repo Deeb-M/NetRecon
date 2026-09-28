@@ -264,5 +264,52 @@ class InvestigationExplanationTests(unittest.TestCase):
         self.assertEqual(explanation.next_actions, ())
 
 
+    def test_final_stalled_decision_suppresses_stale_snapshot_next_action(self) -> None:
+        from evidence_action_plan import EvidenceAction
+        from evidence_gaps import EvidenceGap
+        from investigation_orchestration import FinalInvestigationDecision
+
+        gap = EvidenceGap(
+            host="192.0.2.144",
+            port=5357,
+            protocol="tcp",
+            script_id="http-title",
+            purpose="identify the HTTP service",
+        )
+        action = EvidenceAction(
+            host="192.0.2.144",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-title",),
+            purposes=("identify the HTTP service",),
+            command=("nmap", "-p", "5357", "--script", "http-title", "-oX", "-", "192.0.2.144"),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(gap,),
+            actions=(action,),
+            states=(),
+            error=None,
+        )
+        final_decision = FinalInvestigationDecision(
+            status="stalled",
+            reason="alternative_evidence_incomplete",
+            remaining_gaps=(gap,),
+            further_actions=(),
+        )
+
+        explanation = build_investigation_explanation(
+            snapshot,
+            final_decision=final_decision,
+        )
+
+        self.assertEqual(
+            explanation.unresolved,
+            ("192.0.2.144:5357/tcp http-title — identify the HTTP service",),
+        )
+        self.assertEqual(explanation.next_actions, ())
+
+
 if __name__ == "__main__":
     unittest.main()
