@@ -1402,11 +1402,27 @@ def render_investigation_snapshot_json(snapshot: InvestigationSnapshot) -> str:
                         and plan.authorization.reason == "explicit_approval_required"
                     )
                 ),
+                "finding_requirement_states": len(snapshot.finding_requirement_states),
             },
             "error": snapshot.error,
             "gaps": [asdict(gap) for gap in snapshot.gaps],
             "states": [asdict(state) for state in snapshot.states],
             "actions": [asdict(action) for action in snapshot.actions],
+            "finding_requirement_states": [
+                {
+                    "host": state.requirement.host,
+                    "port": state.requirement.port,
+                    "protocol": state.requirement.protocol,
+                    "requirement_id": state.requirement.requirement_id,
+                    "purpose": state.requirement.purpose,
+                    "finding_id": state.requirement.finding_id,
+                    "evidence_source": state.requirement.evidence_source,
+                    "status": state.status,
+                    "authorization_reason": state.authorization_reason,
+                    "observed_script_ids": list(state.observed_script_ids),
+                }
+                for state in snapshot.finding_requirement_states
+            ],
             "pending_approvals": [
                 {
                     "host": plan.requirement.host,
