@@ -2412,6 +2412,76 @@ class CliTests(unittest.TestCase):
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.execute_alternative_evidence_round")
+    @patch("netrecon.execute_selected_evidence_actions")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_adaptive_continue_stops_explicitly_at_round_limit(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_approved_mock,
+        assess_continuation_mock,
+        execute_selected_mock,
+        execute_alternative_mock,
+        attention_mock,
+        correlations_mock,
+        render_mock,
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from netrecon import main
+
+        scan = Scan(source="discovery.xml")
+        initial_action = EvidenceAction(
+            "192.0.2.230", 445, "tcp", ("smb-protocols",), ("review SMB dialects",),
+            ("nmap", "-p", "445", "--script", "smb-protocols", "-oX", "-", "192.0.2.230"),
+        )
+        next_action = EvidenceAction(
+            "192.0.2.230", 443, "tcp", ("ssl-cert",), ("review TLS certificate",),
+            ("nmap", "-p", "443", "--script", "ssl-cert", "-oX", "-", "192.0.2.230"),
+        )
+        initial = InvestigationSnapshot(True, scan, (), (initial_action,), (), None)
+        updated = InvestigationSnapshot(True, scan, (), (next_action,), (), None)
+        continued = InvestigationSnapshot(True, scan, (), (next_action,), (), None)
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = initial
+        execute_approved_mock.return_value = InvestigationContinuationResult((), updated)
+        assess_continuation_mock.return_value = InvestigationContinuationDecision(
+            "progressed", (), (), (next_action,)
+        )
+        execute_selected_mock.return_value = InvestigationContinuationResult((), continued)
+
+        output = StringIO()
+        with patch("sys.argv", [
+            "netrecon", "--investigate-collect", "192.0.2.230", "--adaptive-plan"
+        ]):
+            with redirect_stdout(output):
+                self.assertEqual(main(), 0)
+
+        self.assertEqual(execute_selected_mock.call_count, 8)
+        self.assertEqual(assess_continuation_mock.call_count, 9)
+        execute_alternative_mock.assert_not_called()
+        self.assertIn("adaptive_round_limit_reached", output.getvalue())
+
+
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
     @patch("netrecon.assess_investigation_continuation")
     @patch("netrecon.execute_approved_evidence_actions")
     @patch("netrecon.build_investigation_snapshot")
