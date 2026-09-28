@@ -264,7 +264,10 @@ def main() -> int:
             )
             final_decision = assess_final_investigation_decision(alternative_round)
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
-        explanation = build_investigation_explanation(final_snapshot)
+        explanation = build_investigation_explanation(
+            final_snapshot,
+            final_decision=final_decision,
+        )
         attention = build_investigation_attention(final_snapshot)
         correlations = correlate_analyst_attention(attention)
         synthesis = (
