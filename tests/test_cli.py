@@ -2015,6 +2015,85 @@ class CliTests(unittest.TestCase):
         self.assertEqual(appended.target, "192.0.2.245")
         self.assertIs(appended.synthesis, stalled_synthesis)
 
+    @patch("netrecon.append_investigation_history_record")
+    @patch("netrecon.compare_investigation_syntheses")
+    @patch("netrecon.latest_investigation_for_target")
+    @patch("netrecon.load_investigation_history")
+    @patch("netrecon.build_investigation_synthesis")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_terminal_investigation_flows_through_synthesis_history_and_memory(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        attention_mock,
+        correlation_mock,
+        synthesis_mock,
+        load_history_mock,
+        latest_mock,
+        compare_mock,
+        append_mock,
+    ) -> None:
+        from investigation_history import InvestigationHistoryRecord
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+        from models import Scan
+        from netrecon import main
+
+        snapshot = InvestigationSnapshot(True, Scan("e2e.xml"), (), (), (), None)
+        decision = InvestigationContinuationDecision("complete", (), (), ())
+        current = InvestigationSynthesis("complete", "all_gaps_resolved", 0, 0, ())
+        previous_synthesis = InvestigationSynthesis(
+            "stalled", "no_supported_actions", 0, 0, ()
+        )
+        previous = InvestigationHistoryRecord(100, "192.0.2.203", previous_synthesis)
+
+        snapshot_mock.return_value = snapshot
+        execute_evidence_mock.return_value = InvestigationContinuationResult((), snapshot)
+        decision_mock.return_value = decision
+        synthesis_mock.return_value = current
+        load_history_mock.return_value = (previous,)
+        latest_mock.return_value = previous
+        compare_mock.return_value = object()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            history_path = Path(tmp) / "history.jsonl"
+            with patch(
+                "sys.argv",
+                [
+                    "netrecon",
+                    "--investigate-collect",
+                    "192.0.2.203",
+                    "--investigation-history",
+                    str(history_path),
+                ],
+            ):
+                with redirect_stdout(StringIO()):
+                    self.assertEqual(main(), 0)
+
+        synthesis_mock.assert_called_once()
+        load_history_mock.assert_called_once_with(str(history_path))
+        latest_mock.assert_called_once_with((previous,), "192.0.2.203")
+        compare_mock.assert_called_once_with(previous_synthesis, current)
+        append_mock.assert_called_once()
+        appended = append_mock.call_args.args[1]
+        self.assertEqual(appended.target, "192.0.2.203")
+        self.assertIs(appended.synthesis, current)
+
     @patch("netrecon.render_investigation_memory", return_value="Investigation Memory")
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses", return_value="memory-result")
