@@ -259,6 +259,7 @@ def main() -> int:
                 updated,
                 adaptive_actions,
                 timeout=args.evidence_timeout,
+                explicitly_approved_requirement_ids=approved_requirement_ids,
             )
             final_decision = assess_final_investigation_decision(alternative_round)
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
