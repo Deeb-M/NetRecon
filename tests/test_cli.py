@@ -1842,7 +1842,7 @@ class CliTests(unittest.TestCase):
         execute_evidence_mock.return_value = InvestigationContinuationResult((), snapshot)
         decision_mock.return_value = InvestigationContinuationDecision("complete", (), (), ())
 
-        with TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp:
             history_path = Path(tmp) / "history.jsonl"
             with patch(
                 "sys.argv",
