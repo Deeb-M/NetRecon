@@ -3192,6 +3192,15 @@ class CliTests(unittest.TestCase):
         self.assertIn("Reason: adaptive_round_limit_reached", output.getvalue())
         self.assertNotIn("Status: complete", output.getvalue())
         self.assertIn("Remaining Requirements:", output.getvalue())
+        self.assertEqual(render_mock.call_args.args[3].status, "stalled")
+        self.assertEqual(
+            render_mock.call_args.args[3].reason,
+            "adaptive_round_limit_reached",
+        )
+        self.assertIs(
+            render_mock.call_args.kwargs["final_snapshot"],
+            continued,
+        )
         for call in execute_selected_mock.call_args_list:
             self.assertEqual(call.args[1], (next_action,))
         self.assertEqual(
