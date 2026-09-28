@@ -2879,6 +2879,91 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertNotIn("192.0.2.111", dynamic_hosts)
         self.assertIn("192.0.2.112", dynamic_hosts)
 
+    @patch("investigation_orchestration.execute_nmap_command")
+    def test_unrelated_round_preserves_prior_finding_requirement_lifecycle(
+        self,
+        execute_mock,
+    ) -> None:
+        from evidence_action_plan import EvidenceAction
+        from evidence_collector import CollectionResult
+        from finding_collection_planner import FindingRequirementVerification
+        from investigation_orchestration import execute_selected_evidence_actions
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.130",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        prior = FindingRequirementVerification(requirement, "unsatisfied", ())
+        scan = Scan(
+            source="discovery.xml",
+            hosts=(Host(
+                address="192.0.2.130",
+                status="up",
+                ports=(
+                    Port(
+                        port=445,
+                        protocol="tcp",
+                        state="open",
+                        service="microsoft-ds",
+                        scripts=(ScriptResult(
+                            "smb2-security-mode",
+                            "Message signing enabled but not required",
+                        ),),
+                    ),
+                    Port(port=5357, protocol="tcp", state="open", service="http"),
+                ),
+            ),),
+        )
+        http_action = EvidenceAction(
+            host="192.0.2.130",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-headers",),
+            purposes=("review HTTP response headers",),
+            command=(
+                "nmap", "-p", "5357", "--script", "http-headers",
+                "-oX", "-", "192.0.2.130",
+            ),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=scan,
+            gaps=(),
+            actions=(http_action,),
+            states=(),
+            error=None,
+            finding_requirement_verifications=(prior,),
+        )
+        execute_mock.return_value = CollectionResult(
+            command=NmapCommand(arguments=http_action.command),
+            returncode=0,
+            stdout="<nmaprun></nmaprun>",
+            stderr="",
+        )
+
+        result = execute_selected_evidence_actions(
+            snapshot,
+            (http_action,),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )
+
+        self.assertEqual(
+            result.snapshot.finding_requirement_verifications,
+            (prior,),
+        )
+        self.assertEqual(
+            {
+                state.requirement.requirement_id: state.status
+                for state in result.snapshot.finding_requirement_states
+            }["smb_access_control_context"],
+            "attempted_unsatisfied",
+        )
+
     def test_finding_requirement_verification_requires_nonempty_requested_evidence(self) -> None:
         requirement = FindingDerivedRequirement(
             requirement_id="smb_access_control_context",
