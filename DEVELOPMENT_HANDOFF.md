@@ -2069,3 +2069,31 @@ Planner truth and execution history remain separate:
 - re-planning must not interpret absence of evidence as permission to retry an already-attempted requirement.
 
 Do not collapse `attempted_unsatisfied` back into `pending_approval`, and do not regenerate an automatic action for an exact requirement identity whose terminal verification is already known.
+
+
+## Finding Requirement Lifecycle → Decision Semantics
+
+The finding-requirement lifecycle is now part of investigation control flow, not merely report metadata.
+
+Both continuation and final-decision layers understand terminal and authorization states. The validated semantics are:
+
+| Lifecycle state | Continuation meaning | Final-decision meaning |
+| --- | --- | --- |
+| `pending_approval` | stalled: `explicit_approval_required` | stalled: `explicit_approval_required` |
+| `authorized_pending` | eligible to progress through the authorized dynamic-action pipeline | collection/execution path remains responsible for producing a terminal verification |
+| `satisfied` | does not block completion when primary evidence is complete | complete is allowed when no primary gaps remain |
+| `attempted_unsatisfied` | stalled: `finding_requirement_unsatisfied` | stalled: `finding_requirement_unsatisfied` |
+
+Important invariant: `all_gaps_resolved` refers to more than an empty primary `EvidenceGap` set. A finding-derived semantic requirement that is still waiting for human approval or that was attempted without observing the requested evidence prevents a false successful completion.
+
+Conversely, a terminal `satisfied` finding requirement must not manufacture a stall or hide a genuine primary evidence gap.
+
+The implementation retains the older plan-derived approval check for compatibility, while `FindingRequirementState` is now a direct semantic input to continuation and final-decision reasoning.
+
+Regression sequence:
+- `1f476c4` / `d300a7b`: pending-approval lifecycle drives continuation.
+- `9a72912` / `9019bac`: attempted-unsatisfied lifecycle prevents false final completion.
+- `39b372b` / `cfbc057`: pending-approval lifecycle prevents false final completion.
+- `9e9db43`: satisfied lifecycle explicitly permits final completion when no primary gaps remain.
+
+Milestone status: **FINDING REQUIREMENT LIFECYCLE → DECISION SEMANTICS CI-VALIDATED**.
