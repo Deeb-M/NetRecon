@@ -2920,6 +2920,11 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(main(), 0)
 
         execute_alternative_mock.assert_not_called()
+        self.assertEqual(build_adaptive_mock.call_count, 1)
+        self.assertEqual(
+            build_adaptive_mock.call_args.args[0],
+            decision,
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
