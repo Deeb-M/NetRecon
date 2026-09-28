@@ -2191,6 +2191,108 @@ class CliTests(unittest.TestCase):
         self.assertEqual(appended.target, "192.0.2.204")
         self.assertIs(appended.synthesis, current)
 
+    @patch("netrecon.append_investigation_history_record")
+    @patch("netrecon.compare_investigation_syntheses")
+    @patch("netrecon.latest_investigation_for_target")
+    @patch("netrecon.load_investigation_history")
+    @patch("netrecon.build_investigation_synthesis")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_terminal_pending_approval_is_persisted_and_compared(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        attention_mock,
+        correlation_mock,
+        synthesis_mock,
+        load_history_mock,
+        latest_mock,
+        compare_mock,
+        append_mock,
+    ) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_history import InvestigationHistoryRecord
+        from investigation_memory import InvestigationMemory
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+        from models import Scan
+        from netrecon import main
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context", "192.0.2.205", 445, "tcp",
+            "review SMB access controls", "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        pending = FindingRequirementState(
+            requirement, "pending_approval", "explicit_approval_required", ()
+        )
+        snapshot = InvestigationSnapshot(
+            True, Scan("e2e-approval.xml"), (), (), (), None,
+            finding_requirement_states=(pending,),
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled", (), (), (), stall_reason="explicit_approval_required",
+            remaining_finding_requirements=(pending,),
+        )
+        current = InvestigationSynthesis(
+            "stalled", "explicit_approval_required", 0, 0, (), (pending,)
+        )
+        previous_synthesis = InvestigationSynthesis(
+            "complete", "all_gaps_resolved", 0, 0, ()
+        )
+        previous = InvestigationHistoryRecord(100, "192.0.2.205", previous_synthesis)
+
+        snapshot_mock.return_value = snapshot
+        execute_evidence_mock.return_value = InvestigationContinuationResult((), snapshot)
+        decision_mock.return_value = decision
+        synthesis_mock.return_value = current
+        load_history_mock.return_value = (previous,)
+        latest_mock.return_value = previous
+        compare_mock.return_value = InvestigationMemory(
+            True, "complete", "stalled", True,
+            "all_gaps_resolved", "explicit_approval_required",
+            0, 0, (), (), (pending,), (),
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            history_path = Path(tmp) / "history.jsonl"
+            history_path.touch()
+            with patch(
+                "sys.argv",
+                [
+                    "netrecon",
+                    "--investigate-collect",
+                    "192.0.2.205",
+                    "--investigation-history",
+                    str(history_path),
+                ],
+            ):
+                with redirect_stdout(StringIO()):
+                    self.assertEqual(main(), 0)
+
+        compare_mock.assert_called_once_with(previous_synthesis, current)
+        append_mock.assert_called_once()
+        appended = append_mock.call_args.args[1]
+        self.assertEqual(
+            appended.synthesis.remaining_finding_requirements,
+            (pending,),
+        )
+
     @patch("netrecon.render_investigation_memory", return_value="Investigation Memory")
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses", return_value="memory-result")
