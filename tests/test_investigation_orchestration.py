@@ -15,7 +15,7 @@ from scan_orchestration import (
     build_baseline_discovery_plan,
 )
 
-from investigation_orchestration import build_investigation_snapshot
+from investigation_orchestration import build_investigation_snapshot, re_evaluate_investigation
 
 
 class InvestigationOrchestrationTests(unittest.TestCase):
@@ -135,6 +135,46 @@ class InvestigationOrchestrationTests(unittest.TestCase):
             "Successful discovery must include a verified scan",
         ):
             build_investigation_snapshot(discovery)
+
+
+    def test_re_evaluation_tracks_approval_blocked_finding_requirement(self) -> None:
+        scan = Scan(
+            source="smb.xml",
+            hosts=(Host(
+                address="192.0.2.96",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    service="microsoft-ds",
+                    scripts=(ScriptResult(
+                        "smb2-security-mode",
+                        "3.1.1: Message signing enabled but not required",
+                    ),),
+                ),),
+            ),),
+        )
+
+        snapshot = re_evaluate_investigation(scan, ())
+
+        self.assertEqual(len(snapshot.finding_collection_plans), 1)
+        plan = snapshot.finding_collection_plans[0]
+        self.assertEqual(
+            plan.requirement.requirement_id,
+            "smb_access_control_context",
+        )
+        self.assertFalse(plan.authorization.allowed)
+        self.assertEqual(
+            plan.authorization.reason,
+            "explicit_approval_required",
+        )
+        self.assertFalse(
+            any(
+                action.script_ids == ("smb-enum-shares",)
+                for action in snapshot.actions
+            )
+        )
 
 
 class InvestigationStateContractTests(unittest.TestCase):
