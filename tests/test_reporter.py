@@ -2002,6 +2002,47 @@ class ReporterTests(unittest.TestCase):
         )
         self.assertIn("Observed Evidence: smb-enum-shares", report)
 
+    def test_renders_unsatisfied_dynamic_requirement_without_retry(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.138",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        result = InvestigationContinuationResult(
+            outcomes=(),
+            snapshot=InvestigationSnapshot(
+                ready=True,
+                scan=Scan(source="updated.xml"),
+                gaps=(),
+                actions=(),
+                states=(),
+                error=None,
+            ),
+            finding_requirement_verifications=(
+                FindingRequirementVerification(
+                    requirement=requirement,
+                    status="unsatisfied",
+                    observed_script_ids=(),
+                ),
+            ),
+        )
+
+        report = render_dynamic_evidence_round(result)
+
+        self.assertIn(
+            "Requirement: smb_access_control_context — unsatisfied",
+            report,
+        )
+        self.assertIn("Outcome: requested evidence was not observed", report)
+        self.assertIn(
+            "Next Step: no automatic retry or unsupported alternative",
+            report,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
