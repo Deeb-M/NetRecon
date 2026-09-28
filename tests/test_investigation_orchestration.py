@@ -3935,6 +3935,8 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.remaining_requirements, ())
         self.assertEqual(final.satisfied_requirements, ())
         self.assertEqual(final.remaining_finding_requirements, ())
+        self.assertEqual(decision.status, "progressed")
+        self.assertEqual(decision.next_actions, ())
 
     def test_finalize_rejects_progressed_continuation_without_stop_reason(self) -> None:
         decision = InvestigationContinuationDecision("progressed", (), (), ())
