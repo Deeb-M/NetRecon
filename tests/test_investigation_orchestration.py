@@ -1407,6 +1407,52 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         self.assertEqual(decision.remaining_finding_requirements, (pending,))
 
+    def test_continuation_preserves_attempted_unsatisfied_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            assess_investigation_continuation,
+        )
+        from models import Scan
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.255",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        attempted = FindingRequirementState(
+            requirement=requirement,
+            status="attempted_unsatisfied",
+            authorization_reason="explicitly_approved",
+        )
+        before = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+        )
+        after = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_requirement_states=(attempted,),
+        )
+
+        decision = assess_investigation_continuation(before, after)
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.stall_reason, "finding_requirement_unsatisfied")
+        self.assertEqual(decision.remaining_finding_requirements, (attempted,))
+
     def test_continuation_is_progressed_when_some_gaps_resolve_and_actions_remain(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 
