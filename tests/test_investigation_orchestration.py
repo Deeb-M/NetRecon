@@ -3728,6 +3728,10 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.status, "complete")
         self.assertEqual(final.reason, "all_gaps_resolved")
         self.assertEqual(final.remaining_gaps, ())
+        self.assertEqual(final.further_actions, ())
+        self.assertEqual(final.remaining_requirements, ())
+        self.assertEqual(final.satisfied_requirements, ())
+        self.assertEqual(final.remaining_finding_requirements, ())
 
     def test_finalize_stalled_continuation_preserves_reason(self) -> None:
         decision = InvestigationContinuationDecision(
