@@ -1353,6 +1353,28 @@ def render_investigation_snapshot(snapshot: InvestigationSnapshot) -> str:
             lines.append(f"  Risk: {plan.strategy.risk_class}")
         lines.append("  Authorization: explicit approval required")
 
+    if snapshot.finding_requirement_states:
+        lines.append("Finding Requirement Lifecycle")
+        for state in snapshot.finding_requirement_states:
+            requirement = state.requirement
+            location = (
+                f"{requirement.host}:{requirement.port}/{requirement.protocol}"
+                if requirement.port is not None and requirement.protocol is not None
+                else requirement.host
+            )
+            lines.append(
+                f"Requirement State: {location}  {requirement.requirement_id} — {state.status}"
+            )
+            lines.append(f"  Purpose: {requirement.purpose}")
+            lines.append(f"  Finding: {requirement.finding_id}")
+            if requirement.evidence_source is not None:
+                lines.append(f"  Evidence Source: {requirement.evidence_source}")
+            lines.append(f"  Authorization: {state.authorization_reason}")
+            if state.observed_script_ids:
+                lines.append(
+                    "  Observed Evidence: " + ", ".join(state.observed_script_ids)
+                )
+
     for action in snapshot.actions:
         lines.append(f"Action: {action.host}:{action.port}/{action.protocol}")
         for purpose in action.purposes:
