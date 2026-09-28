@@ -68,6 +68,7 @@ def re_evaluate_investigation(
     outcomes: tuple[ParsedCollectionResult, ...],
     *,
     explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
+    prior_finding_requirement_verifications: tuple[FindingRequirementVerification, ...] = (),
 ) -> InvestigationSnapshot:
     """Merge collected evidence and rebuild primary plus authorized dynamic actions."""
     merged_hosts = tuple(
@@ -77,9 +78,20 @@ def re_evaluate_investigation(
     scan = replace(discovery_scan, hosts=merged_hosts)
 
     primary_actions = build_evidence_action_plan(scan)
-    dynamic_actions = build_dynamic_evidence_actions(
-        scan,
+    finding_plans = build_finding_collection_plans(
+        analyze_scan(scan),
         explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+    )
+    resolved_finding_requirement_ids = {
+        verification.requirement.requirement_id
+        for verification in prior_finding_requirement_verifications
+        if verification.status in {"satisfied", "unsatisfied"}
+    }
+    dynamic_actions = tuple(
+        action
+        for plan in finding_plans
+        if plan.requirement.requirement_id not in resolved_finding_requirement_ids
+        and (action := evidence_action_for_finding_collection_plan(plan)) is not None
     )
     actions_by_command = {action.command: action for action in primary_actions}
     for action in dynamic_actions:
@@ -92,10 +104,8 @@ def re_evaluate_investigation(
         actions=tuple(actions_by_command.values()),
         states=summarize_investigation_state(scan),
         error=None,
-        finding_collection_plans=build_finding_collection_plans(
-            analyze_scan(scan),
-            explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
-        ),
+        finding_collection_plans=finding_plans,
+        finding_requirement_verifications=prior_finding_requirement_verifications,
     )
 
 
@@ -155,6 +165,7 @@ def execute_selected_evidence_actions(
         snapshot.scan,
         outcomes,
         explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+        prior_finding_requirement_verifications=snapshot.finding_requirement_verifications,
     )
     selected_commands = {action.command for action in actions}
     finding_plans = build_finding_collection_plans(
