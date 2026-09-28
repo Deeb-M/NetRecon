@@ -4,6 +4,10 @@ import unittest
 from unittest.mock import patch
 
 from evidence_action_plan import EvidenceAction
+from finding_collection_planner import FindingCollectionPlan, verify_finding_collection_plan
+from finding_requirements import FindingDerivedRequirement
+from requirement_collection import CollectionAuthorizationDecision, RequirementCollectionStrategy
+from models import Host, Port, Scan, ScriptResult
 from evidence_gaps import EvidenceGap
 from scan_orchestration import (
     DiscoveryExecutionResult,
@@ -2479,6 +2483,66 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(decision.status, "complete")
         self.assertEqual(decision.next_actions, ())
         self.assertEqual(decision.repeat_blocked_actions, (dynamic,))
+
+
+    def test_finding_requirement_verification_requires_nonempty_requested_evidence(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.95",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        plan = FindingCollectionPlan(
+            requirement=requirement,
+            strategy=RequirementCollectionStrategy(
+                requirement_id="smb_access_control_context",
+                status="supported",
+                script_ids=("smb-enum-shares",),
+                risk_class="intrusive",
+                authorization="requires_approval",
+            ),
+            authorization=CollectionAuthorizationDecision(True, "explicitly_approved"),
+        )
+
+        observed = Scan(
+            source="observed.xml",
+            hosts=(Host(
+                address="192.0.2.95",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    service="microsoft-ds",
+                    scripts=(ScriptResult("smb-enum-shares", "account_used: guest"),),
+                ),),
+            ),),
+        )
+        empty = Scan(
+            source="empty.xml",
+            hosts=(Host(
+                address="192.0.2.95",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    service="microsoft-ds",
+                    scripts=(ScriptResult("smb-enum-shares", "   "),),
+                ),),
+            ),),
+        )
+
+        satisfied = verify_finding_collection_plan(plan, observed)
+        unsatisfied = verify_finding_collection_plan(plan, empty)
+
+        self.assertEqual(satisfied.status, "satisfied")
+        self.assertEqual(satisfied.observed_script_ids, ("smb-enum-shares",))
+        self.assertEqual(unsatisfied.status, "unsatisfied")
+        self.assertEqual(unsatisfied.observed_script_ids, ())
 
 
 if __name__ == "__main__":
