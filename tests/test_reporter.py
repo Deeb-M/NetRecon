@@ -2233,6 +2233,58 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(memory.resolved_finding_requirements, ())
         self.assertEqual(memory.changed_finding_requirements, ((pending, attempted),))
 
+    def test_investigation_memory_renders_finding_requirement_lifecycle_change(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_memory import InvestigationMemory
+        from reporter import render_investigation_memory, render_investigation_memory_json
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.250",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        pending = FindingRequirementState(
+            requirement, "pending_approval", "explicit_approval_required", ()
+        )
+        attempted = FindingRequirementState(
+            requirement, "attempted_unsatisfied", "explicitly_approved", ()
+        )
+        memory = InvestigationMemory(
+            False,
+            "stalled",
+            "stalled",
+            True,
+            "explicit_approval_required",
+            "finding_requirement_unsatisfied",
+            0,
+            0,
+            (),
+            (),
+            (),
+            (),
+            ((pending, attempted),),
+        )
+
+        text_report = render_investigation_memory(memory)
+        payload = json.loads(render_investigation_memory_json(memory))
+
+        self.assertIn("Changed Finding Requirements: 1", text_report)
+        self.assertIn("pending_approval -> attempted_unsatisfied", text_report)
+        self.assertEqual(payload["summary"]["changed_finding_requirements"], 1)
+        self.assertEqual(
+            payload["changed_finding_requirements"][0]["previous"]["status"],
+            "pending_approval",
+        )
+        self.assertEqual(
+            payload["changed_finding_requirements"][0]["current"]["status"],
+            "attempted_unsatisfied",
+        )
+
     def test_investigation_memory_reports_finding_requirement_changes(self) -> None:
         from finding_collection_planner import FindingRequirementState
         from finding_requirements import FindingDerivedRequirement
