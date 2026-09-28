@@ -3936,8 +3936,6 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "alternative_evidence_incomplete")
-        self.assertEqual(decision.status, "stalled")
-        self.assertEqual(decision.reason, "alternative_evidence_incomplete")
         self.assertEqual(decision.remaining_gaps, (gap,))
         self.assertEqual(decision.further_actions, ())
         self.assertIs(decision.remaining_gaps[0], gap)
