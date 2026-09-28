@@ -25,6 +25,9 @@ class InvestigationMemory:
     resolved_requirements: tuple[EvidenceRequirementState, ...]
     added_finding_requirements: tuple[FindingRequirementState, ...] = ()
     resolved_finding_requirements: tuple[FindingRequirementState, ...] = ()
+    changed_finding_requirements: tuple[
+        tuple[FindingRequirementState, FindingRequirementState], ...
+    ] = ()
 
 
 def _requirement_identity(state: EvidenceRequirementState) -> tuple[str, int, str, str]:
@@ -74,6 +77,11 @@ def compare_investigation_syntheses(
     resolved_finding_keys = sorted(
         previous_finding_requirements.keys() - current_finding_requirements.keys()
     )
+    changed_finding_keys = sorted(
+        key
+        for key in previous_finding_requirements.keys() & current_finding_requirements.keys()
+        if previous_finding_requirements[key] != current_finding_requirements[key]
+    )
 
     return InvestigationMemory(
         status_changed=previous.status != current.status,
@@ -93,5 +101,12 @@ def compare_investigation_syntheses(
         ),
         resolved_finding_requirements=tuple(
             previous_finding_requirements[key] for key in resolved_finding_keys
+        ),
+        changed_finding_requirements=tuple(
+            (
+                previous_finding_requirements[key],
+                current_finding_requirements[key],
+            )
+            for key in changed_finding_keys
         ),
     )
