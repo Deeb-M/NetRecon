@@ -381,9 +381,14 @@ def assess_final_investigation_decision(
     remaining_requirements = tuple(requirements)
     satisfied_requirements_tuple = tuple(satisfied_requirements)
     statuses = {verification.status for verification in alternative_round.verifications}
-    pending_approval_requirements = tuple(
+    unresolved_finding_requirements = tuple(
         state
         for state in alternative_round.snapshot.finding_requirement_states
+        if state.status in {"pending_approval", "attempted_unsatisfied"}
+    )
+    pending_approval_requirements = tuple(
+        state
+        for state in unresolved_finding_requirements
         if state.status == "pending_approval"
     )
     unsatisfied_finding_requirements = tuple(
@@ -400,7 +405,7 @@ def assess_final_investigation_decision(
             (),
             (),
             (),
-            pending_approval_requirements,
+            unresolved_finding_requirements,
         )
 
     if not remaining and unsatisfied_finding_requirements:
@@ -411,7 +416,7 @@ def assess_final_investigation_decision(
             (),
             (),
             (),
-            unsatisfied_finding_requirements,
+            unresolved_finding_requirements,
         )
 
     if not remaining:
