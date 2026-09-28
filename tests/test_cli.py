@@ -1804,6 +1804,28 @@ class CliTests(unittest.TestCase):
 
 
 
+    def test_investigation_history_v1_remains_readable(self) -> None:
+        import json
+        from investigation_history import parse_investigation_history_record_json
+
+        payload = json.dumps({
+            "schema_version": 1,
+            "observed_at": 1,
+            "target": "192.0.2.244",
+            "synthesis": {
+                "status": "complete",
+                "reason": "all_gaps_resolved",
+                "attention_items": 0,
+                "correlated_review_groups": 0,
+                "remaining_requirements": [],
+            },
+        })
+
+        record = parse_investigation_history_record_json(payload)
+
+        self.assertEqual(record.schema_version, 1)
+        self.assertEqual(record.synthesis.remaining_finding_requirements, ())
+
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.load_investigation_history", return_value=())
     @patch("netrecon.build_investigation_synthesis")
