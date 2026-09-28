@@ -2819,6 +2819,66 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             ("smb-enum-shares",),
         )
 
+    def test_snapshot_lifecycle_and_suppression_are_endpoint_scoped(self) -> None:
+        from finding_collection_planner import FindingRequirementVerification
+        from investigation_orchestration import re_evaluate_investigation
+
+        resolved_requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.111",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        verification = FindingRequirementVerification(
+            resolved_requirement,
+            "unsatisfied",
+            (),
+        )
+        scan = Scan(
+            source="multi-host.xml",
+            hosts=tuple(
+                Host(
+                    address=host,
+                    status="up",
+                    ports=(Port(
+                        port=445,
+                        protocol="tcp",
+                        state="open",
+                        service="microsoft-ds",
+                        scripts=(ScriptResult(
+                            "smb2-security-mode",
+                            "Message signing enabled but not required",
+                        ),),
+                    ),),
+                )
+                for host in ("192.0.2.111", "192.0.2.112")
+            ),
+        )
+
+        snapshot = re_evaluate_investigation(
+            scan,
+            (),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+            prior_finding_requirement_verifications=(verification,),
+        )
+
+        lifecycle = {
+            state.requirement.host: state.status
+            for state in snapshot.finding_requirement_states
+        }
+        self.assertEqual(lifecycle["192.0.2.111"], "attempted_unsatisfied")
+        self.assertEqual(lifecycle["192.0.2.112"], "authorized_pending")
+        dynamic_hosts = {
+            action.host
+            for action in snapshot.actions
+            if action.script_ids == ("smb-enum-shares",)
+        }
+        self.assertNotIn("192.0.2.111", dynamic_hosts)
+        self.assertIn("192.0.2.112", dynamic_hosts)
+
     def test_finding_requirement_verification_requires_nonempty_requested_evidence(self) -> None:
         requirement = FindingDerivedRequirement(
             requirement_id="smb_access_control_context",
