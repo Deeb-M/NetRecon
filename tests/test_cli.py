@@ -1826,6 +1826,28 @@ class CliTests(unittest.TestCase):
 
 
 
+    def test_unversioned_investigation_history_remains_readable_as_v1(self) -> None:
+        import json
+        from investigation_history import parse_investigation_history_record_json
+
+        payload = json.dumps({
+            "observed_at": 1,
+            "target": "192.0.2.243",
+            "synthesis": {
+                "status": "stalled",
+                "reason": "alternative_evidence_incomplete",
+                "attention_items": 1,
+                "correlated_review_groups": 0,
+                "remaining_requirements": [],
+            },
+        })
+
+        record = parse_investigation_history_record_json(payload)
+
+        self.assertEqual(record.schema_version, 1)
+        self.assertEqual(record.target, "192.0.2.243")
+        self.assertEqual(record.synthesis.remaining_finding_requirements, ())
+
     def test_investigation_history_v1_remains_readable(self) -> None:
         import json
         from investigation_history import parse_investigation_history_record_json
