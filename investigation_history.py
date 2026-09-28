@@ -7,6 +7,8 @@ import json
 
 from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
 from investigation_synthesis import InvestigationSynthesis
+from finding_collection_planner import FindingRequirementState
+from finding_requirements import FindingDerivedRequirement
 
 
 @dataclass(frozen=True)
@@ -16,7 +18,7 @@ class InvestigationHistoryRecord:
     observed_at: int
     target: str
     synthesis: InvestigationSynthesis
-    schema_version: int = 1
+    schema_version: int = 2
 
 
 def render_investigation_history_record_json(record: InvestigationHistoryRecord) -> str:
@@ -28,7 +30,7 @@ def parse_investigation_history_record_json(payload: str) -> InvestigationHistor
     """Restore one history record from its portable JSON representation."""
     data = json.loads(payload)
     schema_version = data.get("schema_version")
-    if schema_version != 1:
+    if schema_version not in {1, 2}:
         raise ValueError(
             f"Unsupported investigation history schema version: {schema_version!r}"
         )
@@ -49,12 +51,30 @@ def parse_investigation_history_record_json(payload: str) -> InvestigationHistor
         )
         for state in synthesis_data["remaining_requirements"]
     )
+    finding_requirements = tuple(
+        FindingRequirementState(
+            requirement=FindingDerivedRequirement(
+                requirement_id=state["requirement"]["requirement_id"],
+                host=state["requirement"]["host"],
+                port=state["requirement"]["port"],
+                protocol=state["requirement"]["protocol"],
+                purpose=state["requirement"]["purpose"],
+                finding_id=state["requirement"]["finding_id"],
+                evidence_source=state["requirement"]["evidence_source"],
+            ),
+            status=state["status"],
+            authorization_reason=state["authorization_reason"],
+            observed_script_ids=tuple(state.get("observed_script_ids", ())),
+        )
+        for state in synthesis_data.get("remaining_finding_requirements", ())
+    )
     synthesis = InvestigationSynthesis(
         status=synthesis_data["status"],
         reason=synthesis_data["reason"],
         attention_items=synthesis_data["attention_items"],
         correlated_review_groups=synthesis_data["correlated_review_groups"],
         remaining_requirements=requirements,
+        remaining_finding_requirements=finding_requirements,
     )
     return InvestigationHistoryRecord(
         observed_at=data["observed_at"],
