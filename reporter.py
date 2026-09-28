@@ -1400,6 +1400,21 @@ def render_investigation_continuation_json(result, decision=None, alternative_ro
                 }
                 for state in final_decision.remaining_requirements
             ],
+            "remaining_finding_requirements": [
+                {
+                    "requirement_id": state.requirement.requirement_id,
+                    "host": state.requirement.host,
+                    "port": state.requirement.port,
+                    "protocol": state.requirement.protocol,
+                    "purpose": state.requirement.purpose,
+                    "finding_id": state.requirement.finding_id,
+                    "evidence_source": state.requirement.evidence_source,
+                    "status": state.status,
+                    "authorization_reason": state.authorization_reason,
+                    "observed_script_ids": list(state.observed_script_ids),
+                }
+                for state in final_decision.remaining_finding_requirements
+            ],
         }
     if decision is not None and final_decision is not None:
         payload["semantic_requirement_progress"] = {
