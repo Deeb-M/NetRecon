@@ -1321,10 +1321,12 @@ class CliTests(unittest.TestCase):
         )
         build_explanation_mock.assert_called_once_with(continuation.snapshot, final_decision=final_decision)
         render_explanation_mock.assert_called_once_with("explanation-model")
-        self.assertEqual(
-            output.getvalue().strip(),
-            "Investigation continuation\n\nInvestigation Explanation",
-        )
+        rendered = output.getvalue()
+        self.assertIn("Investigation continuation", rendered)
+        self.assertIn("Investigation Explanation", rendered)
+        self.assertIn("Investigation Synthesis", rendered)
+        self.assertIn("Status: complete", rendered)
+        self.assertIn("Reason: all_gaps_resolved", rendered)
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
