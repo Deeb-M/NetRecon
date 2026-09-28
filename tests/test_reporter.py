@@ -8,6 +8,8 @@ from analyzer import Finding
 from evidence_gaps import EvidenceGap
 from evidence_action_plan import EvidenceAction
 from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
+from finding_collection_planner import FindingRequirementVerification
+from finding_requirements import FindingDerivedRequirement
 from investigation_state import EndpointInvestigationState
 from evidence_collector import (
     CollectionResult,
@@ -1962,6 +1964,43 @@ class ReporterTests(unittest.TestCase):
         )
         self.assertIn("Collection Status: success", report)
         self.assertIn("Return Code: 0", report)
+
+    def test_renders_dynamic_requirement_verification(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.138",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        result = InvestigationContinuationResult(
+            outcomes=(),
+            snapshot=InvestigationSnapshot(
+                ready=True,
+                scan=Scan(source="updated.xml"),
+                gaps=(),
+                actions=(),
+                states=(),
+                error=None,
+            ),
+            finding_requirement_verifications=(
+                FindingRequirementVerification(
+                    requirement=requirement,
+                    status="satisfied",
+                    observed_script_ids=("smb-enum-shares",),
+                ),
+            ),
+        )
+
+        report = render_dynamic_evidence_round(result)
+
+        self.assertIn(
+            "Requirement: smb_access_control_context — satisfied",
+            report,
+        )
+        self.assertIn("Observed Evidence: smb-enum-shares", report)
 
 
 if __name__ == "__main__":
