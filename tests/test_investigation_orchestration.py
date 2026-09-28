@@ -3972,6 +3972,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         final = finalize_continuation_decision(
             decision, stop_reason="adaptive_round_limit_reached"
         )
+        self.assertIsNot(final, decision)
         self.assertEqual(final.status, "stalled")
         self.assertEqual(final.reason, "adaptive_round_limit_reached")
         self.assertEqual(final.remaining_gaps, ())
