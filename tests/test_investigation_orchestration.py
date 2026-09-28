@@ -3922,6 +3922,9 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             decision.remaining_requirements[0].requirement.requirement_id,
             "http_identity_context",
         )
+        self.assertEqual(decision.remaining_requirements[0].host, gap.host)
+        self.assertEqual(decision.remaining_requirements[0].port, gap.port)
+        self.assertEqual(decision.remaining_requirements[0].protocol, gap.protocol)
         self.assertEqual(decision.satisfied_requirements, ())
         self.assertEqual(decision.remaining_finding_requirements, (pending,))
         self.assertIs(decision.remaining_finding_requirements[0], pending)
