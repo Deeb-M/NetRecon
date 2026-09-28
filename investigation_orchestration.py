@@ -17,7 +17,7 @@ from evidence_collector import (
     parse_collection_outcome,
 )
 from investigation_state import EndpointInvestigationState, summarize_investigation_state
-from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, FindingCollectionPlan, FindingRequirementVerification, verify_finding_collection_plan
+from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, finding_requirement_states, FindingCollectionPlan, FindingRequirementState, FindingRequirementVerification, verify_finding_collection_plan
 from models import Scan
 from scan_orchestration import DiscoveryResult
 
@@ -34,6 +34,7 @@ class InvestigationSnapshot:
     error: str | None
     finding_collection_plans: tuple[FindingCollectionPlan, ...] = ()
     finding_requirement_verifications: tuple[FindingRequirementVerification, ...] = ()
+    finding_requirement_states: tuple[FindingRequirementState, ...] = ()
 
 
 def build_investigation_snapshot(
@@ -82,15 +83,25 @@ def re_evaluate_investigation(
         analyze_scan(scan),
         explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
     )
-    resolved_finding_requirement_ids = {
-        verification.requirement.requirement_id
+    resolved_finding_requirement_keys = {
+        (
+            verification.requirement.requirement_id,
+            verification.requirement.host,
+            verification.requirement.port,
+            verification.requirement.protocol,
+        )
         for verification in prior_finding_requirement_verifications
         if verification.status in {"satisfied", "unsatisfied"}
     }
     dynamic_actions = tuple(
         action
         for plan in finding_plans
-        if plan.requirement.requirement_id not in resolved_finding_requirement_ids
+        if (
+            plan.requirement.requirement_id,
+            plan.requirement.host,
+            plan.requirement.port,
+            plan.requirement.protocol,
+        ) not in resolved_finding_requirement_keys
         and (action := evidence_action_for_finding_collection_plan(plan)) is not None
     )
     actions_by_command = {action.command: action for action in primary_actions}
@@ -106,6 +117,10 @@ def re_evaluate_investigation(
         error=None,
         finding_collection_plans=finding_plans,
         finding_requirement_verifications=prior_finding_requirement_verifications,
+        finding_requirement_states=finding_requirement_states(
+            finding_plans,
+            prior_finding_requirement_verifications,
+        ),
     )
 
 
@@ -184,6 +199,10 @@ def execute_selected_evidence_actions(
     updated_snapshot = replace(
         updated_snapshot,
         finding_requirement_verifications=finding_verifications,
+        finding_requirement_states=finding_requirement_states(
+            updated_snapshot.finding_collection_plans,
+            finding_verifications,
+        ),
     )
     return InvestigationContinuationResult(
         outcomes=outcomes,
