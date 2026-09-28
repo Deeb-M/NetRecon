@@ -1318,7 +1318,7 @@ class CliTests(unittest.TestCase):
             continuation, decision, None, None, (), (),
             final_snapshot=continuation.snapshot,
         )
-        build_explanation_mock.assert_called_once_with(continuation.snapshot)
+        build_explanation_mock.assert_called_once_with(continuation.snapshot, final_decision=None)
         render_explanation_mock.assert_called_once_with("explanation-model")
         self.assertEqual(
             output.getvalue().strip(),
@@ -1476,7 +1476,7 @@ class CliTests(unittest.TestCase):
             continuation, decision, None, None, (), (),
             final_snapshot=continuation.snapshot,
         )
-        build_explanation_mock.assert_called_once_with(continuation.snapshot)
+        build_explanation_mock.assert_called_once_with(continuation.snapshot, final_decision=None)
         render_explanation_json_mock.assert_called_once_with("explanation-model")
         payload = json.loads(output.getvalue())
         self.assertEqual(payload["report_type"], "investigation_continuation")
@@ -1689,6 +1689,7 @@ class CliTests(unittest.TestCase):
         )
 
 
+    @patch("netrecon.render_investigation_explanation", return_value="Investigation Explanation\n-------------------------\nKnown\nUnresolved\nBlocked\nNext")
     @patch("netrecon.build_investigation_explanation", return_value="explanation-model")
     @patch("netrecon.render_investigation_synthesis", return_value="Investigation Synthesis\nStatus: stalled")
     @patch("netrecon.build_investigation_synthesis", return_value="synthesis-result")
@@ -1719,6 +1720,7 @@ class CliTests(unittest.TestCase):
         synthesis_mock,
         render_synthesis_mock,
         build_explanation_mock,
+        render_explanation_mock,
     ) -> None:
         from evidence_action_plan import EvidenceAction
         from investigation_orchestration import (
