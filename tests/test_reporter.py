@@ -2131,6 +2131,53 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+    def test_investigation_memory_reports_finding_requirement_changes(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_memory import InvestigationMemory
+        from reporter import render_investigation_memory, render_investigation_memory_json
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.246",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement,
+            "pending_approval",
+            "explicit_approval_required",
+            (),
+        )
+        memory = InvestigationMemory(
+            False,
+            "stalled",
+            "stalled",
+            False,
+            "explicit_approval_required",
+            "explicit_approval_required",
+            0,
+            0,
+            (),
+            (),
+            (state,),
+            (),
+        )
+
+        text_report = render_investigation_memory(memory)
+        payload = json.loads(render_investigation_memory_json(memory))
+
+        self.assertIn("Added Finding Requirements: 1", text_report)
+        self.assertIn("smb_access_control_context", text_report)
+        self.assertEqual(payload["summary"]["added_finding_requirements"], 1)
+        self.assertEqual(
+            payload["added_finding_requirements"][0]["status"],
+            "pending_approval",
+        )
+
     def test_adaptive_investigation_plan_reporting_preserves_decision_and_action(self) -> None:
         action = EvidenceAction(
             "192.0.2.200", 5357, "tcp", ("http-headers",),
