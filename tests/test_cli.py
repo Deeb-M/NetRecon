@@ -2549,6 +2549,18 @@ class CliTests(unittest.TestCase):
         appended = append_mock.call_args.args[1]
         self.assertEqual(appended.target, "192.0.2.180")
         self.assertEqual(appended.synthesis, "current-synthesis")
+        self.assertIs(
+            final_decision_mock.call_args.args[0],
+            alternative_result,
+        )
+        self.assertIs(
+            synthesis_mock.call_args.args[0],
+            final_snapshot,
+        )
+        self.assertIs(
+            synthesis_mock.call_args.args[3],
+            final_decision,
+        )
 
 
 
