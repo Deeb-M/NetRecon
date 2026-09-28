@@ -24,7 +24,9 @@ Findings discovered by NetRecon in third-party systems are not vulnerabilities i
 
 ## Responsible use
 
-NetRecon is intended for analysis of Nmap XML produced from systems and networks you are authorized to test.
+NetRecon can passively analyze existing Nmap XML and can also invoke Nmap for bounded discovery and evidence collection. Any workflow that targets a live system or network must be used only within the scope of authorization you already have.
+
+NetRecon's requirement-scoped explicit approval controls whether certain supported collection actions may proceed inside the product. It is a workflow boundary, not a substitute for legal or organizational authorization to test the target.
 
 Do not use the project to access, test, or disclose information from systems without appropriate authorization.
 
