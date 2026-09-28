@@ -423,13 +423,22 @@ def assess_final_investigation_decision(
         return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), (), (), ())
 
     if not remaining_requirements:
+        # Alternative evidence can satisfy primary requirements without resolving
+        # an independent finding-derived requirement. Preserve that lifecycle.
+        if pending_approval_requirements:
+            status, reason = "stalled", "explicit_approval_required"
+        elif unsatisfied_finding_requirements:
+            status, reason = "stalled", "finding_requirement_unsatisfied"
+        else:
+            status, reason = "complete", "all_semantic_requirements_satisfied"
         return FinalInvestigationDecision(
-            status="complete",
-            reason="all_semantic_requirements_satisfied",
+            status=status,
+            reason=reason,
             remaining_gaps=remaining,
             further_actions=(),
             remaining_requirements=(),
             satisfied_requirements=satisfied_requirements_tuple,
+            remaining_finding_requirements=unresolved_finding_requirements,
         )
 
     if "collection_failed" in statuses:
