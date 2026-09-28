@@ -1418,6 +1418,8 @@ class CliTests(unittest.TestCase):
     @patch("netrecon.build_investigation_snapshot")
     @patch("netrecon.interpret_discovery_execution")
     @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_investigation_explanation", return_value="explanation-model")
+    @patch("netrecon.render_investigation_explanation_json", return_value='{"report_type":"investigation_explanation","known":[],"unresolved":[],"blocked":[],"next_actions":[]}' )
     @patch("netrecon.build_baseline_discovery_plan")
     def test_investigate_collect_json_renders_continuation_provenance(
         self,
@@ -1428,6 +1430,8 @@ class CliTests(unittest.TestCase):
         execute_evidence_mock,
         decision_mock,
         render_json_mock,
+        render_explanation_json_mock,
+        build_explanation_mock,
     ) -> None:
         from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
         from models import Scan
@@ -1472,7 +1476,14 @@ class CliTests(unittest.TestCase):
             continuation, decision, None, None, (), (),
             final_snapshot=continuation.snapshot,
         )
-        self.assertEqual(output.getvalue().strip(), '{"report_type":"investigation_continuation"}')
+        build_explanation_mock.assert_called_once_with(continuation.snapshot)
+        render_explanation_json_mock.assert_called_once_with("explanation-model")
+        payload = json.loads(output.getvalue())
+        self.assertEqual(payload["report_type"], "investigation_continuation")
+        self.assertEqual(
+            payload["investigation_explanation"]["report_type"],
+            "investigation_explanation",
+        )
 
 
     @patch("netrecon.execute_approved_evidence_actions")
