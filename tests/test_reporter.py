@@ -2167,6 +2167,37 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(memory.added_finding_requirements, (state,))
         self.assertEqual(memory.resolved_finding_requirements, ())
 
+    def test_compare_investigation_syntheses_tracks_finding_requirement_resolution(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_memory import compare_investigation_syntheses
+        from investigation_synthesis import InvestigationSynthesis
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.248",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement,
+            "pending_approval",
+            "explicit_approval_required",
+            (),
+        )
+        previous = InvestigationSynthesis(
+            "stalled", "explicit_approval_required", 0, 0, (), (state,)
+        )
+        current = InvestigationSynthesis("complete", "all_gaps_resolved", 0, 0, ())
+
+        memory = compare_investigation_syntheses(previous, current)
+
+        self.assertEqual(memory.added_finding_requirements, ())
+        self.assertEqual(memory.resolved_finding_requirements, (state,))
+
     def test_investigation_memory_reports_finding_requirement_changes(self) -> None:
         from finding_collection_planner import FindingRequirementState
         from finding_requirements import FindingDerivedRequirement
