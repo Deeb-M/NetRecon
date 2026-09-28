@@ -11,3 +11,6 @@ dist/
 
 # Local Nmap/XML scan artifacts
 /*.xml
+
+# Local investigation history/state artifacts
+/investigation-history*.jsonl
