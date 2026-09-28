@@ -380,11 +380,26 @@ def assess_final_investigation_decision(
     remaining_requirements = tuple(requirements)
     satisfied_requirements_tuple = tuple(satisfied_requirements)
     statuses = {verification.status for verification in alternative_round.verifications}
+    pending_approval_requirements = tuple(
+        state
+        for state in alternative_round.snapshot.finding_requirement_states
+        if state.status == "pending_approval"
+    )
     unsatisfied_finding_requirements = tuple(
         state
         for state in alternative_round.snapshot.finding_requirement_states
         if state.status == "attempted_unsatisfied"
     )
+
+    if not remaining and pending_approval_requirements:
+        return FinalInvestigationDecision(
+            "stalled",
+            "explicit_approval_required",
+            (),
+            (),
+            (),
+            (),
+        )
 
     if not remaining and unsatisfied_finding_requirements:
         return FinalInvestigationDecision(
