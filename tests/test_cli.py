@@ -2966,6 +2966,14 @@ class CliTests(unittest.TestCase):
             decision,
         )
         self.assertEqual(assess_continuation_mock.call_count, 1)
+        self.assertIs(
+            assess_continuation_mock.call_args.args[0],
+            snapshot,
+        )
+        self.assertIs(
+            assess_continuation_mock.call_args.args[1],
+            updated,
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
