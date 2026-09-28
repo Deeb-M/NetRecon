@@ -1871,6 +1871,47 @@ class CliTests(unittest.TestCase):
         self.assertEqual(restored.schema_version, 2)
         self.assertEqual(restored.synthesis.remaining_finding_requirements, (state,))
 
+    def test_investigation_history_v2_round_trip_preserves_unsatisfied_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_history import (
+            InvestigationHistoryRecord,
+            parse_investigation_history_record_json,
+            render_investigation_history_record_json,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context", "192.0.2.253", 445, "tcp",
+            "review SMB access controls", "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement,
+            "attempted_unsatisfied",
+            "explicitly_approved",
+            ("smb-enum-shares",),
+        )
+        original = InvestigationHistoryRecord(
+            124,
+            "192.0.2.253",
+            InvestigationSynthesis(
+                "stalled",
+                "finding_requirement_unsatisfied",
+                1,
+                0,
+                (),
+                (state,),
+            ),
+        )
+
+        restored = parse_investigation_history_record_json(
+            render_investigation_history_record_json(original)
+        )
+
+        self.assertEqual(restored.schema_version, 2)
+        self.assertEqual(restored.synthesis.remaining_finding_requirements, (state,))
+
     def test_investigation_history_rejects_unknown_schema_version(self) -> None:
         import json
         from investigation_history import parse_investigation_history_record_json
