@@ -3900,6 +3900,11 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         )
         self.assertEqual(final.status, "stalled")
         self.assertEqual(final.reason, "adaptive_round_limit_reached")
+        self.assertEqual(final.remaining_gaps, ())
+        self.assertEqual(final.further_actions, ())
+        self.assertEqual(final.remaining_requirements, ())
+        self.assertEqual(final.satisfied_requirements, ())
+        self.assertEqual(final.remaining_finding_requirements, ())
 
     def test_finalize_rejects_progressed_continuation_without_stop_reason(self) -> None:
         decision = InvestigationContinuationDecision("progressed", (), (), ())
