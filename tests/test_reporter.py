@@ -2233,6 +2233,49 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(memory.resolved_finding_requirements, ())
         self.assertEqual(memory.changed_finding_requirements, ((pending, attempted),))
 
+    def test_history_round_trip_finding_lifecycle_feeds_investigation_memory(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_history import (
+            InvestigationHistoryRecord,
+            parse_investigation_history_record_json,
+            render_investigation_history_record_json,
+        )
+        from investigation_memory import compare_investigation_syntheses
+        from investigation_synthesis import InvestigationSynthesis
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context", "192.0.2.254", 445, "tcp",
+            "review SMB access controls", "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        pending = FindingRequirementState(
+            requirement, "pending_approval", "explicit_approval_required", ()
+        )
+        attempted = FindingRequirementState(
+            requirement, "attempted_unsatisfied", "explicitly_approved",
+            ("smb-enum-shares",),
+        )
+        previous = InvestigationHistoryRecord(
+            100,
+            "192.0.2.254",
+            InvestigationSynthesis(
+                "stalled", "explicit_approval_required", 0, 0, (), (pending,)
+            ),
+        )
+        restored = parse_investigation_history_record_json(
+            render_investigation_history_record_json(previous)
+        )
+        current = InvestigationSynthesis(
+            "stalled", "finding_requirement_unsatisfied", 0, 0, (), (attempted,)
+        )
+
+        memory = compare_investigation_syntheses(restored.synthesis, current)
+
+        self.assertEqual(memory.added_finding_requirements, ())
+        self.assertEqual(memory.resolved_finding_requirements, ())
+        self.assertEqual(memory.changed_finding_requirements, ((pending, attempted),))
+
     def test_investigation_memory_renders_finding_requirement_lifecycle_change(self) -> None:
         from finding_collection_planner import FindingRequirementState
         from finding_requirements import FindingDerivedRequirement
