@@ -3209,6 +3209,14 @@ class CliTests(unittest.TestCase):
             assess_continuation_mock.call_args_list[-1].kwargs["attempted_actions"],
             (initial_action,) + (next_action,) * 8,
         )
+        self.assertEqual(
+            render_mock.call_args.args[3].remaining_gaps,
+            assess_continuation_mock.return_value.remaining_gaps,
+        )
+        self.assertEqual(
+            render_mock.call_args.args[3].remaining_finding_requirements,
+            assess_continuation_mock.return_value.remaining_finding_requirements,
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
