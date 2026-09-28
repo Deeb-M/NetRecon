@@ -2131,3 +2131,36 @@ Field-validated final explanation included:
 Design note: `Adaptive Investigation Plan` currently reports the adaptive decision that existed before the bounded alternative round, so in the final combined text it can still display the already-executed `http-headers` alternative. `Final Investigation Decision` and `Investigation Explanation` represent the later/final state. This is a presentation/time-context distinction, not permission to re-run the action. If the CLI is later simplified, label or placement can make this temporal distinction clearer without changing reasoning semantics.
 
 Milestone: **INVESTIGATION EXPLANATION — KNOWN / UNRESOLVED / BLOCKED / NEXT — FIELD VALIDATED**.
+
+
+## Handoff — 2026-09-28 — Controller canonical finalization closure
+
+Current verified baseline:
+- Test suite: 799 tests.
+- Latest CI-confirmed commit: `28622e87e1f27a92a6096f966de76cbfa09d2fff` (`Assert stop override returns canonical projection`).
+- User reported CI green for that commit.
+- The next attempted edit did NOT commit: an anchor lookup failed while trying to add a distinct-canonical-projection assertion to the explicit-approval finalization test. Repository state therefore remains at `28622e8...`.
+
+Recent closure sequence, all CI green unless explicitly noted:
+- `60aeaef` Assert unsatisfied source decision remains immutable.
+- `3829b998` Assert alternative terminal status contract.
+- `dfca342c` Assert stop override leaves source continuation immutable.
+- `0045c033` Assert rejected finalization leaves continuation untouched.
+- `9246dbc6` Assert finalizer returns distinct canonical decision (complete path).
+- `3db5ddac` Assert stalled finalization returns canonical projection.
+- `28622e87` Assert stop override returns canonical projection.
+
+Important continuation point:
+- Continue Controller/E2E closure autonomously.
+- Inspect the actual current test text before patching; do not assume an anchor.
+- Natural next target: explicit-approval and attempted-unsatisfied finding finalization should also prove that finalization returns a distinct canonical `FinalInvestigationDecision` while preserving source lifecycle identity/immutability.
+- Do not guess `EvidenceRequirement` fields. Known valid fields used by tests: `requirement_id`, `purpose`. Previous guesses `script_ids` and `primary_script_id` caused CI failures and were removed.
+- Keep the controller bounded/deterministic and preserve the canonical flow: Discover -> Analyze -> Gap -> Plan -> Authorize -> Collect -> Verify -> Re-plan -> STOP.
+
+User workflow:
+- Work directly in GitHub; user should not be asked to commit/push.
+- Ask user only for CI green/red confirmation or when a genuine Kali field test is required.
+- If green, continue automatically without summaries.
+- If red, inspect GitHub Actions/logs, fix, push, then ask only green/red.
+- No Codex.
+- Operational responses should be very short and in Hebrew.
