@@ -3877,6 +3877,15 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.status, "stalled")
         self.assertEqual(final.reason, "adaptive_round_limit_reached")
 
+    def test_finalize_rejects_progressed_continuation_without_stop_reason(self) -> None:
+        decision = InvestigationContinuationDecision("progressed", (), (), ())
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot finalize a non-terminal continuation decision",
+        ):
+            finalize_continuation_decision(decision)
+
 
 if __name__ == "__main__":
     unittest.main()
