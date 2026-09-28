@@ -1249,6 +1249,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(args.investigate_collect, "192.0.2.10")
 
+    @patch("netrecon.build_investigation_explanation", return_value="explanation-model")
+    @patch("netrecon.render_investigation_explanation", return_value="Investigation Explanation")
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
     @patch("netrecon.assess_investigation_continuation")
     @patch("netrecon.execute_approved_evidence_actions")
@@ -1265,6 +1267,8 @@ class CliTests(unittest.TestCase):
         execute_evidence_mock,
         decision_mock,
         render_mock,
+        render_explanation_mock,
+        build_explanation_mock,
     ) -> None:
         from investigation_orchestration import (
             InvestigationContinuationResult,
@@ -1314,7 +1318,12 @@ class CliTests(unittest.TestCase):
             continuation, decision, None, None, (), (),
             final_snapshot=continuation.snapshot,
         )
-        self.assertEqual(output.getvalue().strip(), "Investigation continuation")
+        build_explanation_mock.assert_called_once_with(continuation.snapshot)
+        render_explanation_mock.assert_called_once_with("explanation-model")
+        self.assertEqual(
+            output.getvalue().strip(),
+            "Investigation continuation\n\nInvestigation Explanation",
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
