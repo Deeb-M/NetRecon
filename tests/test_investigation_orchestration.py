@@ -3202,6 +3202,66 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.stall_reason, "finding_requirement_unsatisfied")
 
+    def test_continuation_can_complete_with_satisfied_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementVerification
+        from investigation_orchestration import (
+            assess_investigation_continuation,
+            re_evaluate_investigation,
+        )
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.134",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        verification = FindingRequirementVerification(
+            requirement,
+            "satisfied",
+            ("smb-enum-shares",),
+        )
+        scan = Scan(
+            source="discovery.xml",
+            hosts=(Host(
+                address="192.0.2.134",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    service="microsoft-ds",
+                    scripts=(
+                        ScriptResult(
+                            "smb2-security-mode",
+                            "Message signing enabled but not required",
+                        ),
+                        ScriptResult("smb-enum-shares", "account_used: guest"),
+                    ),
+                ),),
+            ),),
+        )
+        before = re_evaluate_investigation(
+            scan,
+            (),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+            prior_finding_requirement_verifications=(verification,),
+        )
+        after = re_evaluate_investigation(
+            scan,
+            (),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+            prior_finding_requirement_verifications=(verification,),
+        )
+
+        decision = assess_investigation_continuation(before, after)
+
+        self.assertEqual(decision.status, "complete")
+        self.assertIsNone(decision.stall_reason)
+        self.assertEqual(decision.next_actions, ())
+
     def test_finding_requirement_verification_requires_nonempty_requested_evidence(self) -> None:
         requirement = FindingDerivedRequirement(
             requirement_id="smb_access_control_context",
