@@ -3385,14 +3385,20 @@ class CliTests(unittest.TestCase):
     def test_approve_requirement_requires_investigate_collect(self) -> None:
         from netrecon import main
 
+        stderr = StringIO()
         with patch(
             "sys.argv",
             ["netrecon", "--approve-requirement", "smb_access_control_context"],
         ):
-            with self.assertRaises(SystemExit) as raised:
-                main()
+            with redirect_stderr(stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    main()
 
         self.assertEqual(raised.exception.code, 2)
+        self.assertIn(
+            "--approve-requirement requires --investigate-collect",
+            stderr.getvalue(),
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Dynamic continue")
