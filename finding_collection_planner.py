@@ -139,3 +139,14 @@ def verify_finding_collection_plan(
         status=status,
         observed_script_ids=tuple(observed),
     )
+
+
+def unsatisfied_finding_requirements(
+    verifications: tuple[FindingRequirementVerification, ...],
+) -> tuple[FindingRequirementVerification, ...]:
+    """Return attempted finding-derived requirements whose requested evidence was not observed."""
+    return tuple(
+        verification
+        for verification in verifications
+        if verification.status == "unsatisfied"
+    )
