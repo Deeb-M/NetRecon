@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from investigation_explanation import InvestigationExplanation
 from dataclasses import asdict
 from datetime import datetime, timezone
 import json
@@ -185,6 +186,23 @@ def render_investigation_memory_json(memory: InvestigationMemory) -> str:
         indent=2,
         ensure_ascii=False,
     )
+
+
+def render_investigation_explanation(explanation: InvestigationExplanation) -> str:
+    """Render a factual explanation of current investigation state."""
+    lines = [
+        "Investigation Explanation",
+        "-------------------------",
+        "Known",
+    ]
+    lines.extend(f"- {item}" for item in explanation.known)
+    lines.append("Unresolved")
+    lines.extend(f"- {item}" for item in explanation.unresolved)
+    lines.append("Blocked")
+    lines.extend(f"- {item}" for item in explanation.blocked)
+    lines.append("Next")
+    lines.extend(f"- {item}" for item in explanation.next_actions)
+    return "\n".join(lines)
 
 
 def render_investigation_synthesis(synthesis: InvestigationSynthesis) -> str:
