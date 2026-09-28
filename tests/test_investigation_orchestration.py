@@ -1092,6 +1092,46 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "explicit_approval_required")
 
+    def test_final_decision_can_complete_with_satisfied_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from models import Scan
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.137",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement=requirement,
+            status="satisfied",
+            authorization_reason="explicitly_approved",
+            observed_script_ids=("smb-enum-shares",),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_requirement_states=(state,),
+        )
+        round_result = AlternativeEvidenceRoundResult((), (), snapshot)
+
+        decision = assess_final_investigation_decision(round_result)
+
+        self.assertEqual(decision.status, "complete")
+        self.assertEqual(decision.reason, "all_gaps_resolved")
+
     def test_final_decision_exposes_distinct_remaining_semantic_requirements(self) -> None:
         from investigation_orchestration import (
             AlternativeEvidenceRoundResult,
