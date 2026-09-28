@@ -67,6 +67,10 @@ To test the latest development version instead, clone the repository and remain 
 
 The installed CLI can then be invoked as `netrecon`.
 
+## User guide
+
+For a workflow-oriented guide covering XML analysis, comparisons, evidence planning, bounded investigation, explicit approval, history/memory, exit behavior, and troubleshooting, see [USER_GUIDE.md](USER_GUIDE.md).
+
 ## Quick start
 
 Generate XML with Nmap on a system or network you are authorized to test:
