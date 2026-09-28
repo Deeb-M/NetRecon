@@ -3066,6 +3066,90 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             tuple(action.script_ids for action in result.snapshot.actions),
         )
 
+    @patch("investigation_orchestration.execute_nmap_command")
+    def test_current_verification_replaces_prior_same_requirement_identity(
+        self,
+        execute_mock,
+    ) -> None:
+        from evidence_collector import CollectionResult, NmapCommand
+        from finding_collection_planner import FindingRequirementVerification
+        from investigation_orchestration import execute_selected_evidence_actions
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.132",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        prior = FindingRequirementVerification(requirement, "unsatisfied", ())
+        scan = Scan(
+            source="discovery.xml",
+            hosts=(Host(
+                address="192.0.2.132",
+                status="up",
+                ports=(Port(
+                    port=445,
+                    protocol="tcp",
+                    state="open",
+                    service="microsoft-ds",
+                    scripts=(ScriptResult(
+                        "smb2-security-mode",
+                        "Message signing enabled but not required",
+                    ),),
+                ),),
+            ),),
+        )
+        snapshot = re_evaluate_investigation(
+            scan,
+            (),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )
+        dynamic = next(
+            action
+            for action in snapshot.actions
+            if action.script_ids == ("smb-enum-shares",)
+        )
+        snapshot = replace(
+            snapshot,
+            finding_requirement_verifications=(prior,),
+        )
+        execute_mock.return_value = CollectionResult(
+            command=NmapCommand(arguments=dynamic.command),
+            returncode=0,
+            stdout=(
+                '<nmaprun><host><status state="up"/>'
+                '<address addr="192.0.2.132" addrtype="ipv4"/>'
+                '<ports><port protocol="tcp" portid="445"><state state="open"/>'
+                '<script id="smb-enum-shares" output="account_used: guest"/>'
+                '</port></ports></host><runstats><finished time="0"/>'
+                '<hosts up="1" down="0" total="1"/></runstats></nmaprun>'
+            ),
+            stderr="",
+        )
+
+        result = execute_selected_evidence_actions(
+            snapshot,
+            (dynamic,),
+            explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
+        )
+
+        matching = tuple(
+            verification
+            for verification in result.snapshot.finding_requirement_verifications
+            if (
+                verification.requirement.requirement_id,
+                verification.requirement.host,
+                verification.requirement.port,
+                verification.requirement.protocol,
+            ) == ("smb_access_control_context", "192.0.2.132", 445, "tcp")
+        )
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(matching[0].status, "satisfied")
+        self.assertEqual(matching[0].observed_script_ids, ("smb-enum-shares",))
+
     def test_finding_requirement_verification_requires_nonempty_requested_evidence(self) -> None:
         requirement = FindingDerivedRequirement(
             requirement_id="smb_access_control_context",
