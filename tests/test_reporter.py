@@ -1989,6 +1989,7 @@ class ReporterTests(unittest.TestCase):
                 "attention_items": 4,
                 "correlated_review_groups": 1,
                 "remaining_requirements": 1,
+                "remaining_finding_requirements": 0,
             },
         )
         self.assertEqual(
