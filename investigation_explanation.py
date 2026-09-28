@@ -25,6 +25,13 @@ def build_investigation_explanation(
     unresolved: list[str] = []
     blocked: list[str] = []
 
+    for state in snapshot.states:
+        endpoint = f"{state.host}:{state.port}/{state.protocol}"
+        for fact in state.known:
+            known_item = f"{endpoint} {fact}"
+            if known_item not in known:
+                known.append(known_item)
+
     for gap in snapshot.gaps:
         unresolved.append(
             f"{gap.host}:{gap.port}/{gap.protocol} "
