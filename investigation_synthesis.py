@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from analyst_attention import AnalystAttentionCorrelation, AnalystAttentionItem
 from evidence_gaps import EvidenceRequirementState
+from finding_collection_planner import FindingRequirementState
 from investigation_orchestration import FinalInvestigationDecision
 
 
@@ -18,6 +19,7 @@ class InvestigationSynthesis:
     attention_items: int
     correlated_review_groups: int
     remaining_requirements: tuple[EvidenceRequirementState, ...]
+    remaining_finding_requirements: tuple[FindingRequirementState, ...] = ()
 
 
 def build_investigation_synthesis(
@@ -32,4 +34,5 @@ def build_investigation_synthesis(
         attention_items=len(attention),
         correlated_review_groups=len(correlations),
         remaining_requirements=final_decision.remaining_requirements,
+        remaining_finding_requirements=final_decision.remaining_finding_requirements,
     )
