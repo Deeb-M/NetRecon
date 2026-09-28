@@ -150,3 +150,66 @@ def unsatisfied_finding_requirements(
         for verification in verifications
         if verification.status == "unsatisfied"
     )
+
+
+@dataclass(frozen=True)
+class FindingRequirementState:
+    """Lifecycle projection for one finding-derived evidence requirement."""
+
+    requirement: FindingDerivedRequirement
+    status: str
+    authorization_reason: str
+    observed_script_ids: tuple[str, ...] = ()
+
+
+def finding_requirement_states(
+    plans: tuple[FindingCollectionPlan, ...],
+    verifications: tuple[FindingRequirementVerification, ...] = (),
+) -> tuple[FindingRequirementState, ...]:
+    """Project plans plus execution verification into explicit lifecycle states."""
+    verification_by_key = {
+        (
+            verification.requirement.requirement_id,
+            verification.requirement.host,
+            verification.requirement.port,
+            verification.requirement.protocol,
+        ): verification
+        for verification in verifications
+    }
+    states: list[FindingRequirementState] = []
+    for plan in plans:
+        requirement = plan.requirement
+        key = (
+            requirement.requirement_id,
+            requirement.host,
+            requirement.port,
+            requirement.protocol,
+        )
+        verification = verification_by_key.get(key)
+        if verification is not None:
+            status = (
+                "satisfied"
+                if verification.status == "satisfied"
+                else "attempted_unsatisfied"
+            )
+            observed_script_ids = verification.observed_script_ids
+        elif (
+            not plan.authorization.allowed
+            and plan.authorization.reason == "explicit_approval_required"
+        ):
+            status = "pending_approval"
+            observed_script_ids = ()
+        elif plan.authorization.allowed:
+            status = "authorized_pending"
+            observed_script_ids = ()
+        else:
+            continue
+        states.append(
+            FindingRequirementState(
+                requirement=requirement,
+                status=status,
+                authorization_reason=plan.authorization.reason,
+                observed_script_ids=observed_script_ids,
+            )
+        )
+    return tuple(states)
