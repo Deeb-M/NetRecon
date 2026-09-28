@@ -218,6 +218,14 @@ Include the adaptive decision trail when reviewing why NetRecon continued, tried
 netrecon --investigate-collect <authorized-target> --adaptive-plan
 ```
 
+When a report exposes a finding-derived requirement as `Pending Approval`, authorize only that explicit requirement ID on a subsequent bounded collection run:
+
+```bash
+netrecon --investigate-collect <authorized-target> --approve-requirement <requirement-id>
+```
+
+Approval is requirement-scoped, not a blanket authorization. NetRecon executes only collection already supported for that approved requirement, verifies the resulting evidence, records the lifecycle outcome, and does not silently retry an attempted-unsatisfied requirement.
+
 Use `--format json` for machine-readable output. A completed command can end with either a complete or stalled investigation; a stalled result is a valid bounded outcome, not a claim that the target is safe or that evidence was resolved. Explicit-approval requirements remain blocked until approved, attempted-but-unsatisfied requirements are not silently retried, and the final report preserves the terminal decision, explanation, synthesis, evidence provenance, and remaining requirement lifecycle.
 
 Persist completed investigation syntheses in an append-only local history and compare the current terminal synthesis with prior runs:
