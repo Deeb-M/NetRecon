@@ -2555,11 +2555,15 @@ class CliTests(unittest.TestCase):
         )
         self.assertIs(
             synthesis_mock.call_args.args[0],
-            final_snapshot,
-        )
-        self.assertIs(
-            synthesis_mock.call_args.args[3],
             final_decision,
+        )
+        self.assertEqual(
+            synthesis_mock.call_args.args[1],
+            (),
+        )
+        self.assertEqual(
+            synthesis_mock.call_args.args[2],
+            (),
         )
 
 
