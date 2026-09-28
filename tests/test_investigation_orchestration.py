@@ -3772,6 +3772,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         final = finalize_continuation_decision(decision)
 
+        self.assertIsNot(final, decision)
         self.assertEqual(len(final.remaining_requirements), 1)
         self.assertEqual(
             final.remaining_requirements[0].requirement.requirement_id,
