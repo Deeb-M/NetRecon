@@ -3887,6 +3887,14 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "alternative_evidence_incomplete")
+        self.assertEqual(decision.remaining_gaps, (gap,))
+        self.assertEqual(decision.further_actions, ())
+        self.assertEqual(len(decision.remaining_requirements), 1)
+        self.assertEqual(
+            decision.remaining_requirements[0].requirement.requirement_id,
+            "http_identity_context",
+        )
+        self.assertEqual(decision.satisfied_requirements, ())
         self.assertEqual(decision.remaining_finding_requirements, (pending,))
         self.assertEqual(
             tuple(state.status for state in decision.remaining_finding_requirements),
