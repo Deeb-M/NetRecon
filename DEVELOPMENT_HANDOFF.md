@@ -1,6 +1,6 @@
 # NetRecon Development Handoff
 
-Last updated: 2026-09-26
+Last updated: 2026-09-28
 Repository: Deeb-M/NetRecon
 Branch: main
 
@@ -2164,3 +2164,29 @@ User workflow:
 - If red, inspect GitHub Actions/logs, fix, push, then ask only green/red.
 - No Codex.
 - Operational responses should be very short and in Hebrew.
+
+
+## Controller closure checkpoint — 2026-09-28
+
+The bounded investigation Controller/final-decision contract has now been hardened through the alternative-evidence and finding-derived requirement paths.
+
+Latest verified local regression baseline:
+
+```text
+Ran 801 tests in 0.382s
+
+OK
+```
+
+Current main checkpoint: `74858079273f55302f61a8b2057b3be0427b253e`.
+
+Verified invariants include:
+- finalization returns a distinct canonical `FinalInvestigationDecision` projection rather than mutating/returning the source continuation object;
+- source continuation state remains unchanged across complete, stalled, stop-override, pending-approval, and attempted-unsatisfied finalization paths;
+- alternative evidence that semantically satisfies a primary requirement does not erase independent finding-derived lifecycle state;
+- `pending_approval` still stalls with `explicit_approval_required`;
+- `attempted_unsatisfied` still stalls with `finding_requirement_unsatisfied`;
+- primary semantic requirements satisfied by alternative evidence are recorded in `satisfied_requirements` while unresolved finding requirements remain explicit;
+- final decisions expose no further action after the bounded terminal round.
+
+This closes the current Controller contract-hardening slice. Do not continue adding micro-tests to this area merely to increase coverage. The next development work should move outward to end-to-end product completion/field behavior unless a concrete Controller regression is discovered.
