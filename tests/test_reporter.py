@@ -1711,6 +1711,51 @@ class ReporterTests(unittest.TestCase):
 
 
 
+    def test_final_decision_text_preserves_remaining_finding_lifecycle(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import render_investigation_continuation
+
+        finding_state = FindingRequirementState(
+            FindingDerivedRequirement(
+                "smb_access_control_context",
+                "192.0.2.115",
+                445,
+                "tcp",
+                "review SMB access controls",
+                "smb.signing.review",
+                "nse:smb2-security-mode",
+            ),
+            "pending_approval",
+            "explicit_approval_required",
+        )
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (), (), (), None)
+        final = FinalInvestigationDecision(
+            status="stalled",
+            reason="explicit_approval_required",
+            remaining_gaps=(),
+            remaining_finding_requirements=(finding_state,),
+        )
+
+        report = render_investigation_continuation(
+            InvestigationContinuationResult((), snapshot), None, None, final
+        )
+
+        self.assertIn("Remaining Finding Requirements: 1", report)
+        self.assertIn(
+            "Finding Requirement: 192.0.2.115:445/tcp  "
+            "smb_access_control_context — review SMB access controls "
+            "[pending_approval]",
+            report,
+        )
+
+
     def test_continuation_report_exposes_resolved_semantic_requirement(self) -> None:
         from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
         from investigation_orchestration import (
