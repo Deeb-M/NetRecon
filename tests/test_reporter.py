@@ -913,6 +913,51 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Risk: intrusive", report)
         self.assertIn("Authorization: explicit approval required", report)
 
+    def test_renders_approval_blocked_requirement_in_snapshot_json(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        plan = FindingCollectionPlan(
+            requirement=requirement,
+            strategy=RequirementCollectionStrategy(
+                requirement_id="smb_access_control_context",
+                status="supported",
+                script_ids=("smb-enum-shares",),
+                risk_class="intrusive",
+                authorization="requires_approval",
+            ),
+            authorization=CollectionAuthorizationDecision(
+                allowed=False,
+                reason="explicit_approval_required",
+            ),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml"),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_collection_plans=(plan,),
+        )
+
+        payload = json.loads(render_investigation_snapshot_json(snapshot))
+
+        self.assertEqual(payload["summary"]["pending_approvals"], 1)
+        self.assertEqual(len(payload["pending_approvals"]), 1)
+        pending = payload["pending_approvals"][0]
+        self.assertEqual(pending["requirement_id"], "smb_access_control_context")
+        self.assertEqual(pending["finding_id"], "smb.signing.review")
+        self.assertEqual(pending["script_ids"], ["smb-enum-shares"])
+        self.assertEqual(pending["risk_class"], "intrusive")
+        self.assertEqual(pending["reason"], "explicit_approval_required")
+
     def test_renders_blocked_investigation_snapshot_without_actions(self) -> None:
         snapshot = InvestigationSnapshot(
             ready=False,
@@ -962,7 +1007,12 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(payload["status"], "ready")
         self.assertEqual(
             payload["summary"],
-            {"evidence_gaps": 1, "proposed_actions": 1, "investigation_states": 0},
+            {
+                "evidence_gaps": 1,
+                "proposed_actions": 1,
+                "investigation_states": 0,
+                "pending_approvals": 0,
+            },
         )
         self.assertEqual(payload["error"], None)
         self.assertEqual(payload["gaps"][0]["script_id"], "smb-protocols")
