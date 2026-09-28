@@ -59,7 +59,6 @@ def build_investigation_snapshot(
         actions=build_evidence_action_plan(discovery.scan),
         states=summarize_investigation_state(discovery.scan),
         error=None,
-        finding_collection_plans=build_finding_collection_plans(analyze_scan(discovery.scan)),
     )
 
 
