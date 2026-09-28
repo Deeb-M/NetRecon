@@ -2223,3 +2223,15 @@ Relevant E2E commit sequence:
 Important correction to the older Investigation Explanation handoff above: its note that Adaptive Investigation Plan may display a pre-alternative action is historical. That presentation gap has now been fixed; final adaptive reporting is terminal and action-free.
 
 Next development direction: continue product-level E2E completion and field behavior. Do not reopen Controller micro-test expansion unless a concrete regression appears. A deliberate Kali field validation should be requested only when behavior cannot be validated meaningfully in CI.
+
+
+## Field E2E validation — 2026-09-28
+
+Validated against the controlled Windows lab target `192.168.227.138` using the installed Kali CLI.
+
+- `netrecon --investigate-collect 192.168.227.138 --adaptive-plan` completed as a bounded investigation: SMB primary evidence was observed, HTTP primary evidence remained incomplete, one supported `http-headers` alternative was attempted, and the terminal adaptive projection correctly reported `stop / alternative_evidence_incomplete` with zero actions.
+- The final text decision now preserves the pending `smb_access_control_context` finding lifecycle; no `smb-enum-shares` collection occurred without explicit approval.
+- `--investigation-history investigation-history.jsonl` exposed a real backward-compatibility gap: pre-versioning records had no `schema_version`. The loader now treats an absent version as legacy v1 while still rejecting explicitly unsupported versions.
+- Re-running the real investigation with the legacy history file succeeded. A new v2 synthesis record was appended and Investigation Memory compared the legacy and current states. The first v2 comparison correctly reported the SMB finding requirement as added because legacy history did not preserve finding lifecycle data.
+
+These field checks validate the current bounded collect, terminal reporting, finding authorization/lifecycle, legacy-history compatibility, persistence, and memory-comparison path end to end. Do not reopen these paths for speculative micro-tests without a concrete regression or new product requirement.
