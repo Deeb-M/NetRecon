@@ -3827,8 +3827,8 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             AlternativeEvidenceRoundResult,
             InvestigationSnapshot,
             assess_final_investigation_decision,
+            AlternativeEvidenceVerification,
         )
-        from alternative_evidence import AlternativeEvidenceVerification
 
         gap = EvidenceGap(
             "192.0.2.254", 5357, "tcp", "http-title",
@@ -3854,7 +3854,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             actions=(action,),
             finding_requirement_states=(pending,),
         )
-        verification = AlternativeEvidenceVerification(action, "incomplete", ())
+        verification = AlternativeEvidenceVerification("incomplete", action, ())
         result = AlternativeEvidenceRoundResult((), (verification,), snapshot)
 
         decision = assess_final_investigation_decision(result)
