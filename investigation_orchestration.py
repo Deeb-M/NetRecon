@@ -319,7 +319,7 @@ def execute_alternative_evidence_round(
 
 @dataclass(frozen=True)
 class FinalInvestigationDecision:
-    """Terminal decision after a bounded alternative evidence round."""
+    """Canonical terminal decision for a bounded investigation."""
 
     status: str
     reason: str
