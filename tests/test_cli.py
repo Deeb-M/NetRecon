@@ -3491,6 +3491,11 @@ class CliTests(unittest.TestCase):
             decision_mock.call_args_list[1].args[1],
             final,
         )
+        self.assertIs(render_mock.call_args.args[1], complete)
+        self.assertIs(render_mock.call_args.kwargs["final_snapshot"], final)
+        self.assertEqual(render_mock.call_args.args[3].status, "complete")
+        self.assertEqual(render_mock.call_args.args[3].reason, "all_gaps_resolved")
+        self.assertIsNone(render_mock.call_args.args[2])
 
 
 if __name__ == "__main__":
