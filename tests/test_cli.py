@@ -24,7 +24,12 @@ class CliTests(unittest.TestCase):
                 parser.parse_args(["--version"])
 
         self.assertEqual(context.exception.code, 0)
-        self.assertEqual(output.getvalue().strip(), "netrecon 0.1.0")
+        from importlib.metadata import version
+
+        self.assertEqual(
+            output.getvalue().strip(),
+            f"netrecon {version('netrecon')}",
+        )
 
     def test_help_describes_analysis_investigation_and_comparison_modes(self) -> None:
         parser = build_parser()
