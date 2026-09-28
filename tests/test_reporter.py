@@ -21,7 +21,7 @@ from evidence_collector import (
 )
 from models import Host, Port, Scan, ScriptResult
 from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
-from reporter import render_investigation_explanation, render_investigation_explanation_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_dynamic_evidence_round
+from reporter import render_investigation_explanation, render_investigation_explanation_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_dynamic_evidence_round, render_dynamic_evidence_rounds, render_dynamic_evidence_rounds_json
 
 
 class ReporterTests(unittest.TestCase):
@@ -2144,6 +2144,30 @@ class ReporterTests(unittest.TestCase):
         )
         self.assertIn("Collection Status: success", report)
         self.assertIn("Return Code: 0", report)
+
+    def test_renders_all_dynamic_evidence_rounds_in_order(self) -> None:
+        first_command = NmapCommand(("nmap", "-p", "80", "--script", "http-title", "-oX", "-", "192.0.2.138"))
+        second_command = NmapCommand(("nmap", "-p", "443", "--script", "ssl-cert", "-oX", "-", "192.0.2.138"))
+        snapshot = InvestigationSnapshot(True, Scan(source="updated.xml"), (), (), (), None)
+        first = InvestigationContinuationResult(
+            outcomes=(ParsedCollectionResult(CollectionResult(first_command, 0, "<nmaprun />", ""), Scan(source="first")),),
+            snapshot=snapshot,
+        )
+        second = InvestigationContinuationResult(
+            outcomes=(ParsedCollectionResult(CollectionResult(second_command, 0, "<nmaprun />", ""), Scan(source="second")),),
+            snapshot=snapshot,
+        )
+
+        report = render_dynamic_evidence_rounds((first, second))
+        payload = render_dynamic_evidence_rounds_json((first, second))
+
+        self.assertIn("Dynamic Evidence Rounds", report)
+        self.assertIn("Round 1", report)
+        self.assertIn("Round 2", report)
+        self.assertLess(report.index("http-title"), report.index("ssl-cert"))
+        self.assertEqual([item["round"] for item in payload], [1, 2])
+        self.assertEqual(payload[0]["collection_outcomes"][0]["argv"], list(first_command.arguments))
+        self.assertEqual(payload[1]["collection_outcomes"][0]["argv"], list(second_command.arguments))
 
     def test_renders_dynamic_requirement_verification(self) -> None:
         requirement = FindingDerivedRequirement(
