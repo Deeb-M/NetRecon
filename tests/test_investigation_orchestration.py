@@ -3071,6 +3071,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self,
         execute_mock,
     ) -> None:
+        from dataclasses import replace
         from evidence_collector import CollectionResult, NmapCommand
         from finding_collection_planner import FindingRequirementVerification
         from investigation_orchestration import execute_selected_evidence_actions
