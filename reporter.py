@@ -1372,11 +1372,39 @@ def render_investigation_snapshot_json(snapshot: InvestigationSnapshot) -> str:
                 "evidence_gaps": len(snapshot.gaps),
                 "proposed_actions": len(snapshot.actions),
                 "investigation_states": len(snapshot.states),
+                "pending_approvals": sum(
+                    1
+                    for plan in snapshot.finding_collection_plans
+                    if (
+                        not plan.authorization.allowed
+                        and plan.authorization.reason == "explicit_approval_required"
+                    )
+                ),
             },
             "error": snapshot.error,
             "gaps": [asdict(gap) for gap in snapshot.gaps],
             "states": [asdict(state) for state in snapshot.states],
             "actions": [asdict(action) for action in snapshot.actions],
+            "pending_approvals": [
+                {
+                    "host": plan.requirement.host,
+                    "port": plan.requirement.port,
+                    "protocol": plan.requirement.protocol,
+                    "requirement_id": plan.requirement.requirement_id,
+                    "purpose": plan.requirement.purpose,
+                    "finding_id": plan.requirement.finding_id,
+                    "evidence_source": plan.requirement.evidence_source,
+                    "script_ids": list(plan.strategy.script_ids),
+                    "risk_class": plan.strategy.risk_class,
+                    "authorization": plan.strategy.authorization,
+                    "reason": plan.authorization.reason,
+                }
+                for plan in snapshot.finding_collection_plans
+                if (
+                    not plan.authorization.allowed
+                    and plan.authorization.reason == "explicit_approval_required"
+                )
+            ],
         },
         indent=2,
         ensure_ascii=False,
