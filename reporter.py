@@ -205,6 +205,21 @@ def render_investigation_explanation(explanation: InvestigationExplanation) -> s
     return "\n".join(lines)
 
 
+def render_investigation_explanation_json(explanation: InvestigationExplanation) -> str:
+    """Render the factual investigation explanation as stable JSON."""
+    return json.dumps(
+        {
+            "report_type": "investigation_explanation",
+            "known": list(explanation.known),
+            "unresolved": list(explanation.unresolved),
+            "blocked": list(explanation.blocked),
+            "next_actions": list(explanation.next_actions),
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
 def render_investigation_synthesis(synthesis: InvestigationSynthesis) -> str:
     """Render the factual final investigation synthesis."""
     lines = [
