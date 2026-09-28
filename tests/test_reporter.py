@@ -1944,6 +1944,47 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+    def test_investigation_synthesis_renders_remaining_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_synthesis import InvestigationSynthesis
+        from reporter import render_investigation_synthesis, render_investigation_synthesis_json
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.243",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement,
+            "attempted_unsatisfied",
+            "explicitly_approved",
+            (),
+        )
+        synthesis = InvestigationSynthesis(
+            "stalled",
+            "finding_requirement_unsatisfied",
+            1,
+            0,
+            (),
+            (state,),
+        )
+
+        text_report = render_investigation_synthesis(synthesis)
+        payload = json.loads(render_investigation_synthesis_json(synthesis))
+
+        self.assertIn("Remaining Finding Requirements: 1", text_report)
+        self.assertIn("smb_access_control_context", text_report)
+        self.assertEqual(payload["summary"]["remaining_finding_requirements"], 1)
+        self.assertEqual(
+            payload["remaining_finding_requirements"][0]["status"],
+            "attempted_unsatisfied",
+        )
+
     def test_investigation_synthesis_report_preserves_factual_state(self) -> None:
         from evidence_gaps import EvidenceRequirement, EvidenceRequirementState
         from investigation_synthesis import InvestigationSynthesis
