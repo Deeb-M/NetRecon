@@ -303,13 +303,11 @@ def main() -> int:
         )
         attention = build_investigation_attention(final_snapshot)
         correlations = correlate_analyst_attention(attention)
-        synthesis = (
-            build_investigation_synthesis(final_decision, attention, correlations)
-            if final_decision is not None
-            else None
+        synthesis = build_investigation_synthesis(
+            final_decision, attention, correlations
         )
         investigation_memory = None
-        if synthesis is not None and args.investigation_history is not None:
+        if args.investigation_history is not None:
             history_path = args.investigation_history
             try:
                 records = (
@@ -363,17 +361,16 @@ def main() -> int:
                     render_adaptive_investigation_plan_json(adaptive_plan)
                 )
                 report = json.dumps(payload, indent=2, ensure_ascii=False)
-            if synthesis is not None:
-                import json
-                payload = json.loads(report)
-                payload["investigation_synthesis"] = json.loads(
-                    render_investigation_synthesis_json(synthesis)
+            import json
+            payload = json.loads(report)
+            payload["investigation_synthesis"] = json.loads(
+                render_investigation_synthesis_json(synthesis)
+            )
+            if investigation_memory is not None:
+                payload["investigation_memory"] = json.loads(
+                    render_investigation_memory_json(investigation_memory)
                 )
-                if investigation_memory is not None:
-                    payload["investigation_memory"] = json.loads(
-                        render_investigation_memory_json(investigation_memory)
-                    )
-                report = json.dumps(payload, indent=2, ensure_ascii=False)
+            report = json.dumps(payload, indent=2, ensure_ascii=False)
         else:
             report = render_investigation_continuation(
                 continuation, final_continuation_decision, alternative_round, final_decision, attention, correlations,
@@ -384,8 +381,7 @@ def main() -> int:
                 report += "\n\n" + render_dynamic_evidence_rounds(dynamic_rounds)
             if args.adaptive_plan:
                 report += "\n\n" + render_adaptive_investigation_plan(adaptive_plan)
-            if synthesis is not None:
-                report += "\n\n" + render_investigation_synthesis(synthesis)
+            report += "\n\n" + render_investigation_synthesis(synthesis)
             if investigation_memory is not None:
                 report += "\n\n" + render_investigation_memory(investigation_memory)
         print(report)
