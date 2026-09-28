@@ -1975,3 +1975,97 @@ This field run is therefore a regression/safety validation of the controller int
 Architectural finding: the current Primary evidence round executes all planner-supported actions already visible in the initial snapshot. A natural `continue` field case therefore requires newly collected evidence to reveal a new planner-supported evidence gap/action that was not known before the Primary round. Do not manufacture a production rule merely to force this scenario.
 
 Milestone: **CONTINUE CONTROLLER PATH CODE-VALIDATED; NATURAL FIELD CASE PENDING.**
+
+
+## Finding-derived Approval / Verification / Lifecycle — FIELD-VALIDATED
+
+NetRecon now carries a finding-derived semantic requirement through an explicit human authorization boundary, bounded evidence collection, semantic verification, and durable lifecycle state.
+
+Field-validated path:
+
+```text
+Finding
+  -> Finding-derived semantic requirement
+  -> Explicit human approval
+  -> Authorized EvidenceAction
+  -> Nmap collection
+  -> Semantic verification
+  -> Finding requirement lifecycle
+```
+
+Authorized Kali lab target: `192.168.227.138`.
+
+The observed SMB finding `smb.signing.review`, sourced from `nse:smb2-security-mode`, derives the semantic requirement `smb_access_control_context`. Its supported collection strategy is `smb-enum-shares`, classified as intrusive and therefore blocked until explicit approval.
+
+Without approval, the real field run displayed `Pending Approval` and did not execute `smb-enum-shares`.
+
+With:
+
+```bash
+netrecon --investigate-collect 192.168.227.138 --adaptive-plan --approve-requirement smb_access_control_context
+```
+
+NetRecon executed exactly one bounded dynamic collection:
+
+```text
+Command: nmap -p 445 --script smb-enum-shares -oX - 192.168.227.138
+Collection Status: success
+Return Code: 0
+Requirement: smb_access_control_context — unsatisfied
+Outcome: requested evidence was not observed
+Next Step: no automatic retry or unsupported alternative
+```
+
+This validates an important semantic invariant: process success (`Return Code: 0`) is not treated as proof that the requested evidence was observed.
+
+### Lifecycle bugs exposed by field testing
+
+The first approved field run exposed that a later unrelated HTTP alternative round could erase the prior SMB verification. The final Snapshot incorrectly reverted the requirement to `pending_approval`.
+
+The lifecycle implementation was corrected so finding verifications are merged across evidence rounds by endpoint-scoped requirement identity:
+
+```text
+(requirement_id, host, port, protocol)
+```
+
+A current verification replaces only the same exact identity; unrelated prior verification history survives.
+
+A second field run then exposed a separate authorization-propagation bug: lifecycle correctly remained `attempted_unsatisfied`, but the final Snapshot still displayed `Pending Approval` because the CLI approval set was not propagated into the later Alternative evidence round.
+
+Alternative-round execution now receives the same explicit approval set used by the investigation. This changes re-evaluation state only; it does not re-execute the finding-derived action.
+
+### Final field result
+
+The final approved field run produced:
+
+```text
+Finding Requirement Lifecycle
+Requirement State: 192.168.227.138:445/tcp  smb_access_control_context — attempted_unsatisfied
+  Authorization: explicitly_approved
+```
+
+and:
+
+- no `Pending Approval` for that attempted requirement;
+- exactly one `smb-enum-shares` execution;
+- semantic verification remained `unsatisfied`;
+- no automatic SMB retry;
+- no invented SMB alternative;
+- the later unrelated HTTP alternative round did not erase SMB lifecycle or approval state.
+
+The HTTP 5357 investigation independently remained bounded and stalled with `alternative_evidence_incomplete`; this does not change the terminal SMB lifecycle result.
+
+Milestone status: **APPROVAL + SEMANTIC VERIFICATION + MULTI-ROUND LIFECYCLE FIELD-VALIDATED**.
+
+### Architectural invariant
+
+Planner truth and execution history remain separate:
+
+- the finding planner answers what current evidence justifies;
+- authorization answers whether the proposed boundary may be crossed;
+- the executor performs only selected approved actions;
+- semantic verification answers whether requested evidence was actually observed;
+- lifecycle history remembers prior outcomes across unrelated rounds;
+- re-planning must not interpret absence of evidence as permission to retry an already-attempted requirement.
+
+Do not collapse `attempted_unsatisfied` back into `pending_approval`, and do not regenerate an automatic action for an exact requirement identity whose terminal verification is already known.
