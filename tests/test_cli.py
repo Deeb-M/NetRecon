@@ -3310,7 +3310,7 @@ class CliTests(unittest.TestCase):
         )
         self.assertEqual(
             execute_selected_mock.call_args.args[1],
-            decision_mock.call_args_list[0].return_value.next_actions,
+            progressed.next_actions,
         )
 
 
