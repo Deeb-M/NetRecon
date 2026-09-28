@@ -173,7 +173,7 @@ Try the included safe sample:
 netrecon examples/sample.xml
 ```
 
-The following safe comparison examples are available on the development `main` branch and are not included in the `v0.1.0` release.
+The following safe comparison examples are included in the current `v0.2.0` release:
 
 To see an exposure change on `main`:
 
@@ -200,9 +200,9 @@ python -m unittest discover -s tests -v
 ```
 
 
-## Investigation workflow (development main)
+## Investigation workflow
 
-The development `main` branch can run a bounded investigation directly against an authorized target. Nmap remains the discovery and evidence-collection engine; NetRecon plans supported evidence, verifies what was actually observed, re-plans only when justified, and produces one terminal decision.
+NetRecon v0.2.0 can run a bounded investigation directly against an authorized target. Nmap remains the discovery and evidence-collection engine; NetRecon plans supported evidence, verifies what was actually observed, re-plans only when justified, and produces one terminal decision.
 
 Plan the first supported evidence actions without collecting them:
 
