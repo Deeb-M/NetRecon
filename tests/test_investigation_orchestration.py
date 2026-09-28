@@ -3238,6 +3238,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
                             "smb2-security-mode",
                             "Message signing enabled but not required",
                         ),
+                        ScriptResult("smb-protocols", "SMBv2/SMBv3 supported"),
                         ScriptResult("smb-enum-shares", "account_used: guest"),
                     ),
                 ),),
