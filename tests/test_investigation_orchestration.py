@@ -3813,6 +3813,8 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.remaining_requirements, ())
         self.assertEqual(final.further_actions, ())
         self.assertEqual(final.satisfied_requirements, ())
+        self.assertEqual(decision.remaining_finding_requirements, (state,))
+        self.assertEqual(decision.stall_reason, "explicit_approval_required")
         self.assertIs(final.remaining_finding_requirements[0], state)
         self.assertEqual(
             final.remaining_finding_requirements[0].authorization_reason,
