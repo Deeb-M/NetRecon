@@ -136,5 +136,39 @@ class InvestigationExplanationTests(unittest.TestCase):
         )
 
 
+    def test_satisfied_requirement_is_known_but_not_unresolved_or_actionable(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.141",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement=requirement,
+            status="satisfied",
+            authorization_reason="explicitly_approved",
+            observed_script_ids=("smb-enum-shares",),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_requirement_states=(state,),
+        )
+
+        explanation = build_investigation_explanation(snapshot)
+
+        self.assertEqual(explanation.known, ("smb.signing.review from nse:smb2-security-mode",))
+        self.assertEqual(explanation.unresolved, ())
+        self.assertEqual(explanation.blocked, ())
+        self.assertEqual(explanation.next_actions, ())
+
+
 if __name__ == "__main__":
     unittest.main()
