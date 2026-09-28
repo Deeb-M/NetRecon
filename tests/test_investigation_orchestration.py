@@ -4013,7 +4013,15 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "explicit_approval_required")
+        self.assertEqual(decision.remaining_gaps, (gap,))
+        self.assertIs(decision.remaining_gaps[0], gap)
+        self.assertEqual(decision.further_actions, ())
         self.assertEqual(decision.remaining_requirements, ())
+        self.assertEqual(len(decision.satisfied_requirements), 1)
+        self.assertEqual(
+            decision.satisfied_requirements[0].requirement.requirement_id,
+            "http_identity_context",
+        )
         self.assertEqual(decision.remaining_finding_requirements, (pending,))
 
     def test_final_decision_does_not_complete_when_alternative_satisfies_primary_but_finding_unsatisfied(self) -> None:
