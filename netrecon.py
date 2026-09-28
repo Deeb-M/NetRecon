@@ -292,6 +292,10 @@ def main() -> int:
                 final_continuation_decision,
                 stop_reason=adaptive_stop_reason,
             )
+        if final_decision is None:
+            # Defensive E2E boundary: every completed collect workflow must expose
+            # one canonical terminal decision to downstream reporting/synthesis.
+            final_decision = finalize_continuation_decision(final_continuation_decision)
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
         explanation = build_investigation_explanation(
             final_snapshot,
