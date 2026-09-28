@@ -2863,7 +2863,7 @@ class CliTests(unittest.TestCase):
             stderr.getvalue(),
         )
 
-@patch("netrecon.render_adaptive_investigation_plan", return_value="Adaptive Investigation Plan\nDecision: alternative")
+    @patch("netrecon.render_adaptive_investigation_plan", return_value="Adaptive Investigation Plan\nDecision: alternative")
     @patch("netrecon.build_adaptive_investigation_plan")
     @patch("netrecon.correlate_analyst_attention", return_value=())
     @patch("netrecon.build_investigation_attention", return_value=())
