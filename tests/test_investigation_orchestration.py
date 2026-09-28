@@ -3992,6 +3992,12 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         ):
             finalize_continuation_decision(decision)
 
+        self.assertEqual(decision.status, "progressed")
+        self.assertEqual(decision.next_actions, ())
+        self.assertEqual(decision.remaining_gaps, ())
+        self.assertEqual(decision.resolved_requirements, ())
+        self.assertEqual(decision.remaining_finding_requirements, ())
+
 
 if __name__ == "__main__":
     unittest.main()
