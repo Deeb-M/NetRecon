@@ -2333,6 +2333,11 @@ class CliTests(unittest.TestCase):
             appended.synthesis.remaining_finding_requirements,
             (pending,),
         )
+        self.assertEqual(appended.synthesis.status, "stalled")
+        self.assertEqual(
+            appended.synthesis.reason,
+            "explicit_approval_required",
+        )
 
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses")
