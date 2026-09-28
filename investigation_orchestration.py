@@ -33,6 +33,7 @@ class InvestigationSnapshot:
     states: tuple[EndpointInvestigationState, ...]
     error: str | None
     finding_collection_plans: tuple[FindingCollectionPlan, ...] = ()
+    finding_requirement_verifications: tuple[FindingRequirementVerification, ...] = ()
 
 
 def build_investigation_snapshot(
@@ -168,6 +169,10 @@ def execute_selected_evidence_actions(
             and (action := evidence_action_for_finding_collection_plan(plan)) is not None
             and action.command in selected_commands
         )
+    )
+    updated_snapshot = replace(
+        updated_snapshot,
+        finding_requirement_verifications=finding_verifications,
     )
     return InvestigationContinuationResult(
         outcomes=outcomes,
