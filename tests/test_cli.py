@@ -1488,6 +1488,11 @@ class CliTests(unittest.TestCase):
             payload["investigation_explanation"]["report_type"],
             "investigation_explanation",
         )
+        self.assertEqual(payload["final_decision"]["status"], "complete")
+        self.assertEqual(
+            payload["final_decision"]["reason"],
+            "all_gaps_resolved",
+        )
 
 
     @patch("netrecon.execute_approved_evidence_actions")
