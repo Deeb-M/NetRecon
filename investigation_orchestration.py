@@ -549,7 +549,7 @@ def assess_investigation_continuation(
         status = "complete"
     else:
         status = "stalled"
-        if unsatisfied_finding_requirements and not safe_next_actions:
+        if unsatisfied_finding_requirements:
             stall_reason = "finding_requirement_unsatisfied"
         elif repeat_blocked and not safe_next_actions:
             stall_reason = "repeated_actions_exhausted"
