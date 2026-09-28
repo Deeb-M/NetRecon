@@ -2285,6 +2285,36 @@ class ReporterTests(unittest.TestCase):
             "attempted_unsatisfied",
         )
 
+    def test_investigation_memory_renders_authorization_only_finding_change(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_memory import InvestigationMemory
+        from reporter import render_investigation_memory
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context", "192.0.2.251", 445, "tcp",
+            "review SMB access controls", "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        previous = FindingRequirementState(
+            requirement, "pending_approval", "explicit_approval_required", ()
+        )
+        current = FindingRequirementState(
+            requirement, "pending_approval", "approval_deferred", ()
+        )
+        memory = InvestigationMemory(
+            False, "stalled", "stalled", False,
+            "explicit_approval_required", "explicit_approval_required",
+            0, 0, (), (), (), (), ((previous, current),),
+        )
+
+        text_report = render_investigation_memory(memory)
+
+        self.assertIn(
+            "authorization: explicit_approval_required -> approval_deferred",
+            text_report,
+        )
+
     def test_investigation_memory_reports_finding_requirement_changes(self) -> None:
         from finding_collection_planner import FindingRequirementState
         from finding_requirements import FindingDerivedRequirement
