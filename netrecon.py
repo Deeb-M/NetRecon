@@ -297,6 +297,12 @@ def main() -> int:
             # one canonical terminal decision to downstream reporting/synthesis.
             final_decision = finalize_continuation_decision(final_continuation_decision)
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
+        # Reporting must describe the terminal state, not the pre-execution plan
+        # that may already have been consumed by a bounded alternative round.
+        reported_adaptive_plan = AdaptiveInvestigationPlan(
+            "stop",
+            final_decision.reason,
+        )
         explanation = build_investigation_explanation(
             final_snapshot,
             final_decision=final_decision,
@@ -358,7 +364,7 @@ def main() -> int:
                 import json
                 payload = json.loads(report)
                 payload["adaptive_investigation_plan"] = json.loads(
-                    render_adaptive_investigation_plan_json(adaptive_plan)
+                    render_adaptive_investigation_plan_json(reported_adaptive_plan)
                 )
                 report = json.dumps(payload, indent=2, ensure_ascii=False)
             import json
@@ -380,7 +386,7 @@ def main() -> int:
             if dynamic_rounds:
                 report += "\n\n" + render_dynamic_evidence_rounds(dynamic_rounds)
             if args.adaptive_plan:
-                report += "\n\n" + render_adaptive_investigation_plan(adaptive_plan)
+                report += "\n\n" + render_adaptive_investigation_plan(reported_adaptive_plan)
             report += "\n\n" + render_investigation_synthesis(synthesis)
             if investigation_memory is not None:
                 report += "\n\n" + render_investigation_memory(investigation_memory)
