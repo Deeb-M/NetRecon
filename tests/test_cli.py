@@ -1890,6 +1890,69 @@ class CliTests(unittest.TestCase):
         self.assertIs(appended.synthesis, complete_synthesis)
 
 
+    @patch("netrecon.append_investigation_history_record")
+    @patch("netrecon.build_investigation_synthesis")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_stalled_investigation_is_appended_to_history_without_alternative_round(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        attention_mock,
+        correlation_mock,
+        synthesis_mock,
+        append_mock,
+    ) -> None:
+        from investigation_orchestration import (
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from investigation_synthesis import InvestigationSynthesis
+        from models import Scan
+        from netrecon import main
+
+        stalled_synthesis = InvestigationSynthesis(
+            "stalled", "no_supported_actions", 0, 0, ()
+        )
+        synthesis_mock.return_value = stalled_synthesis
+        snapshot = InvestigationSnapshot(True, Scan("stalled.xml"), (), (), (), None)
+        snapshot_mock.return_value = snapshot
+        execute_evidence_mock.return_value = InvestigationContinuationResult((), snapshot)
+        decision_mock.return_value = InvestigationContinuationDecision(
+            "stalled", (), (), (), stall_reason="no_supported_actions"
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            history_path = Path(tmp) / "history.jsonl"
+            with patch(
+                "sys.argv",
+                [
+                    "netrecon",
+                    "--investigate-collect",
+                    "192.0.2.245",
+                    "--investigation-history",
+                    str(history_path),
+                ],
+            ):
+                with redirect_stdout(StringIO()):
+                    self.assertEqual(main(), 0)
+
+        append_mock.assert_called_once()
+        appended = append_mock.call_args.args[1]
+        self.assertEqual(appended.target, "192.0.2.245")
+        self.assertIs(appended.synthesis, stalled_synthesis)
+
     @patch("netrecon.render_investigation_memory", return_value="Investigation Memory")
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses", return_value="memory-result")
