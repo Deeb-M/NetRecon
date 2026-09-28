@@ -619,6 +619,9 @@ def assess_investigation_continuation(
     elif not after.gaps and (pending_approval_requirements or approval_blocked_plans):
         status = "stalled"
         stall_reason = "explicit_approval_required"
+    elif not after.gaps and unsatisfied_finding_requirements:
+        status = "stalled"
+        stall_reason = "finding_requirement_unsatisfied"
     elif not after.gaps:
         status = "complete"
     else:
