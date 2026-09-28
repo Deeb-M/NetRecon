@@ -539,6 +539,11 @@ def assess_investigation_continuation(
             ) not in terminal_finding_requirement_keys
         )
     )
+    pending_approval_requirements = tuple(
+        state
+        for state in after.finding_requirement_states
+        if state.status == "pending_approval"
+    )
     unsatisfied_finding_requirements = tuple(
         state
         for state in after.finding_requirement_states
@@ -548,7 +553,7 @@ def assess_investigation_continuation(
     stall_reason = None
     if safe_next_actions and (resolved or not after.gaps):
         status = "progressed"
-    elif not after.gaps and approval_blocked_plans:
+    elif not after.gaps and (pending_approval_requirements or approval_blocked_plans):
         status = "stalled"
         stall_reason = "explicit_approval_required"
     elif not after.gaps:
