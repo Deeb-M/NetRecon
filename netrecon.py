@@ -274,6 +274,7 @@ def main() -> int:
                 "adaptive_round_limit_reached",
             )
             adaptive_actions = ()
+        final_continuation_decision = decision
         alternative_round = None
         final_decision = None
         if adaptive_plan.decision == "alternative" and adaptive_actions:
@@ -331,7 +332,7 @@ def main() -> int:
                 return 2
         if args.format == "json":
             report = render_investigation_continuation_json(
-                continuation, decision, alternative_round, final_decision, attention, correlations,
+                continuation, final_continuation_decision, alternative_round, final_decision, attention, correlations,
                 final_snapshot=final_snapshot,
             )
             import json
@@ -364,7 +365,7 @@ def main() -> int:
                 report = json.dumps(payload, indent=2, ensure_ascii=False)
         else:
             report = render_investigation_continuation(
-                continuation, decision, alternative_round, final_decision, attention, correlations,
+                continuation, final_continuation_decision, alternative_round, final_decision, attention, correlations,
                 final_snapshot=final_snapshot,
             )
             report += "\n\n" + render_investigation_explanation(explanation)
