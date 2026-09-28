@@ -2235,3 +2235,15 @@ Validated against the controlled Windows lab target `192.168.227.138` using the 
 - Re-running the real investigation with the legacy history file succeeded. A new v2 synthesis record was appended and Investigation Memory compared the legacy and current states. The first v2 comparison correctly reported the SMB finding requirement as added because legacy history did not preserve finding lifecycle data.
 
 These field checks validate the current bounded collect, terminal reporting, finding authorization/lifecycle, legacy-history compatibility, persistence, and memory-comparison path end to end. Do not reopen these paths for speculative micro-tests without a concrete regression or new product requirement.
+
+
+## v0.2.0 release-candidate gate — 2026-09-28
+
+The development main branch is prepared as `v0.2.0` Alpha release candidate. The version bump reflects the substantial new bounded-investigation capability set added after immutable `v0.1.0`.
+
+Release gates completed before tagging:
+- GitHub CI green across the supported Python matrix.
+- Controlled Kali/Windows Field E2E validated bounded collect, terminal adaptive stop, explicit finding authorization boundaries, final finding lifecycle reporting, synthesis, legacy investigation-history compatibility, persistence, and Investigation Memory.
+- Clean installed-package gate on Kali reported success for the release-candidate build and CLI entry point.
+
+Do not add feature work between this checkpoint and the `v0.2.0` tag. If a release-blocking defect is discovered, fix it and repeat the relevant gates before tagging.
