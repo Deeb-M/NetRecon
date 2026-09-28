@@ -1130,7 +1130,7 @@ def render_dynamic_evidence_round(result) -> str:
         "Dynamic Evidence Round",
         "----------------------",
     ]
-    if not result.outcomes:
+    if not result.outcomes and not result.finding_requirement_verifications:
         lines.append("None")
         return "\n".join(lines)
 
