@@ -1472,6 +1472,7 @@ class ReporterTests(unittest.TestCase):
                 "further_supported_actions": 0,
                 "satisfied_requirements": [],
                 "remaining_requirements": [],
+                "remaining_finding_requirements": [],
             },
         )
 
