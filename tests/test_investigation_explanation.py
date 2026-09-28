@@ -311,5 +311,51 @@ class InvestigationExplanationTests(unittest.TestCase):
         self.assertEqual(explanation.next_actions, ())
 
 
+    def test_final_decision_exposes_only_further_supported_actions_as_next(self) -> None:
+        from evidence_action_plan import EvidenceAction
+        from investigation_orchestration import FinalInvestigationDecision
+
+        stale_action = EvidenceAction(
+            host="192.0.2.145",
+            port=80,
+            protocol="tcp",
+            script_ids=("http-title",),
+            purposes=("identify HTTP service",),
+            command=("nmap", "-p", "80", "--script", "http-title", "-oX", "-", "192.0.2.145"),
+        )
+        supported_action = EvidenceAction(
+            host="192.0.2.145",
+            port=80,
+            protocol="tcp",
+            script_ids=("http-headers",),
+            purposes=("review HTTP headers",),
+            command=("nmap", "-p", "80", "--script", "http-headers", "-oX", "-", "192.0.2.145"),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(stale_action,),
+            states=(),
+            error=None,
+        )
+        final_decision = FinalInvestigationDecision(
+            status="progressed",
+            reason="further_supported_actions",
+            remaining_gaps=(),
+            further_actions=(supported_action,),
+        )
+
+        explanation = build_investigation_explanation(
+            snapshot,
+            final_decision=final_decision,
+        )
+
+        self.assertEqual(
+            explanation.next_actions,
+            ("nmap -p 80 --script http-headers -oX - 192.0.2.145",),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
