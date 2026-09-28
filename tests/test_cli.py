@@ -2379,10 +2379,13 @@ class CliTests(unittest.TestCase):
         interpret_mock.return_value = object()
         snapshot_mock.return_value = initial
         execute_approved_mock.return_value = InvestigationContinuationResult((), updated)
+        first_decision = InvestigationContinuationDecision("progressed", (), (), (second_action,))
+        second_decision = InvestigationContinuationDecision("progressed", (), (), (third_action,))
+        terminal_decision = InvestigationContinuationDecision("complete", (), (), ())
         assess_continuation_mock.side_effect = (
-            InvestigationContinuationDecision("progressed", (), (), (second_action,)),
-            InvestigationContinuationDecision("progressed", (), (), (third_action,)),
-            InvestigationContinuationDecision("complete", (), (), ()),
+            first_decision,
+            second_decision,
+            terminal_decision,
         )
         execute_selected_mock.side_effect = (
             InvestigationContinuationResult((), second),
@@ -2409,6 +2412,7 @@ class CliTests(unittest.TestCase):
             attempted_actions=(initial_action, second_action, third_action),
         )
         execute_alternative_mock.assert_not_called()
+        self.assertIs(render_mock.call_args.args[1], terminal_decision)
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
