@@ -230,12 +230,24 @@ def render_investigation_synthesis(synthesis: InvestigationSynthesis) -> str:
         f"Attention Items: {synthesis.attention_items}",
         f"Correlated Review Groups: {synthesis.correlated_review_groups}",
         f"Remaining Requirements: {len(synthesis.remaining_requirements)}",
+        f"Remaining Finding Requirements: {len(synthesis.remaining_finding_requirements)}",
     ]
     for state in synthesis.remaining_requirements:
         requirement = state.requirement
         lines.append(
             f"Requirement: {state.host}:{state.port}/{state.protocol}  "
             f"{requirement.requirement_id} — {requirement.purpose}"
+        )
+    for state in synthesis.remaining_finding_requirements:
+        requirement = state.requirement
+        endpoint = (
+            f"{requirement.host}:{requirement.port}/{requirement.protocol}"
+            if requirement.port is not None and requirement.protocol is not None
+            else requirement.host
+        )
+        lines.append(
+            f"Finding Requirement: {endpoint}  {requirement.requirement_id} — "
+            f"{requirement.purpose} [{state.status}]"
         )
     return "\n".join(lines)
 
@@ -251,8 +263,12 @@ def render_investigation_synthesis_json(synthesis: InvestigationSynthesis) -> st
                 "attention_items": synthesis.attention_items,
                 "correlated_review_groups": synthesis.correlated_review_groups,
                 "remaining_requirements": len(synthesis.remaining_requirements),
+                "remaining_finding_requirements": len(synthesis.remaining_finding_requirements),
             },
             "remaining_requirements": [asdict(state) for state in synthesis.remaining_requirements],
+            "remaining_finding_requirements": [
+                asdict(state) for state in synthesis.remaining_finding_requirements
+            ],
         },
         indent=2,
         ensure_ascii=False,
