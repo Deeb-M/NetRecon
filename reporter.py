@@ -1143,6 +1143,16 @@ def render_dynamic_evidence_round(result) -> str:
         lines.append(f"Return Code: {collection.returncode}")
         if outcome.failure_message is not None:
             lines.append(f"Failure: {outcome.failure_message}")
+
+    for verification in result.finding_requirement_verifications:
+        requirement = verification.requirement
+        lines.append(
+            f"Requirement: {requirement.requirement_id} — {verification.status}"
+        )
+        if verification.observed_script_ids:
+            lines.append(
+                "Observed Evidence: " + ", ".join(verification.observed_script_ids)
+            )
     return "\n".join(lines)
 
 
