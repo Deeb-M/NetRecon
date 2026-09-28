@@ -246,5 +246,23 @@ class InvestigationExplanationTests(unittest.TestCase):
         self.assertEqual(explanation.next_actions, ())
 
 
+    def test_not_ready_snapshot_explains_discovery_error_as_blocked(self) -> None:
+        snapshot = InvestigationSnapshot(
+            ready=False,
+            scan=None,
+            gaps=(),
+            actions=(),
+            states=(),
+            error="Nmap discovery failed",
+        )
+
+        explanation = build_investigation_explanation(snapshot)
+
+        self.assertEqual(explanation.known, ())
+        self.assertEqual(explanation.unresolved, ())
+        self.assertEqual(explanation.blocked, ("discovery — Nmap discovery failed",))
+        self.assertEqual(explanation.next_actions, ())
+
+
 if __name__ == "__main__":
     unittest.main()
