@@ -8,7 +8,7 @@ from analyzer import Finding
 from evidence_gaps import EvidenceGap
 from evidence_action_plan import EvidenceAction
 from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
-from finding_collection_planner import FindingRequirementVerification
+from finding_collection_planner import FindingCollectionPlan, FindingRequirementVerification
 from finding_requirements import FindingDerivedRequirement
 from investigation_state import EndpointInvestigationState
 from evidence_collector import (
