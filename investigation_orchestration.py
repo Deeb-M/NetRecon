@@ -531,6 +531,12 @@ def assess_investigation_continuation(
         if (
             not plan.authorization.allowed
             and plan.authorization.reason == "explicit_approval_required"
+            and (
+                plan.requirement.requirement_id,
+                plan.requirement.host,
+                plan.requirement.port,
+                plan.requirement.protocol,
+            ) not in terminal_finding_requirement_keys
         )
     )
     unsatisfied_finding_requirements = tuple(
