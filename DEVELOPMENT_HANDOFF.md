@@ -33,6 +33,18 @@ NetRecon remains an **Alpha** project. Preserve the product boundary:
 
 Do not reimplement Nmap. Do not turn missing evidence into resolution. Keep collection targeted, bounded, deterministic, authorization-aware, and explainable.
 
+## Pending manual repository cleanup
+
+The GitHub repository description is still the older pre-investigation wording:
+
+`Evidence-aware CLI for analyzing and comparing Nmap XML scans.`
+
+After the current product audit, update it manually in GitHub repository settings to:
+
+`Evidence-driven Nmap analysis and bounded investigation orchestration.`
+
+This is public metadata only; it does not block CI, packaging, or product behavior.
+
 ## v0.1.0 readiness completed
 
 The first public release milestone includes:
