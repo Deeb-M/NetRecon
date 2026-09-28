@@ -55,7 +55,7 @@ def positive_timeout(value: str) -> float:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="netrecon",
-        description="Analyze and compare Nmap XML scans with evidence-based findings and exposure summaries.",
+        description="Analyze Nmap XML and run bounded, evidence-driven investigation workflows.",
     )
     parser.add_argument(
         "--version",
@@ -90,7 +90,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--adaptive-plan",
         action="store_true",
-        help="Show the factual adaptive next-step decision during --investigate-collect without changing execution",
+        help="Show the terminal adaptive decision reached by --investigate-collect",
     )
     parser.add_argument(
         "--approve-requirement",
