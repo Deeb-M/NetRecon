@@ -3849,6 +3849,15 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.remaining_requirements, ())
         self.assertEqual(final.further_actions, ())
         self.assertEqual(final.satisfied_requirements, ())
+        self.assertIs(final.remaining_finding_requirements[0], state)
+        self.assertEqual(
+            final.remaining_finding_requirements[0].authorization_reason,
+            "explicitly_approved",
+        )
+        self.assertEqual(
+            final.remaining_finding_requirements[0].status,
+            "attempted_unsatisfied",
+        )
 
     def test_alternative_incomplete_preserves_pending_finding_requirement(self) -> None:
         from evidence_action_plan import EvidenceAction
