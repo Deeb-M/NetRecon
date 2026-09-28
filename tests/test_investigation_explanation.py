@@ -170,5 +170,47 @@ class InvestigationExplanationTests(unittest.TestCase):
         self.assertEqual(explanation.next_actions, ())
 
 
+    def test_primary_evidence_gap_is_unresolved_with_existing_planned_action(self) -> None:
+        from evidence_action_plan import EvidenceAction
+        from evidence_gaps import EvidenceGap
+
+        gap = EvidenceGap(
+            host="192.0.2.142",
+            port=5357,
+            protocol="tcp",
+            script_id="http-title",
+            purpose="identify the HTTP service",
+        )
+        action = EvidenceAction(
+            host="192.0.2.142",
+            port=5357,
+            protocol="tcp",
+            script_ids=("http-title",),
+            purposes=("identify the HTTP service",),
+            command=("nmap", "-p", "5357", "--script", "http-title", "-oX", "-", "192.0.2.142"),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(gap,),
+            actions=(action,),
+            states=(),
+            error=None,
+        )
+
+        explanation = build_investigation_explanation(snapshot)
+
+        self.assertEqual(explanation.known, ())
+        self.assertEqual(
+            explanation.unresolved,
+            ("192.0.2.142:5357/tcp http-title — identify the HTTP service",),
+        )
+        self.assertEqual(explanation.blocked, ())
+        self.assertEqual(
+            explanation.next_actions,
+            ("nmap -p 5357 --script http-title -oX - 192.0.2.142",),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
