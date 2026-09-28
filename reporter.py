@@ -156,6 +156,24 @@ def render_investigation_memory(memory: InvestigationMemory) -> str:
             f"Resolved: {state.host}:{state.port}/{state.protocol}  "
             f"{state.requirement.requirement_id} — {state.requirement.purpose}"
         )
+    lines.append(
+        f"Added Finding Requirements: {len(memory.added_finding_requirements)}"
+    )
+    for state in memory.added_finding_requirements:
+        requirement = state.requirement
+        lines.append(
+            f"Added Finding: {requirement.host}:{requirement.port}/{requirement.protocol}  "
+            f"{requirement.requirement_id} [{state.status}]"
+        )
+    lines.append(
+        f"Resolved Finding Requirements: {len(memory.resolved_finding_requirements)}"
+    )
+    for state in memory.resolved_finding_requirements:
+        requirement = state.requirement
+        lines.append(
+            f"Resolved Finding: {requirement.host}:{requirement.port}/{requirement.protocol}  "
+            f"{requirement.requirement_id} [{state.status}]"
+        )
     return "\n".join(lines)
 
 
@@ -179,9 +197,17 @@ def render_investigation_memory_json(memory: InvestigationMemory) -> str:
                 "correlated_review_group_change": memory.correlated_review_group_change,
                 "added_requirements": len(memory.added_requirements),
                 "resolved_requirements": len(memory.resolved_requirements),
+                "added_finding_requirements": len(memory.added_finding_requirements),
+                "resolved_finding_requirements": len(memory.resolved_finding_requirements),
             },
             "added_requirements": [asdict(state) for state in memory.added_requirements],
             "resolved_requirements": [asdict(state) for state in memory.resolved_requirements],
+            "added_finding_requirements": [
+                asdict(state) for state in memory.added_finding_requirements
+            ],
+            "resolved_finding_requirements": [
+                asdict(state) for state in memory.resolved_finding_requirements
+            ],
         },
         indent=2,
         ensure_ascii=False,
