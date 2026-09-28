@@ -2865,6 +2865,9 @@ class CliTests(unittest.TestCase):
             timeout=60.0,
             explicitly_approved_requirement_ids=frozenset(),
         )
+        assess_final_mock.assert_called_once_with(
+            execute_alternative_mock.return_value,
+        )
         self.assertIn("Adaptive Investigation Plan", output.getvalue())
 
 
