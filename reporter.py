@@ -1323,6 +1323,36 @@ def render_investigation_snapshot(snapshot: InvestigationSnapshot) -> str:
         )
         lines.append(f"  Purpose: {gap.purpose}")
 
+    approval_blocked_plans = tuple(
+        plan
+        for plan in snapshot.finding_collection_plans
+        if (
+            not plan.authorization.allowed
+            and plan.authorization.reason == "explicit_approval_required"
+        )
+    )
+    for plan in approval_blocked_plans:
+        requirement = plan.requirement
+        location = (
+            f"{requirement.host}:{requirement.port}/{requirement.protocol}"
+            if requirement.port is not None and requirement.protocol is not None
+            else requirement.host
+        )
+        lines.append(f"Pending Approval: {location}")
+        lines.append(
+            f"  Requirement: {requirement.requirement_id} — {requirement.purpose}"
+        )
+        lines.append(f"  Finding: {requirement.finding_id}")
+        if requirement.evidence_source is not None:
+            lines.append(f"  Evidence Source: {requirement.evidence_source}")
+        if plan.strategy.script_ids:
+            lines.append(
+                "  Proposed collection: " + ", ".join(plan.strategy.script_ids)
+            )
+        if plan.strategy.risk_class is not None:
+            lines.append(f"  Risk: {plan.strategy.risk_class}")
+        lines.append("  Authorization: explicit approval required")
+
     for action in snapshot.actions:
         lines.append(f"Action: {action.host}:{action.port}/{action.protocol}")
         for purpose in action.purposes:
