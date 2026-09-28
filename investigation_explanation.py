@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from investigation_orchestration import InvestigationSnapshot
+from investigation_orchestration import FinalInvestigationDecision, InvestigationSnapshot
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,7 @@ class InvestigationExplanation:
 
 def build_investigation_explanation(
     snapshot: InvestigationSnapshot,
+    final_decision: FinalInvestigationDecision | None = None,
 ) -> InvestigationExplanation:
     """Project explanation text only from already-established investigation state."""
     known: list[str] = []
@@ -62,9 +63,15 @@ def build_investigation_explanation(
                 f"{requirement.requirement_id} — explicit approval required"
             )
 
+    next_actions = (
+        final_decision.further_actions
+        if final_decision is not None
+        else snapshot.actions
+    )
+
     return InvestigationExplanation(
         known=tuple(known),
         unresolved=tuple(unresolved),
         blocked=tuple(blocked),
-        next_actions=tuple(" ".join(action.command) for action in snapshot.actions),
+        next_actions=tuple(" ".join(action.command) for action in next_actions),
     )
