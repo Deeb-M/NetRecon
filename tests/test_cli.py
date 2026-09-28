@@ -3111,6 +3111,12 @@ class CliTests(unittest.TestCase):
         )
         execute_alternative_mock.assert_not_called()
         self.assertIs(render_mock.call_args.args[1], terminal_decision)
+        self.assertIs(render_mock.call_args.kwargs["final_snapshot"], final)
+        self.assertEqual(render_mock.call_args.args[3].status, "complete")
+        self.assertEqual(
+            render_mock.call_args.args[3].reason,
+            "all_gaps_resolved",
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
