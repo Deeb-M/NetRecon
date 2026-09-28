@@ -2315,6 +2315,37 @@ class ReporterTests(unittest.TestCase):
             text_report,
         )
 
+    def test_investigation_memory_renders_observed_script_only_finding_change(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_memory import InvestigationMemory
+        from reporter import render_investigation_memory
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context", "192.0.2.252", 445, "tcp",
+            "review SMB access controls", "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        previous = FindingRequirementState(
+            requirement, "attempted_unsatisfied", "explicitly_approved", ()
+        )
+        current = FindingRequirementState(
+            requirement, "attempted_unsatisfied", "explicitly_approved",
+            ("smb-enum-shares",),
+        )
+        memory = InvestigationMemory(
+            False, "stalled", "stalled", False,
+            "finding_requirement_unsatisfied", "finding_requirement_unsatisfied",
+            0, 0, (), (), (), (), ((previous, current),),
+        )
+
+        text_report = render_investigation_memory(memory)
+
+        self.assertIn(
+            "observed scripts: none -> smb-enum-shares",
+            text_report,
+        )
+
     def test_investigation_memory_reports_finding_requirement_changes(self) -> None:
         from finding_collection_planner import FindingRequirementState
         from finding_requirements import FindingDerivedRequirement
