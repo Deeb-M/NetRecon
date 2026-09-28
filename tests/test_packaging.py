@@ -1,31 +1,18 @@
+import re
 import unittest
 from pathlib import Path
 
 
 class PackagingTests(unittest.TestCase):
-    def test_product_modules_are_included_in_package(self) -> None:
+    def test_all_root_product_modules_are_packaged(self) -> None:
         pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
+        match = re.search(r"py-modules\s*=\s*\[([\s\S]*?)\]", pyproject)
+        self.assertIsNotNone(match)
 
-        required_modules = (
-            "evidence_planner",
-            "evidence_collector",
-            "evidence_action_plan",
-            "evidence_gaps",
-            "adaptive_investigation",
-            "investigation_orchestration",
-            "investigation_state",
-            "investigation_explanation",
-            "investigation_synthesis",
-            "investigation_memory",
-            "investigation_history",
-            "finding_requirements",
-            "finding_collection_planner",
-            "requirement_collection",
-        )
+        packaged_modules = set(re.findall(r'"([^"]+)"', match.group(1)))
+        root_modules = {path.stem for path in Path(".").glob("*.py")}
 
-        for module in required_modules:
-            with self.subTest(module=module):
-                self.assertIn(f'"{module}"', pyproject)
+        self.assertEqual(packaged_modules, root_modules)
 
 
 if __name__ == "__main__":
