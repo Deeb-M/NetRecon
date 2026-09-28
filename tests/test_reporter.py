@@ -21,7 +21,7 @@ from evidence_collector import (
 )
 from models import Host, Port, Scan, ScriptResult
 from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
-from reporter import render_investigation_explanation, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_dynamic_evidence_round
+from reporter import render_investigation_explanation, render_investigation_explanation_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_dynamic_evidence_round
 
 
 class ReporterTests(unittest.TestCase):
@@ -2246,6 +2246,32 @@ class ReporterTests(unittest.TestCase):
             "- smb_access_control_context — explicit approval required\n"
             "Next\n"
             "- nmap -p 80 --script http-title -oX - 192.0.2.143",
+        )
+
+
+    def test_render_investigation_explanation_json(self) -> None:
+        explanation = InvestigationExplanation(
+            known=("192.0.2.143:80/tcp state=open",),
+            unresolved=("192.0.2.143:80/tcp http-title — identify the HTTP service",),
+            blocked=("smb_access_control_context — explicit approval required",),
+            next_actions=("nmap -p 80 --script http-title -oX - 192.0.2.143",),
+        )
+
+        data = json.loads(render_investigation_explanation_json(explanation))
+
+        self.assertEqual(data["report_type"], "investigation_explanation")
+        self.assertEqual(data["known"], ["192.0.2.143:80/tcp state=open"])
+        self.assertEqual(
+            data["unresolved"],
+            ["192.0.2.143:80/tcp http-title — identify the HTTP service"],
+        )
+        self.assertEqual(
+            data["blocked"],
+            ["smb_access_control_context — explicit approval required"],
+        )
+        self.assertEqual(
+            data["next_actions"],
+            ["nmap -p 80 --script http-title -oX - 192.0.2.143"],
         )
 
 
