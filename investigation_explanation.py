@@ -25,6 +25,12 @@ def build_investigation_explanation(
     unresolved: list[str] = []
     blocked: list[str] = []
 
+    for gap in snapshot.gaps:
+        unresolved.append(
+            f"{gap.host}:{gap.port}/{gap.protocol} "
+            f"{gap.script_id} — {gap.purpose}"
+        )
+
     for state in snapshot.finding_requirement_states:
         requirement = state.requirement
         known_item = f"{requirement.finding_id} from {requirement.evidence_source}"
