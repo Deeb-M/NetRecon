@@ -1453,6 +1453,65 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.stall_reason, "finding_requirement_unsatisfied")
         self.assertEqual(decision.remaining_finding_requirements, (attempted,))
 
+    def test_pending_approval_takes_precedence_over_unsatisfied_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from investigation_orchestration import (
+            InvestigationSnapshot,
+            assess_investigation_continuation,
+        )
+        from models import Scan
+
+        pending_requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.201",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        unsatisfied_requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.202",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        pending = FindingRequirementState(
+            pending_requirement, "pending_approval", "explicit_approval_required", ()
+        )
+        unsatisfied = FindingRequirementState(
+            unsatisfied_requirement, "attempted_unsatisfied", "explicitly_approved", ()
+        )
+        before = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+        )
+        after = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_requirement_states=(pending, unsatisfied),
+        )
+
+        decision = assess_investigation_continuation(before, after)
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.stall_reason, "explicit_approval_required")
+        self.assertEqual(
+            decision.remaining_finding_requirements,
+            (pending, unsatisfied),
+        )
+
     def test_unsatisfied_finding_requirement_takes_precedence_when_no_gaps_remain(self) -> None:
         from finding_collection_planner import FindingRequirementState
         from investigation_orchestration import (
