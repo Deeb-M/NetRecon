@@ -1689,6 +1689,7 @@ class CliTests(unittest.TestCase):
         )
 
 
+    @patch("netrecon.build_investigation_explanation", return_value="explanation-model")
     @patch("netrecon.render_investigation_synthesis", return_value="Investigation Synthesis\nStatus: stalled")
     @patch("netrecon.build_investigation_synthesis", return_value="synthesis-result")
     @patch("netrecon.render_investigation_continuation", return_value="Investigation Continuation")
@@ -1717,6 +1718,7 @@ class CliTests(unittest.TestCase):
         render_continuation_mock,
         synthesis_mock,
         render_synthesis_mock,
+        build_explanation_mock,
     ) -> None:
         from evidence_action_plan import EvidenceAction
         from investigation_orchestration import (
@@ -1759,6 +1761,10 @@ class CliTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
+        build_explanation_mock.assert_called_once_with(
+            final_snapshot,
+            final_decision=final_decision,
+        )
         synthesis_mock.assert_called_once_with(
             final_decision,
             ("attention-item",),
