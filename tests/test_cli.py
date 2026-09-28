@@ -3304,6 +3304,10 @@ class CliTests(unittest.TestCase):
             decision_mock.call_args_list[-1].args[1],
             final,
         )
+        self.assertEqual(
+            decision_mock.call_args_list[-1].kwargs["attempted_actions"],
+            initial.actions + (dynamic,),
+        )
 
 
 if __name__ == "__main__":
