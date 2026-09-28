@@ -3777,6 +3777,10 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.remaining_requirements[0].host, "192.0.2.241")
         self.assertEqual(final.remaining_requirements[0].port, 5357)
         self.assertEqual(final.remaining_requirements[0].protocol, "tcp")
+        self.assertEqual(
+            final.remaining_requirements[0].requirement.purpose,
+            gap.purpose,
+        )
 
     def test_finalize_preserves_pending_finding_requirement(self) -> None:
         from finding_collection_planner import FindingRequirementState
