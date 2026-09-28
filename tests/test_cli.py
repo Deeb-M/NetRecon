@@ -3122,6 +3122,12 @@ class CliTests(unittest.TestCase):
         self.assertIn("adaptive_round_limit_reached", output.getvalue())
         self.assertIn("Investigation Synthesis", output.getvalue())
         self.assertIn("Status: stalled", output.getvalue())
+        for call in execute_selected_mock.call_args_list:
+            self.assertEqual(call.args[1], (next_action,))
+        self.assertEqual(
+            assess_continuation_mock.call_args_list[-1].kwargs["attempted_actions"],
+            (initial_action,) + (next_action,) * 8,
+        )
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
