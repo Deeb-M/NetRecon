@@ -1424,14 +1424,14 @@ class CliTests(unittest.TestCase):
     def test_investigate_collect_json_renders_continuation_provenance(
         self,
         build_plan_mock,
+        render_explanation_json_mock,
+        build_explanation_mock,
         execute_discovery_mock,
         interpret_mock,
         snapshot_mock,
         execute_evidence_mock,
         decision_mock,
         render_json_mock,
-        render_explanation_json_mock,
-        build_explanation_mock,
     ) -> None:
         from investigation_orchestration import InvestigationContinuationResult, InvestigationSnapshot
         from models import Scan
