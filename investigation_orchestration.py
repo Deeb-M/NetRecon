@@ -461,6 +461,34 @@ class InvestigationContinuationDecision:
     resolved_requirements: tuple[EvidenceRequirementState, ...] = ()
 
 
+def finalize_continuation_decision(
+    continuation: InvestigationContinuationDecision,
+    *,
+    stop_reason: str | None = None,
+) -> FinalInvestigationDecision:
+    """Project a terminal continuation decision into the canonical final decision."""
+    if continuation.status == "progressed" and stop_reason is None:
+        raise ValueError("Cannot finalize a non-terminal continuation decision")
+
+    status = "complete" if continuation.status == "complete" else "stalled"
+    if stop_reason is not None:
+        status = "stalled"
+        reason = stop_reason
+    elif continuation.status == "complete":
+        reason = "all_gaps_resolved"
+    else:
+        reason = continuation.stall_reason or "no_supported_next_step"
+
+    return FinalInvestigationDecision(
+        status=status,
+        reason=reason,
+        remaining_gaps=continuation.remaining_gaps,
+        further_actions=(),
+        remaining_requirements=(),
+        satisfied_requirements=continuation.resolved_requirements,
+    )
+
+
 def _gap_identity(gap: EvidenceGap) -> tuple[str, int, str, str]:
     """Return the endpoint-scoped identity of one planner-supported evidence gap."""
     return (
