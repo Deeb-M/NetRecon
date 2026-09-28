@@ -29,7 +29,9 @@ def render_investigation_history_record_json(record: InvestigationHistoryRecord)
 def parse_investigation_history_record_json(payload: str) -> InvestigationHistoryRecord:
     """Restore one history record from its portable JSON representation."""
     data = json.loads(payload)
-    schema_version = data.get("schema_version")
+    # Records created before history versioning existed have no schema_version;
+    # their shape is the original v1 contract.
+    schema_version = data.get("schema_version", 1)
     if schema_version not in {1, 2}:
         raise ValueError(
             f"Unsupported investigation history schema version: {schema_version!r}"
