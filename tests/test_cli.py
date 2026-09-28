@@ -3292,6 +3292,10 @@ class CliTests(unittest.TestCase):
             explicitly_approved_requirement_ids=approval,
         )
         self.assertEqual(decision_mock.call_count, 2)
+        self.assertEqual(
+            execute_selected_mock.call_args.kwargs["explicitly_approved_requirement_ids"],
+            frozenset({"smb_access_control_context"}),
+        )
 
 
 if __name__ == "__main__":
