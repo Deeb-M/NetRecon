@@ -1806,7 +1806,7 @@ class CliTests(unittest.TestCase):
 
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.load_investigation_history", return_value=())
-    @patch("netrecon.build_investigation_synthesis", return_value="complete-synthesis")
+    @patch("netrecon.build_investigation_synthesis")
     @patch("netrecon.correlate_analyst_attention", return_value=())
     @patch("netrecon.build_investigation_attention", return_value=())
     @patch("netrecon.assess_investigation_continuation")
@@ -1834,9 +1834,12 @@ class CliTests(unittest.TestCase):
             InvestigationContinuationResult,
             InvestigationSnapshot,
         )
+        from investigation_synthesis import InvestigationSynthesis
         from models import Scan
         from netrecon import main
 
+        complete_synthesis = InvestigationSynthesis("complete", "all_gaps_resolved", 0, 0, ())
+        synthesis_mock.return_value = complete_synthesis
         snapshot = InvestigationSnapshot(True, Scan("complete.xml"), (), (), (), None)
         snapshot_mock.return_value = snapshot
         execute_evidence_mock.return_value = InvestigationContinuationResult((), snapshot)
@@ -1862,7 +1865,7 @@ class CliTests(unittest.TestCase):
         append_mock.assert_called_once()
         appended = append_mock.call_args.args[1]
         self.assertEqual(appended.target, "192.0.2.240")
-        self.assertEqual(appended.synthesis, "complete-synthesis")
+        self.assertIs(appended.synthesis, complete_synthesis)
 
 
     @patch("netrecon.render_investigation_memory", return_value="Investigation Memory")
