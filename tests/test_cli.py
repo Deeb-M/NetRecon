@@ -2665,6 +2665,9 @@ class CliTests(unittest.TestCase):
                     self.assertEqual(main(), 0)
 
         render_memory_mock.assert_called_once_with("memory-result")
+        final_decision_mock.assert_called_once_with(alternative_result)
+        synthesis_mock.assert_called_once_with(final_decision, (), ())
+        compare_mock.assert_called_once_with("previous-synthesis", "current-synthesis")
         self.assertEqual(
             output.getvalue().strip(),
             "Investigation Continuation\n\n"
