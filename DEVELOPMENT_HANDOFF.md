@@ -2190,3 +2190,36 @@ Verified invariants include:
 - final decisions expose no further action after the bounded terminal round.
 
 This closes the current Controller contract-hardening slice. Do not continue adding micro-tests to this area merely to increase coverage. The next development work should move outward to end-to-end product completion/field behavior unless a concrete Controller regression is discovered.
+
+
+## E2E product-completion checkpoint — 2026-09-28
+
+Current CI-confirmed main checkpoint before this documentation commit: `ab8574d12c9a6d36ccbefba268671b16f52462ef`.
+
+The Controller micro-contract phase remains closed. Subsequent work moved outward into the completed collect workflow and public product boundary.
+
+E2E changes now established on `main`:
+- every completed `--investigate-collect` path exposes one canonical terminal `FinalInvestigationDecision`;
+- investigation synthesis is mandatory after a completed collect workflow rather than optional downstream state;
+- a bounded stalled investigation returns CLI success because it is a valid terminal product outcome; non-zero remains for discovery/processing failures;
+- continuation text/JSON reporting uses the freshest final snapshot rather than stale pre-alternative state;
+- `--adaptive-plan` reporting now projects the terminal state and cannot present an already-consumed alternative action as a current next action;
+- final-decision JSON exposes remaining finding-derived lifecycle with endpoint, finding provenance, authorization state, lifecycle status, and observed scripts;
+- regression coverage locks the terminal adaptive projection and final finding-lifecycle JSON contract;
+- README now documents the bounded investigation workflow and the current Controller / Adaptive / Explanation / Synthesis / Memory architecture.
+
+Relevant E2E commit sequence:
+- `5e536b5` Guarantee terminal decision for collect workflow.
+- `133fd55` Require synthesis for every completed collect workflow.
+- `6e1fe1d` Clarify collect workflow exit semantics.
+- `ebaae5d` Use final snapshot for continuation reporting.
+- `e2af4e7` / `d7708bc` Report terminal adaptive investigation state and align its CLI contract.
+- `fc6c32c` Lock terminal adaptive projection contract.
+- `9d357b5` / `4c4de0f` Expose final finding lifecycle in JSON and align the JSON contract.
+- `2b46ec3` Cover real pending-approval finding lifecycle JSON provenance.
+- `75d82bb` Document bounded investigation workflow.
+- `ab8574d` Document investigation architecture.
+
+Important correction to the older Investigation Explanation handoff above: its note that Adaptive Investigation Plan may display a pre-alternative action is historical. That presentation gap has now been fixed; final adaptive reporting is terminal and action-free.
+
+Next development direction: continue product-level E2E completion and field behavior. Do not reopen Controller micro-test expansion unless a concrete regression appears. A deliberate Kali field validation should be requested only when behavior cannot be validated meaningfully in CI.
