@@ -56,50 +56,61 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="netrecon",
         description="Analyze Nmap XML and run bounded, evidence-driven investigation workflows.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  netrecon examples/sample.xml --analyze
+  netrecon examples/before.xml examples/after.xml --combined-diff
+  netrecon --investigate <authorized-target>
+  netrecon --investigate-collect <authorized-target> --adaptive-plan
+
+See USER_GUIDE.md for workflow guidance, approvals, history, and exit behavior.""",
     )
     parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {version('netrecon')}",
     )
-    parser.add_argument("scan", nargs="?", type=Path, help="Path to an Nmap XML (-oX) file")
-    parser.add_argument(
+    inputs = parser.add_argument_group("XML scan inputs")
+    inputs.add_argument("scan", nargs="?", type=Path, help="Path to an Nmap XML (-oX) file")
+    inputs.add_argument(
         "compare_scan",
         nargs="?",
         type=Path,
         help="Second Nmap XML file used with --diff, --analysis-diff, or --combined-diff",
     )
-    parser.add_argument(
+    output = parser.add_argument_group("output and collection controls")
+    output.add_argument(
         "--format",
         choices=("text", "json"),
         default="text",
         help="Output format (default: text)",
     )
-    parser.add_argument(
+    output.add_argument(
         "--evidence-timeout",
         type=positive_timeout,
         default=60.0,
         help="Per-command evidence collection timeout in seconds (default: 60)",
     )
-    parser.add_argument(
+    investigation_controls = parser.add_argument_group("investigation controls")
+    investigation_controls.add_argument(
         "--investigation-history",
         type=Path,
         metavar="FILE",
         help="Persist and compare completed --investigate-collect synthesis records in an append-only JSONL file",
     )
-    parser.add_argument(
+    investigation_controls.add_argument(
         "--adaptive-plan",
         action="store_true",
         help="Show the terminal adaptive decision reached by --investigate-collect",
     )
-    parser.add_argument(
+    investigation_controls.add_argument(
         "--approve-requirement",
         action="append",
         default=[],
         metavar="REQUIREMENT_ID",
         help="Explicitly approve a finding-derived collection requirement during --investigate-collect; repeat for multiple approvals",
     )
-    mode = parser.add_mutually_exclusive_group()
+    mode = parser.add_mutually_exclusive_group(title="operation modes")
     mode.add_argument(
         "--discover",
         metavar="TARGET",
