@@ -1999,6 +1999,9 @@ class CliTests(unittest.TestCase):
         appended = append_mock.call_args.args[1]
         self.assertEqual(appended.target, "192.0.2.240")
         self.assertIs(appended.synthesis, complete_synthesis)
+        self.assertEqual(appended.schema_version, 2)
+        self.assertEqual(appended.synthesis.status, "complete")
+        self.assertEqual(appended.synthesis.reason, "all_gaps_resolved")
 
 
     @patch("netrecon.append_investigation_history_record")
