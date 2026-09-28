@@ -1112,9 +1112,14 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
     if not result.outcomes:
         lines.append("None")
 
+    rendered_snapshot = (
+        final_snapshot
+        if final_snapshot is not None
+        else (alternative_round.snapshot if alternative_round is not None else result.snapshot)
+    )
     remaining = {
         (gap.host, gap.port, gap.protocol, gap.script_id)
-        for gap in result.snapshot.gaps
+        for gap in rendered_snapshot.gaps
     }
 
     for outcome in result.outcomes:
@@ -1211,11 +1216,7 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
             )
 
     lines.append("")
-    lines.append(render_investigation_snapshot(
-        final_snapshot
-        if final_snapshot is not None
-        else (alternative_round.snapshot if alternative_round is not None else result.snapshot)
-    ))
+    lines.append(render_investigation_snapshot(rendered_snapshot))
     if attention is not None:
         lines.append("")
         lines.append(render_analyst_attention(attention))
