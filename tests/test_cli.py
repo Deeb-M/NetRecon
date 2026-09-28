@@ -1295,8 +1295,9 @@ class CliTests(unittest.TestCase):
         interpret_mock.return_value = discovery
         snapshot_mock.return_value = initial
         execute_evidence_mock.return_value = continuation
-        from investigation_orchestration import InvestigationContinuationDecision
+        from investigation_orchestration import InvestigationContinuationDecision, FinalInvestigationDecision
         decision = InvestigationContinuationDecision("complete", (), (), ())
+        final_decision = FinalInvestigationDecision("complete", "all_gaps_resolved", ())
         decision_mock.return_value = decision
         output = StringIO()
 
@@ -1315,10 +1316,10 @@ class CliTests(unittest.TestCase):
             attempted_actions=initial.actions,
         )
         render_mock.assert_called_once_with(
-            continuation, decision, None, None, (), (),
+            continuation, decision, None, final_decision, (), (),
             final_snapshot=continuation.snapshot,
         )
-        build_explanation_mock.assert_called_once_with(continuation.snapshot, final_decision=None)
+        build_explanation_mock.assert_called_once_with(continuation.snapshot, final_decision=final_decision)
         render_explanation_mock.assert_called_once_with("explanation-model")
         self.assertEqual(
             output.getvalue().strip(),
@@ -1455,8 +1456,9 @@ class CliTests(unittest.TestCase):
         interpret_mock.return_value = discovery
         snapshot_mock.return_value = initial
         execute_evidence_mock.return_value = continuation
-        from investigation_orchestration import InvestigationContinuationDecision
+        from investigation_orchestration import InvestigationContinuationDecision, FinalInvestigationDecision
         decision = InvestigationContinuationDecision("complete", (), (), ())
+        final_decision = FinalInvestigationDecision("complete", "all_gaps_resolved", ())
         decision_mock.return_value = decision
         output = StringIO()
 
@@ -1473,10 +1475,10 @@ class CliTests(unittest.TestCase):
             attempted_actions=initial.actions,
         )
         render_json_mock.assert_called_once_with(
-            continuation, decision, None, None, (), (),
+            continuation, decision, None, final_decision, (), (),
             final_snapshot=continuation.snapshot,
         )
-        build_explanation_mock.assert_called_once_with(continuation.snapshot, final_decision=None)
+        build_explanation_mock.assert_called_once_with(continuation.snapshot, final_decision=final_decision)
         render_explanation_json_mock.assert_called_once_with("explanation-model")
         payload = json.loads(output.getvalue())
         self.assertEqual(payload["report_type"], "investigation_continuation")
