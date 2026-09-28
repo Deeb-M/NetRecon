@@ -3732,6 +3732,8 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.remaining_requirements, ())
         self.assertEqual(final.satisfied_requirements, ())
         self.assertEqual(final.remaining_finding_requirements, ())
+        self.assertEqual(decision.status, "complete")
+        self.assertEqual(decision.next_actions, ())
 
     def test_finalize_stalled_continuation_preserves_reason(self) -> None:
         decision = InvestigationContinuationDecision(
