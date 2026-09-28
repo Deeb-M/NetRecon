@@ -26,13 +26,13 @@ class CliTests(unittest.TestCase):
         self.assertEqual(context.exception.code, 0)
         self.assertEqual(output.getvalue().strip(), "netrecon 0.1.0")
 
-    def test_help_describes_analysis_and_both_comparison_modes(self) -> None:
+    def test_help_describes_analysis_investigation_and_comparison_modes(self) -> None:
         parser = build_parser()
         help_text = parser.format_help()
         normalized_help = " ".join(help_text.split())
 
         self.assertIn(
-            "Analyze and compare Nmap XML scans with evidence-based findings and exposure summaries.",
+            "Analyze Nmap XML and run bounded, evidence-driven investigation workflows.",
             normalized_help,
         )
 
