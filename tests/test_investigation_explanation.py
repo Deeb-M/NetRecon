@@ -212,5 +212,39 @@ class InvestigationExplanationTests(unittest.TestCase):
         )
 
 
+    def test_endpoint_observed_facts_are_explained_as_known(self) -> None:
+        from investigation_state import EndpointInvestigationState
+
+        endpoint = EndpointInvestigationState(
+            host="192.0.2.143",
+            port=80,
+            protocol="tcp",
+            known=("state=open", "service=http", "product=Example HTTP Server"),
+            unknown=(),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml", hosts=()),
+            gaps=(),
+            actions=(),
+            states=(endpoint,),
+            error=None,
+        )
+
+        explanation = build_investigation_explanation(snapshot)
+
+        self.assertEqual(
+            explanation.known,
+            (
+                "192.0.2.143:80/tcp state=open",
+                "192.0.2.143:80/tcp service=http",
+                "192.0.2.143:80/tcp product=Example HTTP Server",
+            ),
+        )
+        self.assertEqual(explanation.unresolved, ())
+        self.assertEqual(explanation.blocked, ())
+        self.assertEqual(explanation.next_actions, ())
+
+
 if __name__ == "__main__":
     unittest.main()
