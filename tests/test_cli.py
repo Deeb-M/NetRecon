@@ -3296,6 +3296,10 @@ class CliTests(unittest.TestCase):
             execute_selected_mock.call_args.kwargs["explicitly_approved_requirement_ids"],
             frozenset({"smb_access_control_context"}),
         )
+        self.assertIs(
+            decision_mock.call_args_list[-1].args[0],
+            second_round,
+        )
 
 
 if __name__ == "__main__":
