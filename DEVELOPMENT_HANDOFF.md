@@ -6,37 +6,32 @@ Branch: main
 
 ## Verified checkpoint
 
-NetRecon **v0.1.0** remains the project's first public **Alpha pre-release** and an immutable historical release checkpoint.
+NetRecon **v0.2.0** is the current public **Alpha pre-release** and the latest immutable release checkpoint.
 
 Release:
-- Tag: `v0.1.0`
-- Release title: `NetRecon v0.1.0`
-- Tagged commit: `1749fcfc0d7ee66baf44ece08ef6b791413ccb4f`
+- Tag: `v0.2.0`
+- Release title: `NetRecon v0.2.0 — Bounded Investigation`
+- Tagged commit: `6bf36b20b97d44cd03bd214c4819b75a0a7f08d5`
 - Release type: Pre-release
 - License: MIT
 - Supported Python versions validated by CI: 3.10, 3.11, 3.12, 3.13, 3.14
-- Release assets: no separately uploaded assets; GitHub provides the source archives for the tag
-- The published tag must not be moved to include later development changes
+- Release assets: no separately uploaded assets; GitHub provides source archives for the tag
+- Validation baseline recorded at release: 806 automated tests plus installed-package/CLI and controlled field E2E validation
+- The published tag must not be moved to include later documentation or development changes
 
-The release itself was published with a verified **379-test** baseline.
+`v0.1.0` remains the immutable first public Alpha release at commit `1749fcfc0d7ee66baf44ece08ef6b791413ccb4f`.
 
-Post-release development on `main` has continued deliberately. The latest user-run full regression suite passed:
-
-```text
-Ran 395 tests in 0.096s
-
-OK
-```
-
-The authoritative continuation point for current development is therefore **main with 395 tests passing**, while `v0.1.0` remains the historical release snapshot.
+Post-v0.2.0 work on `main` includes user documentation, CLI help organization, public-release README alignment, a focused bug-report template, and stronger packaging coverage. These changes belong to development `main` and must not be backfilled into the v0.2.0 tag.
 
 ## Current project phase
 
-The systematic regression-expansion phase and Product Readiness work for **v0.1.0** are complete.
+The bounded Investigation product milestone represented by **v0.2.0** is released. Current work is post-release product/documentation hardening and audit, not uncontrolled feature expansion.
 
-Post-release work has begun with focused CLI/Product UX and documentation improvements. Do not add tests merely to increase the test count. Future development should remain deliberate, evidence-driven, and compatible with the evidence-first design.
+NetRecon remains an **Alpha** project. Preserve the product boundary:
 
-NetRecon remains an **Alpha** project. Core functionality is stable and covered by automated tests, while the Intelligence layer remains under active development.
+**Nmap discovers and collects network evidence. NetRecon plans bounded evidence collection, verifies observations, preserves provenance and lifecycle, interprets evidence conservatively, and explains when an investigation should continue or stop.**
+
+Do not reimplement Nmap. Do not turn missing evidence into resolution. Keep collection targeted, bounded, deterministic, authorization-aware, and explainable.
 
 ## v0.1.0 readiness completed
 
