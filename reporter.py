@@ -179,9 +179,20 @@ def render_investigation_memory(memory: InvestigationMemory) -> str:
     )
     for previous, current in memory.changed_finding_requirements:
         requirement = current.requirement
+        detail = f"{previous.status} -> {current.status}"
+        if previous.authorization_reason != current.authorization_reason:
+            detail += (
+                f"; authorization: {previous.authorization_reason} -> "
+                f"{current.authorization_reason}"
+            )
+        if previous.observed_script_ids != current.observed_script_ids:
+            detail += (
+                f"; observed scripts: {', '.join(previous.observed_script_ids) or 'none'} -> "
+                f"{', '.join(current.observed_script_ids) or 'none'}"
+            )
         lines.append(
             f"Changed Finding: {requirement.host}:{requirement.port}/{requirement.protocol}  "
-            f"{requirement.requirement_id} [{previous.status} -> {current.status}]"
+            f"{requirement.requirement_id} [{detail}]"
         )
     return "\n".join(lines)
 
