@@ -2358,6 +2358,9 @@ class CliTests(unittest.TestCase):
             appended.synthesis.reason,
             "explicit_approval_required",
         )
+        self.assertEqual(appended.schema_version, 2)
+        self.assertEqual(appended.target, "192.0.2.205")
+        self.assertIs(appended.synthesis, current)
 
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses")
