@@ -19,7 +19,7 @@ from evidence_gaps import summarize_evidence_gaps
 from evidence_planner import plan_host_evidence
 from exposure_history import summarize_exposure_history
 from finding_history import summarize_finding_history
-from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_attention, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions, execute_selected_evidence_actions
+from investigation_orchestration import assess_final_investigation_decision, assess_investigation_continuation, build_investigation_attention, build_investigation_snapshot, execute_alternative_evidence_round, execute_approved_evidence_actions, execute_selected_evidence_actions, finalize_continuation_decision
 from investigation_explanation import build_investigation_explanation
 from investigation_synthesis import build_investigation_synthesis
 from investigation_memory import compare_investigation_syntheses
@@ -264,14 +264,16 @@ def main() -> int:
             adaptive_plan = build_adaptive_investigation_plan(decision)
             adaptive_actions = select_adaptive_actions(adaptive_plan)
             adaptive_round_count += 1
+        adaptive_stop_reason = None
         if (
             adaptive_round_count >= max_adaptive_rounds
             and adaptive_plan.decision == "continue"
             and adaptive_actions
         ):
+            adaptive_stop_reason = "adaptive_round_limit_reached"
             adaptive_plan = AdaptiveInvestigationPlan(
                 "stop",
-                "adaptive_round_limit_reached",
+                adaptive_stop_reason,
             )
             adaptive_actions = ()
         final_continuation_decision = decision
@@ -285,6 +287,11 @@ def main() -> int:
                 explicitly_approved_requirement_ids=approved_requirement_ids,
             )
             final_decision = assess_final_investigation_decision(alternative_round)
+        elif adaptive_plan.decision == "stop":
+            final_decision = finalize_continuation_decision(
+                final_continuation_decision,
+                stop_reason=adaptive_stop_reason,
+            )
         final_snapshot = alternative_round.snapshot if alternative_round is not None else updated
         explanation = build_investigation_explanation(
             final_snapshot,
