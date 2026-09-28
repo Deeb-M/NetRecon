@@ -110,7 +110,7 @@ See USER_GUIDE.md for workflow guidance, approvals, history, and exit behavior."
         metavar="REQUIREMENT_ID",
         help="Explicitly approve a finding-derived collection requirement during --investigate-collect; repeat for multiple approvals",
     )
-    mode = parser.add_mutually_exclusive_group(title="operation modes")
+    mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--discover",
         metavar="TARGET",
