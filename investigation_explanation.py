@@ -25,6 +25,9 @@ def build_investigation_explanation(
     unresolved: list[str] = []
     blocked: list[str] = []
 
+    if not snapshot.ready and snapshot.error:
+        blocked.append(f"discovery — {snapshot.error}")
+
     for state in snapshot.states:
         endpoint = f"{state.host}:{state.port}/{state.protocol}"
         for fact in state.known:
