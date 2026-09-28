@@ -2637,6 +2637,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         )
 
     def test_reevaluation_does_not_regenerate_attempted_unsatisfied_dynamic_action(self) -> None:
+        from finding_collection_planner import FindingRequirementVerification
         from investigation_orchestration import re_evaluate_investigation
 
         requirement = FindingDerivedRequirement(
