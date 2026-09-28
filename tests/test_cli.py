@@ -2965,6 +2965,7 @@ class CliTests(unittest.TestCase):
             build_adaptive_mock.call_args.args[0],
             decision,
         )
+        self.assertEqual(assess_continuation_mock.call_count, 1)
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
