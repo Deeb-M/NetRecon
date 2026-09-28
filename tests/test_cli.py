@@ -2440,6 +2440,11 @@ class CliTests(unittest.TestCase):
             appended.synthesis.remaining_finding_requirements,
             (attempted,),
         )
+        self.assertEqual(appended.synthesis.status, "stalled")
+        self.assertEqual(
+            appended.synthesis.reason,
+            "finding_requirement_unsatisfied",
+        )
 
     @patch("netrecon.render_investigation_memory", return_value="Investigation Memory")
     @patch("netrecon.append_investigation_history_record")
