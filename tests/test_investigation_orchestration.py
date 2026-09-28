@@ -15,7 +15,7 @@ from scan_orchestration import (
     build_baseline_discovery_plan,
 )
 
-from investigation_orchestration import build_investigation_snapshot, re_evaluate_investigation
+from investigation_orchestration import InvestigationContinuationDecision, build_investigation_snapshot, finalize_continuation_decision, re_evaluate_investigation
 
 
 class InvestigationOrchestrationTests(unittest.TestCase):
