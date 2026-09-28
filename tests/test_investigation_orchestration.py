@@ -3747,6 +3747,9 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.remaining_requirements, ())
         self.assertEqual(final.satisfied_requirements, ())
         self.assertEqual(final.remaining_finding_requirements, ())
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.stall_reason, "repeated_actions_exhausted")
+        self.assertEqual(decision.next_actions, ())
 
     def test_finalize_stalled_continuation_preserves_remaining_requirements(self) -> None:
         gap = EvidenceGap(
