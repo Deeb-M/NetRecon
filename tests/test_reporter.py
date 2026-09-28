@@ -994,6 +994,53 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Evidence Source: nse:smb2-security-mode", report)
         self.assertIn("Authorization: explicitly_approved", report)
 
+    def test_renders_finding_requirement_lifecycle_json(self) -> None:
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.21",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement=requirement,
+            status="satisfied",
+            authorization_reason="explicitly_approved",
+            observed_script_ids=("smb-enum-shares",),
+        )
+        snapshot = InvestigationSnapshot(
+            ready=True,
+            scan=Scan(source="test.xml"),
+            gaps=(),
+            actions=(),
+            states=(),
+            error=None,
+            finding_requirement_states=(state,),
+        )
+
+        payload = json.loads(render_investigation_snapshot_json(snapshot))
+
+        self.assertEqual(payload["summary"]["finding_requirement_states"], 1)
+        self.assertEqual(
+            payload["finding_requirement_states"],
+            [
+                {
+                    "host": "192.0.2.21",
+                    "port": 445,
+                    "protocol": "tcp",
+                    "requirement_id": "smb_access_control_context",
+                    "purpose": "review SMB access controls",
+                    "finding_id": "smb.signing.review",
+                    "evidence_source": "nse:smb2-security-mode",
+                    "status": "satisfied",
+                    "authorization_reason": "explicitly_approved",
+                    "observed_script_ids": ["smb-enum-shares"],
+                }
+            ],
+        )
+
     def test_renders_blocked_investigation_snapshot_without_actions(self) -> None:
         snapshot = InvestigationSnapshot(
             ready=False,
@@ -1048,6 +1095,7 @@ class ReporterTests(unittest.TestCase):
                 "proposed_actions": 1,
                 "investigation_states": 0,
                 "pending_approvals": 0,
+                "finding_requirement_states": 0,
             },
         )
         self.assertEqual(payload["error"], None)
