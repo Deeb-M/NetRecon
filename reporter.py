@@ -174,6 +174,15 @@ def render_investigation_memory(memory: InvestigationMemory) -> str:
             f"Resolved Finding: {requirement.host}:{requirement.port}/{requirement.protocol}  "
             f"{requirement.requirement_id} [{state.status}]"
         )
+    lines.append(
+        f"Changed Finding Requirements: {len(memory.changed_finding_requirements)}"
+    )
+    for previous, current in memory.changed_finding_requirements:
+        requirement = current.requirement
+        lines.append(
+            f"Changed Finding: {requirement.host}:{requirement.port}/{requirement.protocol}  "
+            f"{requirement.requirement_id} [{previous.status} -> {current.status}]"
+        )
     return "\n".join(lines)
 
 
@@ -199,6 +208,7 @@ def render_investigation_memory_json(memory: InvestigationMemory) -> str:
                 "resolved_requirements": len(memory.resolved_requirements),
                 "added_finding_requirements": len(memory.added_finding_requirements),
                 "resolved_finding_requirements": len(memory.resolved_finding_requirements),
+                "changed_finding_requirements": len(memory.changed_finding_requirements),
             },
             "added_requirements": [asdict(state) for state in memory.added_requirements],
             "resolved_requirements": [asdict(state) for state in memory.resolved_requirements],
@@ -207,6 +217,10 @@ def render_investigation_memory_json(memory: InvestigationMemory) -> str:
             ],
             "resolved_finding_requirements": [
                 asdict(state) for state in memory.resolved_finding_requirements
+            ],
+            "changed_finding_requirements": [
+                {"previous": asdict(previous), "current": asdict(current)}
+                for previous, current in memory.changed_finding_requirements
             ],
         },
         indent=2,
