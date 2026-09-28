@@ -1488,9 +1488,12 @@ class CliTests(unittest.TestCase):
             payload["investigation_explanation"]["report_type"],
             "investigation_explanation",
         )
-        self.assertEqual(payload["final_decision"]["status"], "complete")
         self.assertEqual(
-            payload["final_decision"]["reason"],
+            render_json_mock.call_args.args[3].status,
+            "complete",
+        )
+        self.assertEqual(
+            render_json_mock.call_args.args[3].reason,
             "all_gaps_resolved",
         )
 
