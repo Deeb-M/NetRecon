@@ -1194,6 +1194,56 @@ def render_dynamic_evidence_round(result) -> str:
     return "\n".join(lines)
 
 
+
+def render_dynamic_evidence_rounds(results) -> str:
+    """Render ordered provenance for all bounded adaptive Continue rounds."""
+    rounds = tuple(results)
+    lines = [
+        "Dynamic Evidence Rounds",
+        "-----------------------",
+    ]
+    if not rounds:
+        lines.append("None")
+        return "\n".join(lines)
+
+    for index, result in enumerate(rounds, start=1):
+        lines.append(f"Round {index}")
+        rendered = render_dynamic_evidence_round(result).splitlines()
+        lines.extend(rendered[2:])
+        if index != len(rounds):
+            lines.append("")
+    return "\n".join(lines)
+
+
+def render_dynamic_evidence_rounds_json(results) -> list[dict]:
+    """Return ordered machine-readable provenance for adaptive Continue rounds."""
+    rendered = []
+    for index, result in enumerate(results, start=1):
+        rendered.append(
+            {
+                "round": index,
+                "collection_outcomes": [
+                    {
+                        "argv": list(outcome.result.command.arguments),
+                        "collection_status": "success" if outcome.scan is not None else "failed",
+                        "returncode": outcome.result.returncode,
+                        "failure": outcome.failure_message,
+                    }
+                    for outcome in result.outcomes
+                ],
+                "finding_requirement_verifications": [
+                    {
+                        "requirement_id": verification.requirement.requirement_id,
+                        "status": verification.status,
+                        "observed_script_ids": list(verification.observed_script_ids),
+                    }
+                    for verification in result.finding_requirement_verifications
+                ],
+            }
+        )
+    return rendered
+
+
 def _investigation_continuation_outcomes(result):
     remaining = {
         (gap.host, gap.port, gap.protocol, gap.script_id)
