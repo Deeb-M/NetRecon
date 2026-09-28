@@ -484,7 +484,7 @@ def finalize_continuation_decision(
         reason=reason,
         remaining_gaps=continuation.remaining_gaps,
         further_actions=(),
-        remaining_requirements=(),
+        remaining_requirements=requirement_states_for_gaps(continuation.remaining_gaps),
         satisfied_requirements=continuation.resolved_requirements,
     )
 
