@@ -3504,6 +3504,26 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.status, "stalled")
         self.assertEqual(final.reason, "repeated_actions_exhausted")
 
+    def test_finalize_stalled_continuation_preserves_remaining_requirements(self) -> None:
+        gap = EvidenceGap(
+            "192.0.2.241",
+            5357,
+            "tcp",
+            "http-title",
+            "review HTTP service identity and exposed content context",
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled", (), (gap,), (), stall_reason="repeated_actions_exhausted"
+        )
+
+        final = finalize_continuation_decision(decision)
+
+        self.assertEqual(len(final.remaining_requirements), 1)
+        self.assertEqual(
+            final.remaining_requirements[0].requirement.requirement_id,
+            "http_identity_context",
+        )
+
     def test_finalize_continuation_accepts_controller_stop_reason(self) -> None:
         decision = InvestigationContinuationDecision("progressed", (), (), ())
         final = finalize_continuation_decision(
