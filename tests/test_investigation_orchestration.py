@@ -3554,6 +3554,37 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         self.assertEqual(final.remaining_finding_requirements, (state,))
 
+    def test_finalize_preserves_attempted_unsatisfied_finding_requirement(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+
+        requirement = FindingDerivedRequirement(
+            requirement_id="smb_access_control_context",
+            host="192.0.2.253",
+            port=445,
+            protocol="tcp",
+            purpose="review SMB access controls",
+            finding_id="smb.signing.review",
+            evidence_source="nse:smb2-security-mode",
+        )
+        state = FindingRequirementState(
+            requirement=requirement,
+            status="attempted_unsatisfied",
+            authorization_reason="explicitly_approved",
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled",
+            (),
+            (),
+            (),
+            stall_reason="finding_requirement_unsatisfied",
+            remaining_finding_requirements=(state,),
+        )
+
+        final = finalize_continuation_decision(decision)
+
+        self.assertEqual(final.reason, "finding_requirement_unsatisfied")
+        self.assertEqual(final.remaining_finding_requirements, (state,))
+
     def test_finalize_continuation_accepts_controller_stop_reason(self) -> None:
         decision = InvestigationContinuationDecision("progressed", (), (), ())
         final = finalize_continuation_decision(
