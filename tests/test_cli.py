@@ -2248,6 +2248,9 @@ class CliTests(unittest.TestCase):
         appended = append_mock.call_args.args[1]
         self.assertEqual(appended.target, "192.0.2.204")
         self.assertIs(appended.synthesis, current)
+        self.assertEqual(appended.schema_version, 2)
+        self.assertEqual(appended.synthesis.status, "stalled")
+        self.assertEqual(appended.synthesis.reason, "no_supported_actions")
 
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses")
