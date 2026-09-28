@@ -327,6 +327,7 @@ class FinalInvestigationDecision:
     further_actions: tuple[EvidenceAction, ...] = ()
     remaining_requirements: tuple[EvidenceRequirementState, ...] = ()
     satisfied_requirements: tuple[EvidenceRequirementState, ...] = ()
+    remaining_finding_requirements: tuple[FindingRequirementState, ...] = ()
 
 
 def assess_final_investigation_decision(
@@ -399,6 +400,7 @@ def assess_final_investigation_decision(
             (),
             (),
             (),
+            pending_approval_requirements,
         )
 
     if not remaining and unsatisfied_finding_requirements:
@@ -409,10 +411,11 @@ def assess_final_investigation_decision(
             (),
             (),
             (),
+            unsatisfied_finding_requirements,
         )
 
     if not remaining:
-        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), (), ())
+        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), (), (), ())
 
     if not remaining_requirements:
         return FinalInvestigationDecision(
@@ -459,6 +462,7 @@ class InvestigationContinuationDecision:
     stall_reason: str | None = None
     alternative_actions: tuple[EvidenceAction, ...] = ()
     resolved_requirements: tuple[EvidenceRequirementState, ...] = ()
+    remaining_finding_requirements: tuple[FindingRequirementState, ...] = ()
 
 
 def finalize_continuation_decision(
@@ -486,6 +490,7 @@ def finalize_continuation_decision(
         further_actions=(),
         remaining_requirements=requirement_states_for_gaps(continuation.remaining_gaps),
         satisfied_requirements=continuation.resolved_requirements,
+        remaining_finding_requirements=continuation.remaining_finding_requirements,
     )
 
 
@@ -640,4 +645,9 @@ def assess_investigation_continuation(
         stall_reason=stall_reason,
         alternative_actions=alternative_actions,
         resolved_requirements=resolved_requirement_states(before.gaps, after.gaps),
+        remaining_finding_requirements=tuple(
+            state
+            for state in after.finding_requirement_states
+            if state.status in {"pending_approval", "attempted_unsatisfied"}
+        ),
     )
