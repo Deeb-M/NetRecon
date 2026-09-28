@@ -3334,6 +3334,14 @@ class CliTests(unittest.TestCase):
             timeout=60.0,
             explicitly_approved_requirement_ids=frozenset({"smb_access_control_context"}),
         )
+        decision_mock.assert_called_once_with(
+            initial,
+            updated,
+            attempted_actions=initial.actions,
+        )
+        self.assertIs(render_mock.call_args.kwargs["final_snapshot"], updated)
+        self.assertEqual(render_mock.call_args.args[3].status, "complete")
+        self.assertEqual(render_mock.call_args.args[3].reason, "all_gaps_resolved")
 
     def test_approve_requirement_requires_investigate_collect(self) -> None:
         from netrecon import main
