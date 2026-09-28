@@ -17,7 +17,7 @@ from evidence_collector import (
     parse_collection_outcome,
 )
 from investigation_state import EndpointInvestigationState, summarize_investigation_state
-from finding_collection_planner import build_authorized_finding_evidence_actions
+from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, FindingRequirementVerification, verify_finding_collection_plan
 from models import Scan
 from scan_orchestration import DiscoveryResult
 
@@ -121,6 +121,7 @@ class InvestigationContinuationResult:
 
     outcomes: tuple[ParsedCollectionResult, ...]
     snapshot: InvestigationSnapshot
+    finding_requirement_verifications: tuple[FindingRequirementVerification, ...] = ()
 
 
 def execute_selected_evidence_actions(
@@ -144,13 +145,29 @@ def execute_selected_evidence_actions(
         for action in actions
     )
 
+    updated_snapshot = re_evaluate_investigation(
+        snapshot.scan,
+        outcomes,
+        explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+    )
+    selected_commands = {action.command for action in actions}
+    finding_plans = build_finding_collection_plans(
+        analyze_scan(snapshot.scan),
+        explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+    )
+    finding_verifications = tuple(
+        verify_finding_collection_plan(plan, updated_snapshot.scan)
+        for plan in finding_plans
+        if (
+            plan.authorization.allowed
+            and (action := evidence_action_for_finding_collection_plan(plan)) is not None
+            and action.command in selected_commands
+        )
+    )
     return InvestigationContinuationResult(
         outcomes=outcomes,
-        snapshot=re_evaluate_investigation(
-            snapshot.scan,
-            outcomes,
-            explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
-        ),
+        snapshot=updated_snapshot,
+        finding_requirement_verifications=finding_verifications,
     )
 
 
