@@ -3798,7 +3798,13 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         final = finalize_continuation_decision(decision)
 
+        self.assertEqual(final.status, "stalled")
+        self.assertEqual(final.reason, "explicit_approval_required")
         self.assertEqual(final.remaining_finding_requirements, (state,))
+        self.assertEqual(final.remaining_gaps, ())
+        self.assertEqual(final.remaining_requirements, ())
+        self.assertEqual(final.further_actions, ())
+        self.assertEqual(final.satisfied_requirements, ())
 
     def test_finalize_preserves_attempted_unsatisfied_finding_requirement(self) -> None:
         from finding_collection_planner import FindingRequirementState
