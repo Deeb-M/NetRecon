@@ -3744,6 +3744,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             "stalled", (), (), (), stall_reason="repeated_actions_exhausted"
         )
         final = finalize_continuation_decision(decision)
+        self.assertIsNot(final, decision)
         self.assertEqual(final.status, "stalled")
         self.assertEqual(final.reason, "repeated_actions_exhausted")
         self.assertEqual(final.further_actions, ())
