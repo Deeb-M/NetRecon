@@ -1214,6 +1214,18 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
                 f"Requirement: {state.host}:{state.port}/{state.protocol}  "
                 f"{requirement.requirement_id} — {requirement.purpose}"
             )
+        lines.append(
+            f"Remaining Finding Requirements: "
+            f"{len(final_decision.remaining_finding_requirements)}"
+        )
+        for state in final_decision.remaining_finding_requirements:
+            requirement = state.requirement
+            lines.append(
+                f"Finding Requirement: "
+                f"{requirement.host}:{requirement.port}/{requirement.protocol}  "
+                f"{requirement.requirement_id} — {requirement.purpose} "
+                f"[{state.status}]"
+            )
 
     lines.append("")
     lines.append(render_investigation_snapshot(rendered_snapshot))
