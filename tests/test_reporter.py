@@ -1477,6 +1477,66 @@ class ReporterTests(unittest.TestCase):
         )
 
 
+    def test_final_decision_json_preserves_remaining_finding_lifecycle(self) -> None:
+        import json
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_orchestration import (
+            FinalInvestigationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+        )
+        from models import Scan
+        from reporter import render_investigation_continuation_json
+
+        requirement = FindingDerivedRequirement(
+            "smb_access_control_context",
+            "192.0.2.111",
+            445,
+            "tcp",
+            "review SMB access controls",
+            "smb.signing.review",
+            "script:smb2-security-mode",
+        )
+        finding_state = FindingRequirementState(
+            requirement,
+            "pending_approval",
+            "explicit_approval_required",
+        )
+        snapshot = InvestigationSnapshot(True, Scan("test.xml"), (), (), (), None)
+        final = FinalInvestigationDecision(
+            status="stalled",
+            reason="explicit_approval_required",
+            remaining_gaps=(),
+            remaining_finding_requirements=(finding_state,),
+        )
+
+        payload = json.loads(
+            render_investigation_continuation_json(
+                InvestigationContinuationResult((), snapshot),
+                None,
+                None,
+                final,
+            )
+        )["final_investigation_decision"]["remaining_finding_requirements"]
+
+        self.assertEqual(
+            payload,
+            [{
+                "requirement_id": "smb_access_control_context",
+                "host": "192.0.2.111",
+                "port": 445,
+                "protocol": "tcp",
+                "purpose": "review SMB access controls",
+                "finding_id": "smb.signing.review",
+                "evidence_source": "script:smb2-security-mode",
+                "status": "pending_approval",
+                "authorization_reason": "explicit_approval_required",
+                "observed_script_ids": [],
+            }],
+        )
+
+
     def test_final_decision_reports_real_remaining_semantic_requirement(self) -> None:
         import json
         from evidence_gaps import EvidenceGap, EvidenceRequirement, EvidenceRequirementState
