@@ -12,6 +12,7 @@ from finding_collection_planner import FindingCollectionPlan, FindingRequirement
 from finding_requirements import FindingDerivedRequirement
 from requirement_collection import CollectionAuthorizationDecision, RequirementCollectionStrategy
 from investigation_state import EndpointInvestigationState
+from investigation_explanation import InvestigationExplanation
 from evidence_collector import (
     CollectionResult,
     CorrelatedEvidenceResult,
@@ -20,7 +21,7 @@ from evidence_collector import (
 )
 from models import Host, Port, Scan, ScriptResult
 from scan_orchestration import DiscoveryExecutionResult, DiscoveryPlan, DiscoveryResult
-from reporter import render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_dynamic_evidence_round
+from reporter import render_investigation_explanation, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_action_plan, render_evidence_action_plan_json, render_evidence_collection, render_evidence_collection_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_findings, render_host_summaries, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_dynamic_evidence_round
 
 
 class ReporterTests(unittest.TestCase):
@@ -2220,6 +2221,31 @@ class ReporterTests(unittest.TestCase):
         self.assertIn(
             "Next Step: no automatic retry or unsupported alternative",
             report,
+        )
+
+
+    def test_render_investigation_explanation_text(self) -> None:
+        explanation = InvestigationExplanation(
+            known=("192.0.2.143:80/tcp state=open",),
+            unresolved=("192.0.2.143:80/tcp http-title — identify the HTTP service",),
+            blocked=("smb_access_control_context — explicit approval required",),
+            next_actions=("nmap -p 80 --script http-title -oX - 192.0.2.143",),
+        )
+
+        rendered = render_investigation_explanation(explanation)
+
+        self.assertEqual(
+            rendered,
+            "Investigation Explanation\n"
+            "-------------------------\n"
+            "Known\n"
+            "- 192.0.2.143:80/tcp state=open\n"
+            "Unresolved\n"
+            "- 192.0.2.143:80/tcp http-title — identify the HTTP service\n"
+            "Blocked\n"
+            "- smb_access_control_context — explicit approval required\n"
+            "Next\n"
+            "- nmap -p 80 --script http-title -oX - 192.0.2.143",
         )
 
 
