@@ -3765,6 +3765,10 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             final.remaining_requirements[0].requirement.requirement_id,
             "http_identity_context",
         )
+        self.assertEqual(final.remaining_gaps, (gap,))
+        self.assertEqual(final.further_actions, ())
+        self.assertEqual(final.satisfied_requirements, ())
+        self.assertEqual(final.remaining_finding_requirements, ())
 
     def test_finalize_preserves_pending_finding_requirement(self) -> None:
         from finding_collection_planner import FindingRequirementState
