@@ -2332,16 +2332,6 @@ class CliTests(unittest.TestCase):
     @patch("netrecon.build_investigation_snapshot")
     @patch("netrecon.interpret_discovery_execution")
     @patch("netrecon.execute_discovery_plan")
-    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
-    @patch("netrecon.correlate_analyst_attention", return_value=())
-    @patch("netrecon.build_investigation_attention", return_value=())
-    @patch("netrecon.execute_alternative_evidence_round")
-    @patch("netrecon.execute_selected_evidence_actions")
-    @patch("netrecon.assess_investigation_continuation")
-    @patch("netrecon.execute_approved_evidence_actions")
-    @patch("netrecon.build_investigation_snapshot")
-    @patch("netrecon.interpret_discovery_execution")
-    @patch("netrecon.execute_discovery_plan")
     @patch("netrecon.build_baseline_discovery_plan")
     def test_adaptive_continue_runs_until_terminal_decision(
         self,
