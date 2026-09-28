@@ -671,6 +671,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         from investigation_orchestration import (
             InvestigationSnapshot,
             assess_investigation_continuation,
+    finalize_continuation_decision,
         )
         from models import Scan
 
@@ -3485,6 +3486,31 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(satisfied.observed_script_ids, ("smb-enum-shares",))
         self.assertEqual(unsatisfied.status, "unsatisfied")
         self.assertEqual(unsatisfied.observed_script_ids, ())
+
+
+
+    def test_finalize_complete_continuation(self) -> None:
+        decision = InvestigationContinuationDecision("complete", (), (), ())
+        final = finalize_continuation_decision(decision)
+        self.assertEqual(final.status, "complete")
+        self.assertEqual(final.reason, "all_gaps_resolved")
+        self.assertEqual(final.remaining_gaps, ())
+
+    def test_finalize_stalled_continuation_preserves_reason(self) -> None:
+        decision = InvestigationContinuationDecision(
+            "stalled", (), (), (), stall_reason="repeated_actions_exhausted"
+        )
+        final = finalize_continuation_decision(decision)
+        self.assertEqual(final.status, "stalled")
+        self.assertEqual(final.reason, "repeated_actions_exhausted")
+
+    def test_finalize_continuation_accepts_controller_stop_reason(self) -> None:
+        decision = InvestigationContinuationDecision("progressed", (), (), ())
+        final = finalize_continuation_decision(
+            decision, stop_reason="adaptive_round_limit_reached"
+        )
+        self.assertEqual(final.status, "stalled")
+        self.assertEqual(final.reason, "adaptive_round_limit_reached")
 
 
 if __name__ == "__main__":
