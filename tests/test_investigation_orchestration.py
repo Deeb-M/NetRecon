@@ -1055,6 +1055,42 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         self.assertEqual(decision.reason, "finding_requirement_unsatisfied")
         self.assertEqual(decision.remaining_finding_requirements, (state,))
 
+    def test_final_decision_preserves_all_unresolved_finding_requirements_with_approval_precedence(self) -> None:
+        from finding_collection_planner import FindingRequirementState
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from models import Scan
+
+        pending_requirement = FindingDerivedRequirement(
+            "pending_context", "192.0.2.207", 445, "tcp",
+            "review pending context", "finding.pending", "source",
+        )
+        unsatisfied_requirement = FindingDerivedRequirement(
+            "unsatisfied_context", "192.0.2.207", 445, "tcp",
+            "review unsatisfied context", "finding.unsatisfied", "source",
+        )
+        pending = FindingRequirementState(
+            pending_requirement, "pending_approval", "explicit_approval_required", ()
+        )
+        unsatisfied = FindingRequirementState(
+            unsatisfied_requirement, "attempted_unsatisfied", "explicitly_approved", ()
+        )
+        snapshot = InvestigationSnapshot(
+            True, Scan("mixed-final.xml"), (), (), (), None,
+            finding_requirement_states=(pending, unsatisfied),
+        )
+
+        decision = assess_final_investigation_decision(
+            AlternativeEvidenceRoundResult((), (), snapshot)
+        )
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.reason, "explicit_approval_required")
+        self.assertEqual(decision.remaining_finding_requirements, (pending, unsatisfied))
+
     def test_final_decision_does_not_complete_with_pending_approval_requirement(self) -> None:
         from finding_collection_planner import FindingRequirementState
         from investigation_orchestration import (
