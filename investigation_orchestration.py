@@ -452,6 +452,7 @@ def assess_final_investigation_decision(
         (),
         remaining_requirements,
         satisfied_requirements_tuple,
+        unresolved_finding_requirements,
     )
 
 
