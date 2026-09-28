@@ -2332,8 +2332,18 @@ class CliTests(unittest.TestCase):
     @patch("netrecon.build_investigation_snapshot")
     @patch("netrecon.interpret_discovery_execution")
     @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
+    @patch("netrecon.correlate_analyst_attention", return_value=())
+    @patch("netrecon.build_investigation_attention", return_value=())
+    @patch("netrecon.execute_alternative_evidence_round")
+    @patch("netrecon.execute_selected_evidence_actions")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
     @patch("netrecon.build_baseline_discovery_plan")
-    def test_adaptive_continue_is_limited_to_one_additional_round(
+    def test_adaptive_continue_runs_until_terminal_decision(
         self,
         build_plan_mock,
         execute_discovery_mock,
@@ -2371,7 +2381,8 @@ class CliTests(unittest.TestCase):
         )
         initial = InvestigationSnapshot(True, scan, (), (initial_action,), (), None)
         updated = InvestigationSnapshot(True, scan, (), (second_action,), (), None)
-        continued = InvestigationSnapshot(True, scan, (), (third_action,), (), None)
+        second = InvestigationSnapshot(True, scan, (), (third_action,), (), None)
+        final = InvestigationSnapshot(True, scan, (), (), (), None)
 
         build_plan_mock.return_value = object()
         execute_discovery_mock.return_value = object()
@@ -2381,19 +2392,32 @@ class CliTests(unittest.TestCase):
         assess_continuation_mock.side_effect = (
             InvestigationContinuationDecision("progressed", (), (), (second_action,)),
             InvestigationContinuationDecision("progressed", (), (), (third_action,)),
+            InvestigationContinuationDecision("complete", (), (), ()),
         )
-        execute_selected_mock.return_value = InvestigationContinuationResult((), continued)
+        execute_selected_mock.side_effect = (
+            InvestigationContinuationResult((), second),
+            InvestigationContinuationResult((), final),
+        )
 
         with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.221"]):
             with redirect_stdout(StringIO()):
                 self.assertEqual(main(), 0)
 
-        execute_selected_mock.assert_called_once_with(
-            updated,
-            (second_action,),
-            timeout=60.0,
+        self.assertEqual(execute_selected_mock.call_count, 2)
+        self.assertEqual(
+            execute_selected_mock.call_args_list[0].args,
+            (updated, (second_action,)),
         )
-        self.assertEqual(execute_selected_mock.call_count, 1)
+        self.assertEqual(
+            execute_selected_mock.call_args_list[1].args,
+            (second, (third_action,)),
+        )
+        self.assertEqual(assess_continuation_mock.call_count, 3)
+        assess_continuation_mock.assert_any_call(
+            second,
+            final,
+            attempted_actions=(initial_action, second_action, third_action),
+        )
         execute_alternative_mock.assert_not_called()
 
 
