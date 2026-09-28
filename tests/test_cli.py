@@ -3004,11 +3004,19 @@ class CliTests(unittest.TestCase):
             continued,
             attempted_actions=(initial_action, next_action),
         )
-        self.assertIs(render_mock.call_args.args[0], continuation := execute_approved_mock.return_value)
+        self.assertIs(render_mock.call_args.args[0], execute_approved_mock.return_value)
         self.assertIs(render_mock.call_args.args[1], second_decision)
         self.assertIs(
             render_mock.call_args.kwargs["final_snapshot"],
             continued,
+        )
+        self.assertEqual(
+            render_mock.call_args.args[3].status,
+            "complete",
+        )
+        self.assertEqual(
+            render_mock.call_args.args[3].reason,
+            "all_gaps_resolved",
         )
 
 
