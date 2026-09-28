@@ -2097,3 +2097,37 @@ Regression sequence:
 - `9e9db43`: satisfied lifecycle explicitly permits final completion when no primary gaps remain.
 
 Milestone status: **FINDING REQUIREMENT LIFECYCLE → DECISION SEMANTICS CI-VALIDATED**.
+
+
+## Investigation Explanation — Known / Unresolved / Blocked / Next
+
+Status: **CI-validated and field-validated** on 2026-09-28 against the authorized lab target `192.168.227.138`.
+
+The explanation layer is a projection of established investigation state. It does not run Nmap, re-run analysis, create findings, invent retries, or bypass authorization.
+
+Source-of-truth mapping:
+- `snapshot.states[].known` -> **Known** observed endpoint facts.
+- Finding lifecycle evidence -> **Known** finding/evidence provenance.
+- `snapshot.gaps` and non-terminal finding requirements -> **Unresolved**.
+- Discovery failure, `pending_approval`, and `attempted_unsatisfied` -> **Blocked**.
+- Before a final decision exists, `snapshot.actions` may supply **Next**.
+- Once a `FinalInvestigationDecision` exists, only `final_decision.further_actions` may supply **Next**. Stale snapshot proposals must not be presented as currently justified actions.
+
+Rendering and integration:
+- Text renderer: `render_investigation_explanation`.
+- JSON renderer: `render_investigation_explanation_json`.
+- `investigation_explanation` is included in installed-package metadata.
+- CLI builds the explanation from the freshest/final snapshot and passes the final decision when available.
+- JSON keeps the explanation inside the existing investigation-continuation envelope rather than creating a competing top-level workflow.
+
+Field validation exposed and then verified a semantic correction. After the primary HTTP collection (`http-title,http-methods`) returned incomplete evidence, the repeat guard blocked re-running it, the bounded alternative (`http-headers`) was attempted once and also returned incomplete, and the final decision was `stalled / alternative_evidence_incomplete` with zero further supported actions. The snapshot still contained the original proposed HTTP action, but the corrected Explanation rendered **Next** empty. No HTTP retry was invented and `smb-enum-shares` was not executed without explicit approval.
+
+Field-validated final explanation included:
+- observed RPC, NetBIOS, SMB, and HTTP endpoint facts under **Known**;
+- the two unresolved HTTP evidence gaps plus `smb_access_control_context` under **Unresolved**;
+- `smb_access_control_context — explicit approval required` under **Blocked**;
+- no entry under **Next**.
+
+Design note: `Adaptive Investigation Plan` currently reports the adaptive decision that existed before the bounded alternative round, so in the final combined text it can still display the already-executed `http-headers` alternative. `Final Investigation Decision` and `Investigation Explanation` represent the later/final state. This is a presentation/time-context distinction, not permission to re-run the action. If the CLI is later simplified, label or placement can make this temporal distinction clearer without changing reasoning semantics.
+
+Milestone: **INVESTIGATION EXPLANATION — KNOWN / UNRESOLVED / BLOCKED / NEXT — FIELD VALIDATED**.
