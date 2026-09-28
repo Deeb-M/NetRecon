@@ -3913,6 +3913,11 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         )
         self.assertEqual(decision.satisfied_requirements, ())
         self.assertEqual(decision.remaining_finding_requirements, (pending,))
+        self.assertIs(decision.remaining_finding_requirements[0], pending)
+        self.assertEqual(
+            decision.remaining_finding_requirements[0].authorization_reason,
+            "explicit_approval_required",
+        )
         self.assertEqual(
             tuple(state.status for state in decision.remaining_finding_requirements),
             ("pending_approval",),
