@@ -2468,6 +2468,9 @@ class CliTests(unittest.TestCase):
             appended.synthesis.reason,
             "finding_requirement_unsatisfied",
         )
+        self.assertEqual(appended.schema_version, 2)
+        self.assertEqual(appended.target, "192.0.2.206")
+        self.assertIs(appended.synthesis, current)
 
     @patch("netrecon.render_investigation_memory", return_value="Investigation Memory")
     @patch("netrecon.append_investigation_history_record")
