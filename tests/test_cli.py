@@ -3201,6 +3201,8 @@ class CliTests(unittest.TestCase):
             render_mock.call_args.kwargs["final_snapshot"],
             continued,
         )
+        self.assertIs(render_mock.call_args.args[1], assess_continuation_mock.return_value)
+        self.assertIsNone(render_mock.call_args.args[2])
         for call in execute_selected_mock.call_args_list:
             self.assertEqual(call.args[1], (next_action,))
         self.assertEqual(
