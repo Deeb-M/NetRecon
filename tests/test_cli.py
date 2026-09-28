@@ -3124,6 +3124,7 @@ class CliTests(unittest.TestCase):
         self.assertIn("Status: stalled", output.getvalue())
         self.assertIn("Reason: adaptive_round_limit_reached", output.getvalue())
         self.assertNotIn("Status: complete", output.getvalue())
+        self.assertIn("Remaining Requirements:", output.getvalue())
         for call in execute_selected_mock.call_args_list:
             self.assertEqual(call.args[1], (next_action,))
         self.assertEqual(
