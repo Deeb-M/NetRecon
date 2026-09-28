@@ -220,6 +220,14 @@ netrecon --investigate-collect <authorized-target> --adaptive-plan
 
 Use `--format json` for machine-readable output. A completed command can end with either a complete or stalled investigation; a stalled result is a valid bounded outcome, not a claim that the target is safe or that evidence was resolved. Explicit-approval requirements remain blocked until approved, attempted-but-unsatisfied requirements are not silently retried, and the final report preserves the terminal decision, explanation, synthesis, evidence provenance, and remaining requirement lifecycle.
 
+Persist completed investigation syntheses in an append-only local history and compare the current terminal synthesis with prior runs:
+
+```bash
+netrecon --investigate-collect <authorized-target> --investigation-history investigation-history.jsonl
+```
+
+Investigation History stores synthesis records rather than raw scan authority. The resulting Investigation Memory is evidence-aware comparison context; it does not turn absence into resolution, assign a risk score, or authorize additional collection.
+
 ## Architecture
 
 - `netrecon.py` — CLI entry point
