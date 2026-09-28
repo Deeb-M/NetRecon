@@ -446,9 +446,21 @@ def assess_investigation_continuation(
         action for action in after.actions if action.command not in attempted_commands
     )
 
+    approval_blocked_plans = tuple(
+        plan
+        for plan in after.finding_collection_plans
+        if (
+            not plan.authorization.allowed
+            and plan.authorization.reason == "explicit_approval_required"
+        )
+    )
+
     stall_reason = None
     if safe_next_actions and (resolved or not after.gaps):
         status = "progressed"
+    elif not after.gaps and approval_blocked_plans:
+        status = "stalled"
+        stall_reason = "explicit_approval_required"
     elif not after.gaps:
         status = "complete"
     else:
