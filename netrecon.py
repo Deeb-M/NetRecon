@@ -9,7 +9,7 @@ import time
 from importlib.metadata import version
 from pathlib import Path
 
-from adaptive_investigation import build_adaptive_investigation_plan, select_adaptive_actions
+from adaptive_investigation import AdaptiveInvestigationPlan, build_adaptive_investigation_plan, select_adaptive_actions
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
 from analyst_attention import build_analyst_attention, correlate_analyst_attention
@@ -262,6 +262,16 @@ def main() -> int:
             adaptive_plan = build_adaptive_investigation_plan(decision)
             adaptive_actions = select_adaptive_actions(adaptive_plan)
             adaptive_round_count += 1
+        if (
+            adaptive_round_count >= max_adaptive_rounds
+            and adaptive_plan.decision == "continue"
+            and adaptive_actions
+        ):
+            adaptive_plan = AdaptiveInvestigationPlan(
+                "stop",
+                "adaptive_round_limit_reached",
+            )
+            adaptive_actions = ()
         alternative_round = None
         final_decision = None
         if adaptive_plan.decision == "alternative" and adaptive_actions:
