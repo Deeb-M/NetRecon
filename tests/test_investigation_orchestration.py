@@ -3818,6 +3818,51 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         self.assertEqual(final.reason, "finding_requirement_unsatisfied")
         self.assertEqual(final.remaining_finding_requirements, (state,))
 
+    def test_alternative_incomplete_preserves_pending_finding_requirement(self) -> None:
+        from evidence_action_plan import EvidenceAction
+        from evidence_gaps import EvidenceGap
+        from finding_collection_planner import FindingRequirementState
+        from finding_requirements import FindingDerivedRequirement
+        from investigation_orchestration import (
+            AlternativeEvidenceRoundResult,
+            InvestigationSnapshot,
+            assess_final_investigation_decision,
+        )
+        from alternative_evidence import AlternativeEvidenceVerification
+
+        gap = EvidenceGap(
+            "192.0.2.254", 5357, "tcp", "http-title",
+            "review HTTP service identity and exposed content context",
+        )
+        finding = FindingDerivedRequirement(
+            "smb_access_control_context", "192.0.2.254", 445, "tcp",
+            "review SMB access controls", "smb.signing.review",
+            "nse:smb2-security-mode",
+        )
+        pending = FindingRequirementState(
+            finding, "pending_approval", "explicit_approval_required", ()
+        )
+        action = EvidenceAction(
+            "192.0.2.254", 5357, "tcp", ("http-headers",),
+            ("review HTTP service identity and exposed content context",),
+            ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.254"),
+        )
+        snapshot = InvestigationSnapshot(
+            status="ready",
+            hosts=(),
+            gaps=(gap,),
+            actions=(action,),
+            finding_requirement_states=(pending,),
+        )
+        verification = AlternativeEvidenceVerification(action, "incomplete", ())
+        result = AlternativeEvidenceRoundResult((), (verification,), snapshot)
+
+        decision = assess_final_investigation_decision(result)
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.reason, "alternative_evidence_incomplete")
+        self.assertEqual(decision.remaining_finding_requirements, (pending,))
+
     def test_finalize_continuation_accepts_controller_stop_reason(self) -> None:
         decision = InvestigationContinuationDecision("progressed", (), (), ())
         final = finalize_continuation_decision(
