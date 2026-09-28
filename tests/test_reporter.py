@@ -2117,6 +2117,8 @@ class ReporterTests(unittest.TestCase):
                 "correlated_review_group_change": -1,
                 "added_requirements": 1,
                 "resolved_requirements": 1,
+                "added_finding_requirements": 0,
+                "resolved_finding_requirements": 0,
             },
         )
         self.assertEqual(
