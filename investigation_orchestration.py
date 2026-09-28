@@ -17,7 +17,7 @@ from evidence_collector import (
     parse_collection_outcome,
 )
 from investigation_state import EndpointInvestigationState, summarize_investigation_state
-from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, FindingRequirementVerification, verify_finding_collection_plan
+from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, FindingCollectionPlan, FindingRequirementVerification, verify_finding_collection_plan
 from models import Scan
 from scan_orchestration import DiscoveryResult
 
@@ -32,6 +32,7 @@ class InvestigationSnapshot:
     actions: tuple[EvidenceAction, ...]
     states: tuple[EndpointInvestigationState, ...]
     error: str | None
+    finding_collection_plans: tuple[FindingCollectionPlan, ...] = ()
 
 
 def build_investigation_snapshot(
@@ -58,6 +59,7 @@ def build_investigation_snapshot(
         actions=build_evidence_action_plan(discovery.scan),
         states=summarize_investigation_state(discovery.scan),
         error=None,
+        finding_collection_plans=build_finding_collection_plans(analyze_scan(discovery.scan)),
     )
 
 
@@ -90,6 +92,10 @@ def re_evaluate_investigation(
         actions=tuple(actions_by_command.values()),
         states=summarize_investigation_state(scan),
         error=None,
+        finding_collection_plans=build_finding_collection_plans(
+            analyze_scan(scan),
+            explicitly_approved_requirement_ids=explicitly_approved_requirement_ids,
+        ),
     )
 
 
