@@ -2084,6 +2084,7 @@ class CliTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             history_path = Path(tmp) / "history.jsonl"
+            history_path.touch()
             with patch(
                 "sys.argv",
                 [
