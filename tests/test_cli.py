@@ -2810,6 +2810,8 @@ class CliTests(unittest.TestCase):
         append_mock.assert_not_called()
         final_decision_mock.assert_called_once_with(alternative_result)
         synthesis_mock.assert_called_once_with(final_decision, (), ())
+        load_history_mock.assert_called_once_with(str(history_path))
+        self.assertNotIn("Investigation Memory", output.getvalue())
 
 
     def test_investigation_history_requires_investigate_collect(self) -> None:
