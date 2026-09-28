@@ -3848,10 +3848,12 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.254"),
         )
         snapshot = InvestigationSnapshot(
-            status="ready",
-            hosts=(),
+            ready=True,
+            scan=None,
             gaps=(gap,),
             actions=(action,),
+            states=(),
+            error=None,
             finding_requirement_states=(pending,),
         )
         verification = AlternativeEvidenceVerification("incomplete", action, ())
