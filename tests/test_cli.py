@@ -1756,7 +1756,10 @@ class CliTests(unittest.TestCase):
         render_synthesis_mock.assert_called_once_with("synthesis-result")
         self.assertEqual(
             output.getvalue().strip(),
-            "Investigation Continuation\n\nInvestigation Synthesis\nStatus: stalled",
+            "Investigation Continuation\n\n"
+            "Investigation Explanation\n-------------------------\n"
+            "Known\nUnresolved\nBlocked\nNext\n\n"
+            "Investigation Synthesis\nStatus: stalled",
         )
 
 
@@ -1983,6 +1986,8 @@ class CliTests(unittest.TestCase):
         self.assertEqual(
             output.getvalue().strip(),
             "Investigation Continuation\n\n"
+            "Investigation Explanation\n-------------------------\n"
+            "Known\nUnresolved\nBlocked\nNext\n\n"
             "Investigation Synthesis\nStatus: stalled\n\n"
             "Investigation Memory\nReason Changed: yes",
         )
