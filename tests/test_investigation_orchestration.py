@@ -4065,7 +4065,15 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
 
         self.assertEqual(decision.status, "stalled")
         self.assertEqual(decision.reason, "finding_requirement_unsatisfied")
+        self.assertEqual(decision.remaining_gaps, (gap,))
+        self.assertIs(decision.remaining_gaps[0], gap)
+        self.assertEqual(decision.further_actions, ())
         self.assertEqual(decision.remaining_requirements, ())
+        self.assertEqual(len(decision.satisfied_requirements), 1)
+        self.assertEqual(
+            decision.satisfied_requirements[0].requirement.requirement_id,
+            "http_identity_context",
+        )
         self.assertEqual(decision.remaining_finding_requirements, (unsatisfied,))
 
     def test_finalize_continuation_accepts_controller_stop_reason(self) -> None:
