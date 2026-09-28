@@ -2706,6 +2706,11 @@ class CliTests(unittest.TestCase):
         final_decision_mock.assert_called_once_with(alternative_result)
         synthesis_mock.assert_called_once_with(final_decision, (), ())
         compare_mock.assert_called_once_with("previous-synthesis", "current-synthesis")
+        append_mock.assert_called_once()
+        appended = append_mock.call_args.args[1]
+        self.assertEqual(appended.target, "192.0.2.190")
+        self.assertEqual(appended.synthesis, "current-synthesis")
+        self.assertEqual(appended.schema_version, 2)
         self.assertEqual(
             output.getvalue().strip(),
             "Investigation Continuation\n\n"
