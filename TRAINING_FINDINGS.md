@@ -88,6 +88,15 @@ This file records findings discovered during authorized practical training. Find
 
 **Expected direction:** Add protocol-aware NFS evidence requirements and collectors. A detected NFS service should be able to request export context via `nfs-showmount` and, where authorized and appropriate, access/content context via `nfs-ls`. Preserve evidence boundaries: report only export/access properties actually observed by each collector and do not infer server-side export options that were not directly evidenced.
 
+
+## F-011 — FTP Access and Transport Evidence Collection
+
+**Status:** OPEN
+
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered FTP on 21/tcp and identified vsFTPd 2.3.4, but its analyst-facing investigation stopped at the generic FTP exposure observation. Manual Nmap validation showed that `ftp-anon` directly observed anonymous login as allowed (FTP code 230), while `ftp-syst` reported service/system context and that both control and data connections were plain text. A separate manual anonymous FTP session confirmed successful login and a successful directory-listing operation; no filenames were returned by that listing.
+
+**Expected direction:** Add protocol-aware FTP evidence requirements for access and transport context. A detected FTP service should be able to request anonymous-access evidence via `ftp-anon` and service/transport context via `ftp-syst`. Preserve evidence boundaries: distinguish an allowed anonymous login from the content actually visible through that session, and do not infer files or permissions that were not observed.
+
 ## Practical observations worth preserving
 
 - NetRecon successfully separated discovery from investigation and generated targeted evidence collection rather than blindly repeating broad scans.
