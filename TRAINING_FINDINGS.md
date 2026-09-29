@@ -32,6 +32,63 @@ This file records findings discovered during authorized practical training. Find
 
 **Expected direction:** Distinguish collector timeout from target unreachability, retain useful partial/context evidence where appropriate, and evaluate safe fallback/alternative collection paths instead of treating all discovery timeouts as equivalent failures.
 
+## F-004 — Authenticated SMB Evidence Collection
+
+**Status:** OPEN
+
+**Observed:** In the Windows lab, the approval-gated `smb-enum-shares` collection completed successfully at the collector/process level but the requested SMB access-control evidence was not observed. Manual anonymous SMB enumeration was denied. This exposed a limitation in the current evidence workflow when useful SMB evidence requires authenticated collection.
+
+**Expected direction:** Add an authorized authenticated SMB evidence path with explicit credential handling, clear separation between anonymous and authenticated evidence, and no credentials written into reports or command history.
+
+## F-005 — Investigation Coverage Is Narrower Than Service Discovery
+
+**Status:** OPEN
+
+**Observed:** In the isolated Metasploitable lab, baseline discovery found 23 open ports / 20 unique services, but the investigation planner created only five evidence gaps covering SSH and two HTTP services. Numerous other discovered services had no protocol-specific evidence requirements or follow-up collection plan.
+
+**Expected direction:** Expand protocol-aware investigation rules and evidence collectors so that supported services can generate meaningful evidence requirements rather than merely appearing in the inventory.
+
+## F-006 — Completion Semantics Can Overstate Investigation Coverage
+
+**Status:** OPEN
+
+**Observed:** The Metasploitable investigation ended with `Status: complete`, `Reason: all_gaps_resolved`, and zero remaining requirements after resolving the five requirements known to the current planner. This does not mean all discovered services were investigated in depth.
+
+**Expected direction:** Make completion language scope-aware. Distinguish “all currently supported/planned requirements resolved” from “target investigation complete” so users do not interpret planner completeness as comprehensive target coverage.
+
+## F-007 — Default Investigation Report Is Too Verbose and Repetitive
+
+**Status:** OPEN
+
+**Observed:** `--investigate-collect` repeated substantially the same information across Continuation Decision, Semantic Requirement Progress, Final Investigation Decision, Investigation Snapshot, Investigation Explanation, and Investigation Synthesis. The full service inventory was also repeated.
+
+**Expected direction:** Make the default report concise and decision-oriented. Show target/status, service summary, collection outcomes, important findings/attention, unresolved requirements, and next actions once. Move detailed evidence/state/explanation sections behind a verbose/detail mode.
+
+## F-008 — Attention Prioritization and Correlation Need Improvement
+
+**Status:** OPEN
+
+**Observed:** The Metasploitable run produced 10 Analyst Attention items but zero Correlated Review groups. Attention mixed transport exposure, missing product identification, legacy configuration evidence, and duplicated/related service observations without a compact priority/correlation view.
+
+**Expected direction:** Improve evidence-based grouping and prioritization without inventing severity. Correlate related ports/services and distinguish actionable configuration/exposure evidence from lower-value visibility notes.
+
+## F-009 — Service Identity/Protocol Labeling Needs Review
+
+**Status:** OPEN
+
+**Observed:** Both 139/tcp and 445/tcp were presented as `netbios-ssn`/“NetBIOS session service exposed” in the Metasploitable report. The underlying discovery identified Samba on both ports, but the analyst-facing label risks obscuring the SMB context of 445/tcp.
+
+**Expected direction:** Preserve raw scanner evidence while presenting protocol/service context accurately and consistently. Avoid analyst-facing labels that can make distinct transport/service roles look identical.
+
+## Practical observations worth preserving
+
+- NetRecon successfully separated discovery from investigation and generated targeted evidence collection rather than blindly repeating broad scans.
+- In the Metasploitable lab, all five planned SSH/HTTP evidence requirements were successfully collected and resolved.
+- The evidence discipline remains useful: a successful collector return code is not treated as proof that requested evidence was observed.
+- The practical lab is revealing the difference between “services NetRecon can see” and “services NetRecon knows how to investigate”; this should remain a central development test.
+- Default output should optimize for analyst decisions; detailed evidence should remain available on demand.
+- Practical verification should continue to compare NetRecon conclusions with direct/manual ground truth before closing findings.
+
 ## Verification workflow
 
 For each finding:
