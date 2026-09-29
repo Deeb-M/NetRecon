@@ -80,12 +80,21 @@ This file records findings discovered during authorized practical training. Find
 
 **Expected direction:** Preserve raw scanner evidence while presenting protocol/service context accurately and consistently. Avoid analyst-facing labels that can make distinct transport/service roles look identical.
 
+## F-010 — NFS Export and Access Evidence Collection
+
+**Status:** OPEN
+
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered NFS on 2049/tcp but did not create an NFS-specific evidence requirement. Manual validation showed that Nmap's `nfs-showmount` collector could observe the root export (`/ *`), while `nfs-ls` could enumerate the exported volume and report observed access capabilities including Read, Lookup, Modify, Extend, and Delete. A read-only manual mount independently confirmed that the exported volume exposed the target filesystem. Reading `/etc/exports` provided additional ground truth showing `/ *(rw,sync,no_root_squash,no_subtree_check)`; those server-side options must not be inferred solely from `nfs-showmount` or `nfs-ls`.
+
+**Expected direction:** Add protocol-aware NFS evidence requirements and collectors. A detected NFS service should be able to request export context via `nfs-showmount` and, where authorized and appropriate, access/content context via `nfs-ls`. Preserve evidence boundaries: report only export/access properties actually observed by each collector and do not infer server-side export options that were not directly evidenced.
+
 ## Practical observations worth preserving
 
 - NetRecon successfully separated discovery from investigation and generated targeted evidence collection rather than blindly repeating broad scans.
 - In the Metasploitable lab, all five planned SSH/HTTP evidence requirements were successfully collected and resolved.
 - The evidence discipline remains useful: a successful collector return code is not treated as proof that requested evidence was observed.
 - The practical lab is revealing the difference between “services NetRecon can see” and “services NetRecon knows how to investigate”; this should remain a central development test.
+- NFS practical validation confirmed that existing Nmap NSE collectors can provide useful export and access evidence without requiring a new external collector for the first implementation.
 - Default output should optimize for analyst decisions; detailed evidence should remain available on demand.
 - Practical verification should continue to compare NetRecon conclusions with direct/manual ground truth before closing findings.
 
