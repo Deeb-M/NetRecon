@@ -434,7 +434,9 @@ def main() -> int:
                 continuation, final_continuation_decision, alternative_round, final_decision, attention, correlations,
                 final_snapshot=final_snapshot,
             )
-            if protocol_round is not None:\n                report += "\n\n" + render_protocol_alternative_progress(protocol_round)\n            report += "\n\n" + render_investigation_explanation(explanation)
+            if protocol_round is not None:
+                report += "\n\n" + render_protocol_alternative_progress(protocol_round)
+            report += "\n\n" + render_investigation_explanation(explanation)
             if dynamic_rounds:
                 report += "\n\n" + render_dynamic_evidence_rounds(dynamic_rounds)
             if args.adaptive_plan:
