@@ -52,11 +52,20 @@ def build_baseline_discovery_plan(target: str) -> DiscoveryPlan:
         explicit_port = False
         path = None
 
+    if scheme in {"http", "https"}:
+        profile = "web"
+        purpose = "discover the explicitly supplied Web service with version detection"
+        command = ("nmap", "-sV", "-p", str(port), "-oX", "-", normalized_target)
+    else:
+        profile = "baseline"
+        purpose = "discover open TCP services with version detection"
+        command = ("nmap", "-sV", "-oX", "-", normalized_target)
+
     return DiscoveryPlan(
         target=normalized_target,
-        profile="baseline",
-        purpose="discover open TCP services with version detection",
-        command=("nmap", "-sV", "-oX", "-", normalized_target),
+        profile=profile,
+        purpose=purpose,
+        command=command,
         input_target=input_target,
         scheme=scheme,
         port=port,
