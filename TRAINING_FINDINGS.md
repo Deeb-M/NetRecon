@@ -106,6 +106,30 @@ This file records findings discovered during authorized practical training. Find
 
 **Expected direction:** Add protocol-aware SMTP capability evidence collection using `smtp-commands`. Preserve evidence boundaries: an advertised capability such as STARTTLS is evidence that the server announces that capability, not proof that TLS properties were successfully collected or validated. Treat collectors that return no requested evidence as incomplete/unsatisfied rather than inferring a result.
 
+## F-013 — RPC Service Mapping and Correlation
+
+**Status:** OPEN
+
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered rpcbind on 111/tcp but did not create an RPC-specific evidence requirement. Manual Nmap validation with `rpcinfo` exposed a richer RPC service map, including RPC program numbers, supported versions, TCP/UDP transports, and dynamically assigned ports for related services such as NFS, mountd, nlockmgr, and status.
+
+**Expected direction:** Add protocol-aware RPC service mapping using `rpcinfo` and correlate observed RPC programs, versions, transports, and dynamic ports with related discovered services. Preserve the distinction between the rpcbind endpoint itself and services learned through its mapping data.
+
+## F-014 — MySQL Protocol Capability Evidence Collection
+
+**Status:** OPEN
+
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered MySQL on 3306/tcp and identified MySQL 5.0.51a-3ubuntu5, but did not create a MySQL-specific evidence requirement. Manual Nmap validation with `mysql-info` observed protocol version 10, server version, protocol capability flags, and status information including Autocommit. The collector also reported that the server advertised `SwitchToSSLAfterHandshake`.
+
+**Expected direction:** Add protocol-aware MySQL handshake/capability evidence collection using `mysql-info`. Surface useful protocol version, server version, capability, and status context while omitting low-value ephemeral fields from default analyst output. Preserve evidence boundaries: an advertised capability such as `SwitchToSSLAfterHandshake` is not proof that transport security was successfully negotiated or validated.
+
+## F-015 — VNC Protocol and Security Evidence Collection
+
+**Status:** OPEN
+
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered VNC on 5900/tcp but did not create a VNC-specific evidence requirement. Manual Nmap validation with `vnc-info` observed VNC protocol version 3.3 and the advertised security type `VNC Authentication (2)`.
+
+**Expected direction:** Add protocol-aware VNC evidence collection using `vnc-info`. Surface the observed protocol version and advertised security types. Preserve evidence boundaries: observing `VNC Authentication (2)` does not establish password strength, credential validity, or successful authenticated access.
+
 ## Practical observations worth preserving
 
 - NetRecon successfully separated discovery from investigation and generated targeted evidence collection rather than blindly repeating broad scans.
