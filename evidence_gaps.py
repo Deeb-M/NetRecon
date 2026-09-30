@@ -116,6 +116,21 @@ EVIDENCE_REQUIREMENTS: dict[str, EvidenceRequirement] = {
         "review NFS export and client-scope context",
         ("nfs-showmount",),
     ),
+    "mysql-info": EvidenceRequirement(
+        "mysql_capability_context",
+        "review MySQL protocol and server capability context",
+        ("mysql-info",),
+    ),
+    "vnc-info": EvidenceRequirement(
+        "vnc_security_context",
+        "review VNC protocol and advertised security types",
+        ("vnc-info",),
+    ),
+    "rpcinfo": EvidenceRequirement(
+        "rpc_service_mapping",
+        "review RPC program, version, transport, and service mappings",
+        ("rpcinfo",),
+    ),
 }
 
 
