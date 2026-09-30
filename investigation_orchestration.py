@@ -17,6 +17,11 @@ from evidence_collector import (
     parse_collection_outcome,
 )
 from investigation_state import EndpointInvestigationState, summarize_investigation_state
+from ftp_evidence_collector import (
+    FtpProtocolEvidence,
+    build_ftp_protocol_collection_plan,
+    collect_ftp_protocol_evidence,
+)
 from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, finding_requirement_states, FindingCollectionPlan, FindingRequirementState, FindingRequirementVerification, verify_finding_collection_plan
 from models import Scan
 from scan_orchestration import DiscoveryResult
@@ -595,6 +600,47 @@ def _build_protocol_alternative_actions(
             requirement_ids=tuple(sorted(requirement_ids)),
         )
         for (host, port, protocol), requirement_ids in sorted(ftp_requirements.items())
+    )
+
+
+@dataclass(frozen=True)
+class ProtocolAlternativeResult:
+    """Observed semantic evidence from one bounded protocol collector."""
+
+    action: ProtocolAlternativeAction
+    satisfied_requirement_ids: tuple[str, ...]
+    evidence: FtpProtocolEvidence
+
+
+def execute_protocol_alternative_action(
+    action: ProtocolAlternativeAction,
+    *,
+    timeout: float | None = None,
+) -> ProtocolAlternativeResult:
+    """Execute one bounded protocol alternative without representing it as NSE evidence."""
+    if action.kind != "ftp_protocol":
+        raise ValueError(f"Unsupported protocol alternative kind: {action.kind}")
+
+    plan = build_ftp_protocol_collection_plan(
+        action.host,
+        action.port,
+        timeout=timeout,
+    )
+    evidence = collect_ftp_protocol_evidence(plan)
+
+    satisfied: list[str] = []
+    for requirement_id in action.requirement_ids:
+        if requirement_id == "ftp_anonymous_access":
+            if evidence.anonymous_login in {"allowed", "denied"}:
+                satisfied.append(requirement_id)
+        elif requirement_id == "ftp_system_context":
+            if evidence.syst is not None or evidence.stat is not None:
+                satisfied.append(requirement_id)
+
+    return ProtocolAlternativeResult(
+        action=action,
+        satisfied_requirement_ids=tuple(satisfied),
+        evidence=evidence,
     )
 
 
