@@ -1076,6 +1076,15 @@ def render_discovery_execution(result: DiscoveryResult) -> str:
         lines.extend(("", render_text(result.scan)))
     else:
         lines.append(f"Error: {result.error or 'unknown discovery failure'}")
+        if result.failure_kind is not None:
+            lines.append(f"Failure kind: {result.failure_kind}")
+            lines.append(
+                f"Target unreachable: {'yes' if result.target_unreachable else 'no'}"
+            )
+        if result.partial_stdout:
+            lines.append(f"Partial stdout: {result.partial_stdout}")
+        if result.partial_stderr:
+            lines.append(f"Partial stderr: {result.partial_stderr}")
     return "\n".join(lines)
 
 
@@ -1094,6 +1103,10 @@ def render_discovery_execution_json(result: DiscoveryResult) -> str:
             "returncode": execution.returncode,
             "timed_out": execution.timed_out,
             "error": result.error,
+            "failure_kind": result.failure_kind,
+            "partial_stdout": result.partial_stdout,
+            "partial_stderr": result.partial_stderr,
+            "target_unreachable": result.target_unreachable,
             "scan": scan_payload,
         },
         indent=2,
