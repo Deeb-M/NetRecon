@@ -273,5 +273,23 @@ class EvidenceGapTests(unittest.TestCase):
         )
         self.assertTrue(all(gap.purpose for gap in gaps))
 
+    def test_mysql_vnc_rpcbind_gaps_have_semantic_requirements(self) -> None:
+        gaps = (
+            EvidenceGap("192.0.2.10", 33060, "tcp", "mysql-info", "x"),
+            EvidenceGap("192.0.2.10", 5901, "tcp", "vnc-info", "x"),
+            EvidenceGap("192.0.2.10", 1111, "tcp", "rpcinfo", "x"),
+        )
+
+        states = requirement_states_for_gaps(gaps)
+
+        self.assertEqual(
+            tuple(state.requirement.requirement_id for state in states),
+            (
+                "rpc_service_mapping",
+                "vnc_security_context",
+                "mysql_capability_context",
+            ),
+        )
+
 if __name__ == "__main__":
     unittest.main()
