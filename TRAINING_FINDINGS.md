@@ -20,7 +20,9 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-002 — Web-Aware Discovery
 
-**Status:** OPEN
+**Status:** CLOSED
+
+**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VERIFIED. CI passed after the implementation. In the isolated VMware lab, `netrecon --discover http://192.168.111.130:8180/` selected the `web` discovery profile and executed the bounded command `nmap -sV -p 8180 -oX - 192.168.111.130`. Discovery completed successfully and identified 8180/tcp as HTTP running Apache Tomcat/Coyote JSP engine 1.1.
 
 **Observed:** A target explicitly supplied as an HTTPS URL entered the generic baseline discovery path (`nmap -sV` across Nmap's default ports). The HTTPS application itself was reachable with a normal HTTP client, while the Nmap discovery path did not complete in a useful time.
 
