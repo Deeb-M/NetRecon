@@ -63,6 +63,18 @@ class FtpEvidenceCollectorTests(unittest.TestCase):
         self.assertIsNone(evidence.syst)
         self.assertIsNone(evidence.stat)
 
+    def test_builds_bounded_read_only_collection_plan(self) -> None:
+        from ftp_evidence_collector import build_ftp_protocol_collection_plan
+
+        plan = build_ftp_protocol_collection_plan("192.0.2.10", 2121, timeout=5)
+
+        self.assertEqual(plan.host, "192.0.2.10")
+        self.assertEqual(plan.port, 2121)
+        self.assertEqual(plan.timeout, 5)
+        self.assertEqual(plan.commands, ("SYST", "STAT"))
+        self.assertTrue(plan.check_anonymous)
+        self.assertFalse(hasattr(plan, "password_candidates"))
+
 
 if __name__ == "__main__":
     unittest.main()
