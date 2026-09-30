@@ -91,11 +91,17 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-010 — NFS Export and Access Evidence Collection
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the isolated Metasploitable lab, NetRecon discovered NFS on 2049/tcp but did not create an NFS-specific evidence requirement. Manual validation showed that Nmap's `nfs-showmount` collector could observe the root export (`/ *`), while `nfs-ls` could enumerate the exported volume and report observed access capabilities including Read, Lookup, Modify, Extend, and Delete. A read-only manual mount independently confirmed that the exported volume exposed the target filesystem. Reading `/etc/exports` provided additional ground truth showing `/ *(rw,sync,no_root_squash,no_subtree_check)`; those server-side options must not be inferred solely from `nfs-showmount` or `nfs-ls`.
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered NFS on 2049/tcp but initially did not create an NFS-specific evidence requirement. Manual validation showed that Nmap's `nfs-showmount` collector could observe the root export (`/ *`), while `nfs-ls` could enumerate the exported volume and report observed access capabilities including Read, Lookup, Modify, Extend, and Delete. A read-only manual mount independently confirmed that the exported volume exposed the target filesystem. Reading `/etc/exports` provided additional ground truth showing `/ *(rw,sync,no_root_squash,no_subtree_check)`; those server-side options must not be inferred solely from `nfs-showmount` or `nfs-ls`.
 
-**Expected direction:** Add protocol-aware NFS evidence requirements and collectors. A detected NFS service should be able to request export context via `nfs-showmount` and, where authorized and appropriate, access/content context via `nfs-ls`. Preserve evidence boundaries: report only export/access properties actually observed by each collector and do not infer server-side export options that were not directly evidenced.
+**Implemented:** NetRecon now creates the semantic `nfs_export_context` requirement for discovered NFS services and plans `nfs-showmount`. When an open rpcbind service is present, the bounded NFS action includes RPC context and service detection (`-sV -p 111,2049` in the lab). Cross-port recognition is deliberately scoped to non-empty `nfs-showmount` evidence, allowing evidence emitted on the related rpcbind endpoint to satisfy the NFS requirement without making evidence matching generally cross-port.
+
+**Regression tested:** TDD covered RPC-aware NFS action planning and the cross-port case where `nfs-showmount` is emitted on rpcbind while the semantic requirement remains bound to NFS/2049. CI passed after both implementation changes.
+
+**Practically verified:** On the isolated Metasploitable target, `netrecon --investigate-collect` executed `nmap -sV -p 111,2049 --script nfs-showmount -oX - <target>`, reported `Requested Evidence: observed`, resolved `nfs_export_context` on 2049/tcp, and left only the two independent FTP requirements on 2121/tcp. This confirms the NFS planner, collector execution path, cross-port evidence recognition, and semantic-resolution path operate together.
+
+**Evidence boundary:** Closure covers NFS export/client-scope context through `nfs-showmount`. Access/content observations from `nfs-ls` and server-side options such as `no_root_squash` remain separate evidence and must not be inferred from `nfs-showmount`.
 
 
 ## F-011 — FTP Access and Transport Evidence Collection
