@@ -196,5 +196,34 @@ class EvidenceGapTests(unittest.TestCase):
         )
 
 
+    def test_new_protocol_rules_surface_as_analyst_facing_gaps(self) -> None:
+        scan = Scan(
+            source="lab.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=2121, protocol="tcp", state="open", service="ftp"),
+                        Port(port=2525, protocol="tcp", state="open", service="smtp"),
+                        Port(port=2049, protocol="tcp", state="open", service="nfs"),
+                    ),
+                ),
+            ),
+        )
+
+        gaps = summarize_evidence_gaps(scan)
+
+        self.assertEqual(
+            tuple((gap.port, gap.script_id) for gap in gaps),
+            (
+                (2121, "ftp-syst"),
+                (2121, "ftp-anon"),
+                (2525, "smtp-commands"),
+                (2049, "nfs-showmount"),
+            ),
+        )
+        self.assertTrue(all(gap.purpose for gap in gaps))
+
 if __name__ == "__main__":
     unittest.main()
