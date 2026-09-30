@@ -97,6 +97,15 @@ This file records findings discovered during authorized practical training. Find
 
 **Expected direction:** Add protocol-aware FTP evidence requirements for access and transport context. A detected FTP service should be able to request anonymous-access evidence via `ftp-anon` and service/transport context via `ftp-syst`. Preserve evidence boundaries: distinguish an allowed anonymous login from the content actually visible through that session, and do not infer files or permissions that were not observed.
 
+
+## F-012 — SMTP Capability Evidence Collection
+
+**Status:** OPEN
+
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered SMTP on 25/tcp and identified Postfix smtpd, but did not create an SMTP-specific evidence requirement. Manual Nmap validation with `smtp-commands` observed the advertised SMTP identity/capabilities: `metasploitable.localdomain`, PIPELINING, SIZE 10240000, VRFY, ETRN, STARTTLS, ENHANCEDSTATUSCODES, 8BITMIME, and DSN. Follow-up runs using generic TLS scripts and `smtp-ntlm-info` returned no additional evidence.
+
+**Expected direction:** Add protocol-aware SMTP capability evidence collection using `smtp-commands`. Preserve evidence boundaries: an advertised capability such as STARTTLS is evidence that the server announces that capability, not proof that TLS properties were successfully collected or validated. Treat collectors that return no requested evidence as incomplete/unsatisfied rather than inferring a result.
+
 ## Practical observations worth preserving
 
 - NetRecon successfully separated discovery from investigation and generated targeted evidence collection rather than blindly repeating broad scans.
