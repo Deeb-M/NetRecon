@@ -12,7 +12,7 @@ from pathlib import Path
 from adaptive_investigation import AdaptiveInvestigationPlan, build_adaptive_investigation_plan, select_adaptive_actions
 from analysis_diff import compare_findings
 from analyzer import analyze_scan
-from analyst_attention import build_analyst_attention, correlate_analyst_attention
+from analyst_attention import build_analyst_attention, correlate_analyst_attention, prioritize_analyst_attention
 from evidence_action_plan import build_evidence_action_plan
 from evidence_collector import EvidenceCollectionError, collect_correlated_host_evidence
 from evidence_gaps import summarize_evidence_gaps
@@ -653,7 +653,7 @@ def main() -> int:
         return 0
 
     if args.attention:
-        attention = build_analyst_attention(analyze_scan(scan))
+        attention = prioritize_analyst_attention(build_analyst_attention(analyze_scan(scan)))
         print(
             render_analyst_attention_json(attention)
             if args.format == "json"

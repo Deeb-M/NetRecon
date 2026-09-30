@@ -82,5 +82,63 @@ class AnalystAttentionTests(unittest.TestCase):
 
         self.assertEqual(correlate_analyst_attention(items), ())
 
+
+    def test_prioritizes_actionable_attention_before_visibility_without_scores(self) -> None:
+        from analyst_attention import prioritize_analyst_attention
+
+        items = build_analyst_attention((
+            Finding("visibility", "visibility", "h", 111, "tcp", "info", "Visibility", "e", "r"),
+            Finding("transport", "transport", "h", 21, "tcp", "medium", "Transport", "e", "r"),
+            Finding("configuration", "configuration", "h", 22, "tcp", "medium", "Configuration", "e", "r"),
+            Finding("exposure", "exposure", "h", 445, "tcp", "medium", "Exposure", "e", "r"),
+        ))
+
+        prioritized = prioritize_analyst_attention(items)
+
+        self.assertEqual(
+            tuple(item.category for item in prioritized),
+            ("configuration", "transport", "exposure", "visibility"),
+        )
+
+    def test_correlates_multiple_ftp_service_instances_on_same_host(self) -> None:
+        from analyst_attention import AnalystAttentionItem, correlate_analyst_attention
+
+        items = (
+            AnalystAttentionItem(
+                "service.ftp.exposed", "transport", "192.0.2.70", 21, "tcp",
+                "FTP service exposed", "21/tcp is open.", "Review FTP.", "service:detection",
+            ),
+            AnalystAttentionItem(
+                "service.ftp.exposed", "transport", "192.0.2.70", 2121, "tcp",
+                "FTP service exposed", "2121/tcp is open.", "Review FTP.", "service:detection",
+            ),
+        )
+
+        correlations = correlate_analyst_attention(items)
+
+        self.assertEqual(len(correlations), 1)
+        self.assertEqual(correlations[0].correlation_id, "ftp.multiple_service_instances")
+        self.assertEqual(correlations[0].finding_ids, ("service.ftp.exposed", "service.ftp.exposed"))
+
+    def test_correlates_netbios_and_smb_transport_ports_on_same_host(self) -> None:
+        from analyst_attention import AnalystAttentionItem, correlate_analyst_attention
+
+        items = (
+            AnalystAttentionItem(
+                "service.netbios.exposed", "exposure", "192.0.2.71", 139, "tcp",
+                "NetBIOS session service exposed", "139/tcp is open.", "Review NetBIOS.", "service:detection",
+            ),
+            AnalystAttentionItem(
+                "service.netbios.exposed", "exposure", "192.0.2.71", 445, "tcp",
+                "NetBIOS session service exposed", "445/tcp is open.", "Review SMB context.", "service:detection",
+            ),
+        )
+
+        correlations = correlate_analyst_attention(items)
+
+        self.assertEqual(len(correlations), 1)
+        self.assertEqual(correlations[0].correlation_id, "smb.netbios_transport_context")
+        self.assertEqual(correlations[0].finding_ids, ("service.netbios.exposed", "service.netbios.exposed"))
+
 if __name__ == "__main__":
     unittest.main()
