@@ -1252,6 +1252,35 @@ def render_investigation_continuation(result, decision=None, alternative_round=N
 
 
 
+def render_investigation_summary(final_decision, attention=None, correlations=None) -> str:
+    """Render the concise decision-oriented default investigation report."""
+    lines = [
+        "Investigation Summary",
+        "---------------------",
+        f"Status: {final_decision.status}",
+        f"Reason: {final_decision.reason}",
+        f"Remaining Requirements: {len(final_decision.remaining_requirements)}",
+        f"Remaining Finding Requirements: {len(final_decision.remaining_finding_requirements)}",
+    ]
+    for state in final_decision.remaining_requirements:
+        requirement = state.requirement
+        lines.append(
+            f"Requirement: {state.host}:{state.port}/{state.protocol}  "
+            f"{requirement.requirement_id} — {requirement.purpose}"
+        )
+    for state in final_decision.remaining_finding_requirements:
+        requirement = state.requirement
+        lines.append(
+            f"Finding Requirement: {requirement.host}:{requirement.port}/{requirement.protocol}  "
+            f"{requirement.requirement_id} — {requirement.purpose} [{state.status}]"
+        )
+    if attention is not None:
+        lines.extend(("", render_analyst_attention(attention)))
+    if correlations is not None:
+        lines.extend(("", render_analyst_attention_correlations(correlations)))
+    return "\n".join(lines)
+
+
 def render_dynamic_evidence_round(result) -> str:
     """Render provenance for one bounded adaptive Continue evidence round."""
     lines = [

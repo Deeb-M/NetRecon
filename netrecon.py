@@ -30,7 +30,7 @@ from investigation_history import (
     load_investigation_history,
 )
 from parser import NmapParseError, parse_nmap_xml
-from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_analyst_attention, render_analyst_attention_json, render_investigation_explanation, render_investigation_explanation_json, render_investigation_synthesis, render_investigation_synthesis_json, render_investigation_memory, render_investigation_memory_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_dynamic_evidence_round, render_dynamic_evidence_rounds, render_dynamic_evidence_rounds_json
+from reporter import render_analysis_diff, render_analysis_diff_json, render_analysis_json, render_combined_diff, render_combined_diff_json, render_diff, render_diff_json, render_discovery_execution, render_discovery_execution_json, render_discovery_plan, render_discovery_plan_json, render_evidence_collection, render_evidence_collection_error_json, render_evidence_collections_json, render_evidence_gaps, render_evidence_gaps_json, render_evidence_action_plan, render_evidence_action_plan_json, render_exposure_history, render_exposure_history_json, render_finding_history, render_finding_history_json, render_findings, render_host_summaries, render_json, render_text, render_investigation_snapshot, render_investigation_snapshot_json, render_investigation_continuation, render_investigation_continuation_json, render_investigation_summary, render_analyst_attention, render_analyst_attention_json, render_investigation_explanation, render_investigation_explanation_json, render_investigation_synthesis, render_investigation_synthesis_json, render_investigation_memory, render_investigation_memory_json, render_adaptive_investigation_plan, render_adaptive_investigation_plan_json, render_dynamic_evidence_round, render_dynamic_evidence_rounds, render_dynamic_evidence_rounds_json
 from scan_diff import compare_scans
 from scan_orchestration import build_baseline_discovery_plan, execute_discovery_plan, interpret_discovery_execution
 
@@ -84,6 +84,11 @@ See USER_GUIDE.md for workflow guidance, approvals, history, and exit behavior."
         choices=("text", "json"),
         default="text",
         help="Output format (default: text)",
+    )
+    output.add_argument(
+        "--detail",
+        action="store_true",
+        help="Show the full investigation evidence, state, explanation, and provenance report",
     )
     output.add_argument(
         "--evidence-timeout",
@@ -447,20 +452,23 @@ def main() -> int:
                 )
             report = json.dumps(payload, indent=2, ensure_ascii=False)
         else:
-            report = render_investigation_continuation(
-                continuation, final_continuation_decision, alternative_round, final_decision, attention, correlations,
-                final_snapshot=final_snapshot,
-            )
-            if protocol_round is not None:
-                report += "\n\n" + render_protocol_alternative_progress(protocol_round)
-            report += "\n\n" + render_investigation_explanation(explanation)
-            if dynamic_rounds:
-                report += "\n\n" + render_dynamic_evidence_rounds(dynamic_rounds)
-            if args.adaptive_plan:
-                report += "\n\n" + render_adaptive_investigation_plan(reported_adaptive_plan)
-            report += "\n\n" + render_investigation_synthesis(synthesis)
-            if investigation_memory is not None:
-                report += "\n\n" + render_investigation_memory(investigation_memory)
+            if args.detail:
+                report = render_investigation_continuation(
+                    continuation, final_continuation_decision, alternative_round, final_decision, attention, correlations,
+                    final_snapshot=final_snapshot,
+                )
+                if protocol_round is not None:
+                    report += "\n\n" + render_protocol_alternative_progress(protocol_round)
+                report += "\n\n" + render_investigation_explanation(explanation)
+                if dynamic_rounds:
+                    report += "\n\n" + render_dynamic_evidence_rounds(dynamic_rounds)
+                if args.adaptive_plan:
+                    report += "\n\n" + render_adaptive_investigation_plan(reported_adaptive_plan)
+                report += "\n\n" + render_investigation_synthesis(synthesis)
+                if investigation_memory is not None:
+                    report += "\n\n" + render_investigation_memory(investigation_memory)
+            else:
+                report = render_investigation_summary(final_decision, attention, correlations)
         print(report)
         # A stalled investigation is a valid bounded outcome, not a CLI failure.
         # Non-zero remains reserved for discovery/processing failures handled above.

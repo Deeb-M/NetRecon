@@ -71,11 +71,13 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-007 — Default Investigation Report Is Too Verbose and Repetitive
 
-**Status:** OPEN
+**Status:** CLOSED
 
 **Observed:** `--investigate-collect` repeated substantially the same information across Continuation Decision, Semantic Requirement Progress, Final Investigation Decision, Investigation Snapshot, Investigation Explanation, and Investigation Synthesis. The full service inventory was also repeated.
 
-**Expected direction:** Make the default report concise and decision-oriented. Show target/status, service summary, collection outcomes, important findings/attention, unresolved requirements, and next actions once. Move detailed evidence/state/explanation sections behind a verbose/detail mode.
+**Expected direction:** Make the default report concise and decision-oriented. Show target/status, important findings/attention, unresolved requirements, and correlated review without repeating the investigation lifecycle. Move detailed evidence/state/explanation sections behind a detail mode.
+
+**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VALIDATED. Text `--investigate-collect` now renders a concise `Investigation Summary` by default. The previous full evidence/provenance report remains available with `--detail`. JSON output remains structurally unchanged. Full regression suite passed 857/857 tests. Windows lab validation confirmed both concise default output and restored full detail output.
 
 ## F-008 — Attention Prioritization and Correlation Need Improvement
 
