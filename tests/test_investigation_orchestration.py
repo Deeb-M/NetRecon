@@ -2115,6 +2115,9 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         )
 
         attention = build_investigation_attention(snapshot)
+        categories = tuple(item.category for item in attention)
+        self.assertEqual(categories[0], "configuration")
+        self.assertEqual(categories[-1], "visibility")
 
         self.assertEqual(
             [item.finding_id for item in attention],
