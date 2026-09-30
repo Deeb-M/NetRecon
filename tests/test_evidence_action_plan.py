@@ -109,6 +109,34 @@ class EvidenceActionPlanTests(unittest.TestCase):
 
         self.assertEqual(build_evidence_action_plan(scan), ())
 
+    def test_ftp_smtp_nfs_rules_create_bounded_actions(self) -> None:
+        scan = Scan(
+            source="lab.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=2121, protocol="tcp", state="open", service="ftp"),
+                        Port(port=2525, protocol="tcp", state="open", service="smtp"),
+                        Port(port=2049, protocol="tcp", state="open", service="nfs"),
+                    ),
+                ),
+            ),
+        )
+
+        actions = build_evidence_action_plan(scan)
+
+        self.assertEqual(
+            tuple((a.port, a.script_ids) for a in actions),
+            (
+                (2121, ("ftp-syst", "ftp-anon")),
+                (2525, ("smtp-commands",)),
+                (2049, ("nfs-showmount",)),
+            ),
+        )
+        self.assertTrue(all(a.command[-1] == "192.0.2.10" for a in actions))
+
     def test_unsupported_service_creates_no_action(self) -> None:
         scan = Scan(
             source="unsupported.xml",
