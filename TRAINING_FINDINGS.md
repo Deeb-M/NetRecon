@@ -149,11 +149,17 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-014 — MySQL Protocol Capability Evidence Collection
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the isolated Metasploitable lab, NetRecon discovered MySQL on 3306/tcp and identified MySQL 5.0.51a-3ubuntu5, but did not create a MySQL-specific evidence requirement. Manual Nmap validation with `mysql-info` observed protocol version 10, server version, protocol capability flags, and status information including Autocommit. The collector also reported that the server advertised `SwitchToSSLAfterHandshake`.
+**Observed:** In the isolated Metasploitable lab, NetRecon already had the MySQL evidence-planning path introduced earlier: discovered MySQL services create the semantic `mysql_capability_context` requirement and plan `mysql-info`. Practical validation on 3306/tcp reported MySQL protocol version 10, server version 5.0.51a-3ubuntu5, capability flags, advertised capabilities including `SwitchToSSLAfterHandshake`, and status `Autocommit`. The remaining F-014 gap was semantic interpretation of the collected NSE evidence.
 
-**Expected direction:** Add protocol-aware MySQL handshake/capability evidence collection using `mysql-info`. Surface useful protocol version, server version, capability, and status context while omitting low-value ephemeral fields from default analyst output. Preserve evidence boundaries: an advertised capability such as `SwitchToSSLAfterHandshake` is not proof that transport security was successfully negotiated or validated.
+**Implemented:** Added protocol-aware interpretation of `mysql-info`. NetRecon now emits the informational `mysql.capabilities.inventory` finding and retains protocol version, server version, capability flags, advertised capabilities, and status context. Low-value ephemeral handshake fields such as Thread ID and Salt are omitted from the default analyst-facing evidence.
+
+**Evidence boundary:** An advertised capability such as `SwitchToSSLAfterHandshake` is retained as protocol context only. It does not establish that TLS was negotiated or that its security properties were validated.
+
+**Practical verification:** An authorized lab scan of MySQL on 3306/tcp reported Protocol 10, Version 5.0.51a-3ubuntu5, capability flags 43564, multiple advertised capabilities, and Autocommit status. The implementation was validated against this observed output shape.
+
+**Validation:** Added a focused test for MySQL capability interpretation and ephemeral-field filtering. The regression suite passed 848/848 tests.
 
 ## F-015 — VNC Protocol and Security Evidence Collection
 
