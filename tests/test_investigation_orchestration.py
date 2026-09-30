@@ -177,6 +177,70 @@ class InvestigationOrchestrationTests(unittest.TestCase):
         )
 
 
+    def test_re_evaluation_accepts_nfs_showmount_observed_on_rpcbind_context(self) -> None:
+        from evidence_collector import CollectionResult, NmapCommand, ParsedCollectionResult
+
+        discovery_scan = Scan(
+            source="discovery.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.130",
+                    status="up",
+                    ports=(
+                        Port(111, "tcp", "open", "rpcbind"),
+                        Port(2049, "tcp", "open", "nfs", version="2-4"),
+                    ),
+                ),
+            ),
+        )
+        evidence_scan = Scan(
+            source="nfs-evidence.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.130",
+                    status="up",
+                    ports=(
+                        Port(
+                            111,
+                            "tcp",
+                            "open",
+                            "rpcbind",
+                            scripts=(ScriptResult("nfs-showmount", "/ *"),),
+                        ),
+                        Port(2049, "tcp", "open", "nfs", version="2-4"),
+                    ),
+                ),
+            ),
+        )
+        outcome = ParsedCollectionResult(
+            result=CollectionResult(
+                command=NmapCommand(
+                    arguments=(
+                        "nmap", "-sV", "-p", "111,2049",
+                        "--script", "nfs-showmount", "-oX", "-", "192.0.2.130",
+                    )
+                ),
+                returncode=0,
+                stdout="<nmaprun />",
+                stderr="",
+            ),
+            scan=evidence_scan,
+        )
+
+        snapshot = re_evaluate_investigation(discovery_scan, (outcome,))
+
+        self.assertNotIn(
+            (2049, "nfs-showmount"),
+            tuple((gap.port, gap.script_id) for gap in snapshot.gaps),
+        )
+        self.assertFalse(
+            any(
+                action.port == 2049 and "nfs-showmount" in action.script_ids
+                for action in snapshot.actions
+            )
+        )
+
+
 class InvestigationStateContractTests(unittest.TestCase):
     def test_state_separates_observed_endpoint_facts_from_planner_unknowns(self) -> None:
         from investigation_state import EndpointInvestigationState, summarize_investigation_state
