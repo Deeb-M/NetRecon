@@ -3432,6 +3432,79 @@ class CliTests(unittest.TestCase):
             (),
         )
 
+    @patch("netrecon.assess_final_protocol_investigation_decision")
+    @patch("netrecon.execute_protocol_alternative_round")
+    @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
+    @patch("netrecon.assess_investigation_continuation")
+    @patch("netrecon.execute_approved_evidence_actions")
+    @patch("netrecon.build_investigation_snapshot")
+    @patch("netrecon.interpret_discovery_execution")
+    @patch("netrecon.execute_discovery_plan")
+    @patch("netrecon.build_baseline_discovery_plan")
+    def test_investigate_collect_executes_ftp_protocol_alternative_after_nse_exhaustion(
+        self,
+        build_plan_mock,
+        execute_discovery_mock,
+        interpret_mock,
+        snapshot_mock,
+        execute_evidence_mock,
+        decision_mock,
+        render_mock,
+        execute_protocol_mock,
+        assess_protocol_mock,
+    ) -> None:
+        from investigation_orchestration import (
+            FinalProtocolInvestigationDecision,
+            InvestigationContinuationDecision,
+            InvestigationContinuationResult,
+            InvestigationSnapshot,
+            ProtocolAlternativeAction,
+            ProtocolAlternativeRoundResult,
+        )
+        from models import Scan
+        from netrecon import main
+
+        gaps = (
+            EvidenceGap("192.0.2.62", 2121, "tcp", "ftp-syst", "purpose"),
+            EvidenceGap("192.0.2.62", 2121, "tcp", "ftp-anon", "purpose"),
+        )
+        initial = InvestigationSnapshot(True, Scan("initial.xml"), gaps, (), (), None)
+        updated = InvestigationSnapshot(True, Scan("updated.xml"), gaps, (), (), None)
+        continuation = InvestigationContinuationResult((), updated)
+        protocol_action = ProtocolAlternativeAction(
+            "ftp_protocol", "192.0.2.62", 2121, "tcp",
+            ("ftp_anonymous_access", "ftp_system_context"),
+        )
+        decision = InvestigationContinuationDecision(
+            "stalled", (), gaps, (), stall_reason="repeated_actions_exhausted",
+            protocol_alternative_actions=(protocol_action,),
+        )
+        protocol_round = ProtocolAlternativeRoundResult(
+            (), updated,
+            ("ftp_anonymous_access", "ftp_system_context"), (),
+        )
+        protocol_final = FinalProtocolInvestigationDecision(
+            "complete", "all_semantic_requirements_satisfied", gaps, (),
+        )
+
+        build_plan_mock.return_value = object()
+        execute_discovery_mock.return_value = object()
+        interpret_mock.return_value = object()
+        snapshot_mock.return_value = initial
+        execute_evidence_mock.return_value = continuation
+        decision_mock.return_value = decision
+        execute_protocol_mock.return_value = protocol_round
+        assess_protocol_mock.return_value = protocol_final
+
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.62"]):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(), 0)
+
+        execute_protocol_mock.assert_called_once_with(
+            updated, (protocol_action,), timeout=60.0
+        )
+        assess_protocol_mock.assert_called_once_with(protocol_round)
+
     def test_approve_requirement_requires_investigate_collect(self) -> None:
         from netrecon import main
 
