@@ -467,6 +467,39 @@ class EvidencePlannerTests(unittest.TestCase):
             (EvidenceRequest(2049, "tcp", "nfs-showmount"),),
         )
 
+    def test_open_mysql_service_requests_protocol_metadata(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=33060, protocol="tcp", state="open", service="mysql"),),
+        )
+        self.assertEqual(
+            plan_evidence_requests(host),
+            (EvidenceRequest(33060, "tcp", "mysql-info"),),
+        )
+
+    def test_open_vnc_service_requests_protocol_metadata(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=5901, protocol="tcp", state="open", service="vnc"),),
+        )
+        self.assertEqual(
+            plan_evidence_requests(host),
+            (EvidenceRequest(5901, "tcp", "vnc-info"),),
+        )
+
+    def test_open_rpcbind_service_requests_mapping_evidence(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=1111, protocol="tcp", state="open", service="rpcbind"),),
+        )
+        self.assertEqual(
+            plan_evidence_requests(host),
+            (EvidenceRequest(1111, "tcp", "rpcinfo"),),
+        )
+
     def test_unsupported_open_service_requests_no_evidence(self) -> None:
         host = Host(
             address="192.0.2.10",
