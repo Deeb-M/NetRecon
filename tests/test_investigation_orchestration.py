@@ -2116,14 +2116,13 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
 
         attention = build_investigation_attention(snapshot)
         categories = tuple(item.category for item in attention)
-        self.assertEqual(categories[0], "configuration")
-        self.assertEqual(categories[-1], "visibility")
+        self.assertEqual(categories, ("configuration", "exposure"))
 
         self.assertEqual(
             [item.finding_id for item in attention],
-            ["service.smb.exposed", "smb.signing.review"],
+            ["smb.signing.review", "service.smb.exposed"],
         )
-        self.assertEqual(attention[1].evidence_source, "nse:smb2-security-mode")
+        self.assertEqual(attention[0].evidence_source, "nse:smb2-security-mode")
         self.assertNotIn("smb.protocol.modern_only", [item.finding_id for item in attention])
 
 
