@@ -89,6 +89,59 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(finding.severity, "info")
         self.assertEqual(finding.evidence_source, "nse:http-methods")
 
+    def test_rpc_service_mapping_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=111,
+                    protocol="tcp",
+                    state="open",
+                    service="rpcbind",
+                    scripts=(
+                        ScriptResult(
+                            script_id="rpcinfo",
+                            output=(
+                                "program version port/proto service "
+                                "100000 2 111/tcp rpcbind "
+                                "100000 2 111/udp rpcbind "
+                                "100003 2,3,4 2049/tcp nfs "
+                                "100003 2,3,4 2049/udp nfs "
+                                "100005 1,2,3 33508/tcp mountd "
+                                "100021 1,3,4 39532/tcp nlockmgr "
+                                "100024 1 49509/tcp status"
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 30, tzinfo=timezone.utc),
+        )
+
+        rpc_findings = [
+            finding
+            for finding in findings
+            if finding.finding_id == "rpc.service.mapping"
+        ]
+
+        self.assertEqual(len(rpc_findings), 1)
+        finding = rpc_findings[0]
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "info")
+        self.assertIn("100003", finding.evidence)
+        self.assertIn("2049/tcp", finding.evidence)
+        self.assertIn("nfs", finding.evidence)
+        self.assertIn("mountd", finding.evidence)
+        self.assertIn("nlockmgr", finding.evidence)
+        self.assertIn("status", finding.evidence)
+        self.assertEqual(finding.evidence_source, "nse:rpcinfo")
+
     def test_smtp_capability_inventory_finding(self) -> None:
         host = Host(
             address="192.0.2.10",

@@ -156,6 +156,32 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                     )
                 )
 
+        if script_id == "rpcinfo":
+            mapping = " ".join(output.split())
+            if mapping:
+                findings.append(
+                    _script_finding(
+                        script.script_id,
+                        finding_id="rpc.service.mapping",
+                        category="protocol",
+                        host=host.address,
+                        port=script_port,
+                        protocol=script_protocol,
+                        severity="info",
+                        title="RPC service mapping collected",
+                        evidence=(
+                            "Nmap rpcinfo reported RPC program, version, transport, "
+                            f"port, and service mappings: {mapping}"
+                        ),
+                        recommendation=(
+                            "Use the RPC mapping as protocol context for related services. "
+                            "Services reported through rpcinfo are mappings learned from "
+                            "rpcbind and should not be treated as independently discovered "
+                            "open ports without separate supporting evidence."
+                        ),
+                    )
+                )
+
         if script_id == "smtp-commands":
             capabilities = tuple(
                 item.strip()

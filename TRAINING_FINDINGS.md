@@ -135,11 +135,17 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-013 — RPC Service Mapping and Correlation
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the isolated Metasploitable lab, NetRecon discovered rpcbind on 111/tcp but did not create an RPC-specific evidence requirement. Manual Nmap validation with `rpcinfo` exposed a richer RPC service map, including RPC program numbers, supported versions, TCP/UDP transports, and dynamically assigned ports for related services such as NFS, mountd, nlockmgr, and status.
+**Observed:** In the isolated Metasploitable lab, NetRecon already had the RPC evidence-planning path introduced earlier: discovered rpcbind services create the semantic `rpc_service_mapping` requirement and plan `rpcinfo`. Practical validation showed that `rpcinfo` returned a richer RPC service map containing RPC program numbers, supported versions, TCP/UDP transports, and mapped ports for rpcbind, NFS, mountd, nlockmgr, and status. The remaining F-013 gap was semantic interpretation: the collected mapping was preserved as raw NSE output but was not surfaced as an analyst-facing RPC finding.
 
-**Expected direction:** Add protocol-aware RPC service mapping using `rpcinfo` and correlate observed RPC programs, versions, transports, and dynamic ports with related discovered services. Preserve the distinction between the rpcbind endpoint itself and services learned through its mapping data.
+**Implemented:** Added protocol-aware interpretation of `rpcinfo` evidence. NetRecon now emits the informational `rpc.service.mapping` finding and preserves the observed RPC program, version, transport, mapped-port, and service context. The recommendation explicitly preserves provenance: services learned through rpcbind mapping data are not treated as independently discovered open ports without separate supporting evidence.
+
+**Correlation boundary:** RPC program-to-service mapping is retained as protocol context rather than promoted into Analyst Attention. Existing Analyst Attention correlation is intentionally limited to review-worthy finding categories. F-013 therefore does not broaden that architecture merely to correlate informational RPC context.
+
+**Practical verification:** An authorized lab scan of rpcbind on 111/tcp with `rpcinfo` reported RPC program 100003 for NFS, 100005 for mountd, 100021 for nlockmgr, and 100024 for status, across observed TCP/UDP mappings. NetRecon surfaced the new `RPC service mapping collected` finding while the Network Summary continued to report only the independently scanned 111/tcp rpcbind endpoint as open.
+
+**Validation:** Added a focused TDD test for RPC service-map interpretation. The test failed before implementation and passed after the rule was added. The full NetRecon regression suite passed 847/847 tests.
 
 ## F-014 — MySQL Protocol Capability Evidence Collection
 
