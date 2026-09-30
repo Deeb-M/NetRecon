@@ -39,6 +39,11 @@ def build_evidence_action_plan(scan: Scan) -> tuple[EvidenceAction, ...]:
 
             command = build_nmap_command(spec)
             command_arguments = command.arguments
+            if any(script_id in {"ftp-syst", "ftp-anon"} for script_id in script_ids):
+                arguments = list(command_arguments)
+                if "-sV" not in arguments:
+                    arguments.insert(1, "-sV")
+                command_arguments = tuple(arguments)
             if "nfs-showmount" in script_ids:
                 rpcbind_ports = tuple(
                     port.port
