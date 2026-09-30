@@ -41,6 +41,11 @@ class ScanOrchestrationTests(unittest.TestCase):
 
         self.assertEqual(plan.target, "example.com")
         self.assertEqual(plan.command[-1], "example.com")
+        self.assertEqual(plan.input_target, "https://example.com/")
+        self.assertEqual(plan.scheme, "https")
+        self.assertEqual(plan.port, 443)
+        self.assertFalse(plan.explicit_port)
+        self.assertEqual(plan.path, "/")
 
     def test_extracts_hostname_from_url_with_port_and_path(self) -> None:
         plan = build_baseline_discovery_plan(
@@ -49,6 +54,11 @@ class ScanOrchestrationTests(unittest.TestCase):
 
         self.assertEqual(plan.target, "example.com")
         self.assertEqual(plan.command[-1], "example.com")
+        self.assertEqual(plan.input_target, "https://example.com:8443/admin")
+        self.assertEqual(plan.scheme, "https")
+        self.assertEqual(plan.port, 8443)
+        self.assertTrue(plan.explicit_port)
+        self.assertEqual(plan.path, "/admin")
 
     def test_extracts_ip_address_from_http_url(self) -> None:
         plan = build_baseline_discovery_plan(
@@ -57,6 +67,11 @@ class ScanOrchestrationTests(unittest.TestCase):
 
         self.assertEqual(plan.target, "192.0.2.10")
         self.assertEqual(plan.command[-1], "192.0.2.10")
+        self.assertEqual(plan.input_target, "http://192.0.2.10/test")
+        self.assertEqual(plan.scheme, "http")
+        self.assertEqual(plan.port, 80)
+        self.assertFalse(plan.explicit_port)
+        self.assertEqual(plan.path, "/test")
 
 
 if __name__ == "__main__":
