@@ -137,6 +137,34 @@ class EvidenceActionPlanTests(unittest.TestCase):
         )
         self.assertTrue(all(a.command[-1] == "192.0.2.10" for a in actions))
 
+    def test_mysql_vnc_rpcbind_rules_create_bounded_actions(self) -> None:
+        scan = Scan(
+            source="lab.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=33060, protocol="tcp", state="open", service="mysql"),
+                        Port(port=5901, protocol="tcp", state="open", service="vnc"),
+                        Port(port=1111, protocol="tcp", state="open", service="rpcbind"),
+                    ),
+                ),
+            ),
+        )
+
+        actions = build_evidence_action_plan(scan)
+
+        self.assertEqual(
+            tuple((a.port, a.script_ids) for a in actions),
+            (
+                (33060, ("mysql-info",)),
+                (5901, ("vnc-info",)),
+                (1111, ("rpcinfo",)),
+            ),
+        )
+        self.assertTrue(all(a.command[-1] == "192.0.2.10" for a in actions))
+
     def test_unsupported_service_creates_no_action(self) -> None:
         scan = Scan(
             source="unsupported.xml",
