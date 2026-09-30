@@ -3667,6 +3667,55 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
             tuple(action.script_ids for action in result.snapshot.actions),
         )
 
+    def test_authenticated_smb_runtime_command_uses_credentials_file_without_mutating_action(self) -> None:
+        from investigation_orchestration import _runtime_command_for_action
+
+        action = EvidenceAction(
+            host="192.0.2.132",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-enum-shares",),
+            purposes=("review SMB access controls",),
+            command=(
+                "nmap",
+                "-p",
+                "445",
+                "--script",
+                "smb-enum-shares",
+                "-oX",
+                "-",
+                "192.0.2.132",
+            ),
+        )
+
+        runtime = _runtime_command_for_action(
+            action,
+            smb_credentials_file="/run/user/1000/netrecon-smb.conf",
+        )
+
+        self.assertIn("--script-args-file", runtime.arguments)
+        self.assertIn("/run/user/1000/netrecon-smb.conf", runtime.arguments)
+        self.assertNotIn("--script-args-file", action.command)
+
+    def test_smb_credentials_are_not_applied_to_unrelated_actions(self) -> None:
+        from investigation_orchestration import _runtime_command_for_action
+
+        action = EvidenceAction(
+            host="192.0.2.10",
+            port=22,
+            protocol="tcp",
+            script_ids=("ssh2-enum-algos",),
+            purposes=("review SSH algorithms",),
+            command=("nmap", "-p", "22", "--script", "ssh2-enum-algos", "-oX", "-", "192.0.2.10"),
+        )
+
+        runtime = _runtime_command_for_action(
+            action,
+            smb_credentials_file="/run/user/1000/netrecon-smb.conf",
+        )
+
+        self.assertEqual(runtime.arguments, action.command)
+
     @patch("investigation_orchestration.execute_nmap_command")
     def test_current_verification_replaces_prior_same_requirement_identity(
         self,
