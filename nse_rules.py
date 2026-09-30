@@ -182,6 +182,43 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                     )
                 )
 
+        if script_id == "mysql-info":
+            retained_fields = []
+            for line in output.splitlines():
+                field = line.strip()
+                if field.startswith((
+                    "Protocol:",
+                    "Version:",
+                    "Capabilities flags:",
+                    "Some Capabilities:",
+                    "Status:",
+                )):
+                    retained_fields.append(field)
+
+            if retained_fields:
+                findings.append(
+                    _script_finding(
+                        script.script_id,
+                        finding_id="mysql.capabilities.inventory",
+                        category="protocol",
+                        host=host.address,
+                        port=script_port,
+                        protocol=script_protocol,
+                        severity="info",
+                        title="MySQL protocol capability inventory collected",
+                        evidence=(
+                            "Nmap mysql-info reported MySQL handshake and capability context: "
+                            + "; ".join(retained_fields)
+                        ),
+                        recommendation=(
+                            "Use the reported MySQL protocol, server version, capabilities, "
+                            "and status as service context. An advertised capability such as "
+                            "SwitchToSSLAfterHandshake does not establish that TLS was negotiated "
+                            "or that its security properties were validated."
+                        ),
+                    )
+                )
+
         if script_id == "smtp-commands":
             capabilities = tuple(
                 item.strip()
