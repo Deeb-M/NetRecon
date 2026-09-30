@@ -19,32 +19,49 @@ class DiscoveryPlan:
     profile: str
     purpose: str
     command: tuple[str, ...]
-
-
-def _normalize_discovery_target(target: str) -> str:
-    """Return a hostname/IP/CIDR suitable for Nmap discovery."""
-    normalized_target = target.strip()
-    if not normalized_target:
-        raise ValueError("Discovery target must not be blank")
-
-    parsed = urlparse(normalized_target)
-    if parsed.scheme.lower() in {"http", "https"}:
-        if not parsed.hostname:
-            raise ValueError("Discovery URL must include a hostname")
-        return parsed.hostname
-
-    return normalized_target
+    input_target: str | None = None
+    scheme: str | None = None
+    port: int | None = None
+    explicit_port: bool = False
+    path: str | None = None
 
 
 def build_baseline_discovery_plan(target: str) -> DiscoveryPlan:
     """Build the conservative baseline TCP service-discovery plan."""
-    normalized_target = _normalize_discovery_target(target)
+    input_target = target.strip()
+    if not input_target:
+        raise ValueError("Discovery target must not be blank")
+
+    parsed = urlparse(input_target)
+    scheme = parsed.scheme.lower()
+    if scheme in {"http", "https"}:
+        if not parsed.hostname:
+            raise ValueError("Discovery URL must include a hostname")
+        normalized_target = parsed.hostname
+        try:
+            parsed_port = parsed.port
+        except ValueError as exc:
+            raise ValueError("Discovery URL contains an invalid port") from exc
+        explicit_port = parsed_port is not None
+        port = parsed_port if explicit_port else (443 if scheme == "https" else 80)
+        path = parsed.path or "/"
+    else:
+        normalized_target = input_target
+        scheme = None
+        port = None
+        explicit_port = False
+        path = None
 
     return DiscoveryPlan(
         target=normalized_target,
         profile="baseline",
         purpose="discover open TCP services with version detection",
         command=("nmap", "-sV", "-oX", "-", normalized_target),
+        input_target=input_target,
+        scheme=scheme,
+        port=port,
+        explicit_port=explicit_port,
+        path=path,
     )
 
 
