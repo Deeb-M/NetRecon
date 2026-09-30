@@ -2038,5 +2038,38 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertIsNone(outcome.scan)
 
 
+    def test_authenticated_smb_command_uses_credentials_file_not_inline_secret(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-enum-shares",),
+            auth_context="smb",
+            credentials_file="/run/user/1000/netrecon-smb.conf",
+        )
+
+        command = build_nmap_command(spec)
+
+        joined = " ".join(command.arguments)
+        self.assertIn("--script-args-file", command.arguments)
+        self.assertIn("/run/user/1000/netrecon-smb.conf", command.arguments)
+        self.assertNotIn("username", joined.lower())
+        self.assertNotIn("password", joined.lower())
+        self.assertEqual(spec.auth_context, "smb")
+
+    def test_anonymous_collection_spec_has_no_auth_context(self) -> None:
+        spec = CollectionSpec(
+            target="192.0.2.10",
+            port=445,
+            protocol="tcp",
+            script_ids=("smb-protocols",),
+        )
+
+        command = build_nmap_command(spec)
+
+        self.assertIsNone(spec.auth_context)
+        self.assertIsNone(spec.credentials_file)
+        self.assertNotIn("--script-args-file", command.arguments)
+
 if __name__ == "__main__":
     unittest.main()
