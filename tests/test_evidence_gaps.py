@@ -2,7 +2,7 @@
 
 import unittest
 
-from evidence_gaps import EvidenceGap, summarize_evidence_gaps
+from evidence_gaps import EvidenceGap, requirement_states_for_gaps, summarize_evidence_gaps
 from models import Host, Port, Scan, ScriptResult
 
 
