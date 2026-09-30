@@ -106,11 +106,17 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-011 — FTP Access and Transport Evidence Collection
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the isolated Metasploitable lab, NetRecon discovered FTP on 21/tcp and identified vsFTPd 2.3.4, but its analyst-facing investigation stopped at the generic FTP exposure observation. Manual Nmap validation showed that `ftp-anon` directly observed anonymous login as allowed (FTP code 230), while `ftp-syst` reported service/system context and that both control and data connections were plain text. A separate manual anonymous FTP session confirmed successful login and a successful directory-listing operation; no filenames were returned by that listing.
+**Observed:** In the isolated Metasploitable lab, FTP evidence behaved differently across endpoints. On 21/tcp, Nmap `ftp-anon` and `ftp-syst` directly supplied the requested evidence. On ProFTPD 1.3.1 at 2121/tcp, the corrected `nmap -sV -p 2121 --script ftp-syst,ftp-anon` collection completed successfully but produced no requested NSE evidence.
 
-**Expected direction:** Add protocol-aware FTP evidence requirements for access and transport context. A detected FTP service should be able to request anonymous-access evidence via `ftp-anon` and service/transport context via `ftp-syst`. Preserve evidence boundaries: distinguish an allowed anonymous login from the content actually visible through that session, and do not infer files or permissions that were not observed.
+**Implemented:** NetRecon now requests FTP evidence with service detection enabled and preserves the original NSE evidence gaps when those scripts remain silent. After the primary action is repeat-exhausted, a bounded protocol-level FTP alternative can collect the welcome banner, `SYST`, `STAT`, and one anonymous-login observation. Anonymous access is recorded as `allowed`, `denied`, or `unknown`; no password candidates or brute-force behavior are used. Protocol evidence remains distinct from NSE `ScriptResult` provenance.
+
+**Regression tested:** Collector normalization, bounded collection planning/execution, protocol-alternative planning, execution, semantic round handling, terminal semantic decision, CLI orchestration, packaging, and analyst-facing reporting are covered by regression tests. The full CI suite was GREEN before practical verification.
+
+**Practically verified:** On 192.168.111.130:2121/tcp, primary NSE collection remained incomplete for `ftp-syst` and `ftp-anon`. NetRecon then executed the protocol alternative and observed anonymous login as `denied`, `SYST: UNIX Type: L8`, and `STAT: Please login with USER and PASS`. Both semantic requirements (`ftp_anonymous_access`, `ftp_system_context`) were satisfied while both original NSE gaps were explicitly preserved. The final semantic decision was `complete / all_semantic_requirements_satisfied`.
+
+**Evidence boundary:** A denied anonymous login is evidence about anonymous-access behavior, not evidence of authenticated access. `SYST`/`STAT` responses provide protocol/server context only. Preserved NSE gaps continue to state that the requested NSE scripts themselves did not return evidence.
 
 
 ## F-012 — SMTP Capability Evidence Collection
