@@ -55,3 +55,32 @@ def parse_ftp_protocol_evidence(
         stat=_observed_text(stat_code, stat),
         anonymous_login=_anonymous_status(anonymous_code),
     )
+
+@dataclass(frozen=True)
+class FtpProtocolCollectionPlan:
+    """Bounded read-only FTP protocol collection plan."""
+
+    host: str
+    port: int
+    timeout: float | None
+    commands: tuple[str, ...] = ("SYST", "STAT")
+    check_anonymous: bool = True
+
+
+def build_ftp_protocol_collection_plan(
+    host: str,
+    port: int,
+    *,
+    timeout: float | None = None,
+) -> FtpProtocolCollectionPlan:
+    """Build a fixed, read-only FTP evidence plan for one endpoint."""
+    normalized_host = host.strip()
+    if not normalized_host:
+        raise ValueError("FTP collection requires a host")
+    if not 1 <= port <= 65535:
+        raise ValueError("FTP collection requires a valid TCP port")
+    return FtpProtocolCollectionPlan(
+        host=normalized_host,
+        port=port,
+        timeout=timeout,
+    )
