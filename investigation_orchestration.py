@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from analyst_attention import AnalystAttentionItem, build_analyst_attention
+from analyst_attention import prioritize_analyst_attention, AnalystAttentionItem, build_analyst_attention
 from analyzer import analyze_scan
 
 from evidence_action_plan import EvidenceAction, build_evidence_action_plan
@@ -149,7 +149,7 @@ def build_investigation_attention(
     """Project analyst attention from the investigation's current merged evidence."""
     if not snapshot.ready or snapshot.scan is None:
         return ()
-    return build_analyst_attention(analyze_scan(snapshot.scan))
+    return prioritize_analyst_attention(build_analyst_attention(analyze_scan(snapshot.scan)))
 
 
 @dataclass(frozen=True)
