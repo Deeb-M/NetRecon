@@ -30,11 +30,14 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-003 — Discovery Timeout Handling
 
-**Status:** OPEN
+**Status:** CLOSED
 
 **Observed:** `netrecon --discover <host>` ended with `Nmap discovery timed out`. A direct HTTPS request to the same authorized lab target returned promptly, while direct Nmap attempts did not produce a completed host/ports result.
 
 **Expected direction:** Distinguish collector timeout from target unreachability, retain useful partial/context evidence where appropriate, and evaluate safe fallback/alternative collection paths instead of treating all discovery timeouts as equivalent failures.
+
+
+**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VERIFIED. CI passed after timeout provenance and reporting support were added. In the isolated VMware lab, `netrecon --discover http://192.168.111.130:8180/ --evidence-timeout 0.001` produced a bounded timeout with `Failure kind: collector_timeout` and `Target unreachable: no`, demonstrating that a collector timeout is no longer mislabeled as target unreachability. Partial stdout/stderr retention is covered by regression tests when such output exists.
 
 ## F-004 — Authenticated SMB Evidence Collection
 
