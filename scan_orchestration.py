@@ -137,12 +137,16 @@ def execute_discovery_plan(
 
 @dataclass(frozen=True)
 class DiscoveryResult:
-    """Interpreted discovery outcome with a Scan only for verified success."""
+    """Interpreted discovery outcome with explicit failure provenance."""
 
     execution: DiscoveryExecutionResult
     success: bool
     scan: Scan | None
     error: str | None
+    failure_kind: str | None = None
+    partial_stdout: str = ""
+    partial_stderr: str = ""
+    target_unreachable: bool = False
 
 
 def interpret_discovery_execution(
@@ -155,6 +159,10 @@ def interpret_discovery_execution(
             success=False,
             scan=None,
             error="Nmap discovery timed out",
+            failure_kind="collector_timeout",
+            partial_stdout=execution.stdout,
+            partial_stderr=execution.stderr,
+            target_unreachable=False,
         )
 
     if execution.returncode != 0:
@@ -163,6 +171,10 @@ def interpret_discovery_execution(
             success=False,
             scan=None,
             error=execution.stderr or f"Nmap discovery failed with exit code {execution.returncode}",
+            failure_kind="collector_failure",
+            partial_stdout=execution.stdout,
+            partial_stderr=execution.stderr,
+            target_unreachable=False,
         )
 
     try:
