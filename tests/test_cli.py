@@ -54,6 +54,29 @@ class CliTests(unittest.TestCase):
             any(action.dest == "compare_scan" for action in parser._actions)
         )
 
+    def test_accepts_smb_credentials_file_for_authorized_collection(self) -> None:
+        parser = build_parser()
+
+        args = parser.parse_args([
+            "--investigate-collect",
+            "192.0.2.10",
+            "--smb-credentials-file",
+            "/run/user/1000/netrecon-smb.conf",
+        ])
+
+        self.assertEqual(
+            str(args.smb_credentials_file),
+            "/run/user/1000/netrecon-smb.conf",
+        )
+
+    def test_smb_credentials_file_is_not_a_username_or_password_argument(self) -> None:
+        parser = build_parser()
+        help_text = parser.format_help().lower()
+
+        self.assertIn("--smb-credentials-file", help_text)
+        self.assertNotIn("--smb-password", help_text)
+        self.assertNotIn("--smb-username", help_text)
+
     def test_accepts_combined_diff_mode(self) -> None:
         parser = build_parser()
 
