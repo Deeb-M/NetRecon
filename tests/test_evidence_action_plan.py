@@ -137,6 +137,37 @@ class EvidenceActionPlanTests(unittest.TestCase):
         )
         self.assertTrue(all(a.command[-1] == "192.0.2.10" for a in actions))
 
+    def test_ftp_action_uses_service_detection_before_ftp_evidence_scripts(self) -> None:
+        scan = Scan(
+            source="ftp-lab.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=2121, protocol="tcp", state="open", service="ftp"),
+                    ),
+                ),
+            ),
+        )
+
+        ftp_action = next(
+            action
+            for action in build_evidence_action_plan(scan)
+            if action.port == 2121 and "ftp-syst" in action.script_ids
+        )
+
+        self.assertEqual(ftp_action.script_ids, ("ftp-syst", "ftp-anon"))
+        self.assertIn("-sV", ftp_action.command)
+        self.assertEqual(
+            ftp_action.command,
+            (
+                "nmap", "-sV", "-p", "2121",
+                "--script", "ftp-syst,ftp-anon",
+                "-oX", "-", "192.0.2.10",
+            ),
+        )
+
     def test_nfs_action_includes_rpcbind_context_for_showmount(self) -> None:
         scan = Scan(
             source="nfs-lab.xml",
