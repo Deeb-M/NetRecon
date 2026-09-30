@@ -163,11 +163,17 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-015 — VNC Protocol and Security Evidence Collection
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the isolated Metasploitable lab, NetRecon discovered VNC on 5900/tcp but did not create a VNC-specific evidence requirement. Manual Nmap validation with `vnc-info` observed VNC protocol version 3.3 and the advertised security type `VNC Authentication (2)`.
+**Observed:** In the isolated Metasploitable lab, NetRecon already had the VNC evidence-planning path introduced earlier: discovered VNC services create the semantic `vnc_security_context` requirement and plan `vnc-info`. Practical validation on 5900/tcp reported VNC protocol version 3.3 and the advertised security type `VNC Authentication (2)`. The remaining F-015 gap was semantic interpretation of the collected NSE evidence.
 
-**Expected direction:** Add protocol-aware VNC evidence collection using `vnc-info`. Surface the observed protocol version and advertised security types. Preserve evidence boundaries: observing `VNC Authentication (2)` does not establish password strength, credential validity, or successful authenticated access.
+**Implemented:** Added protocol-aware interpretation of `vnc-info`. NetRecon now emits the informational `vnc.security.context` finding and retains the observed VNC protocol version and advertised security types.
+
+**Evidence boundary:** Observing `VNC Authentication (2)` is retained as advertised service context only. It does not establish password strength, credential validity, or successful authenticated access.
+
+**Practical verification:** An authorized lab scan of VNC on 5900/tcp reported Protocol version 3.3 and Security type `VNC Authentication (2)`. The implementation was validated against this observed output shape.
+
+**Validation:** Added a focused test for VNC protocol and security-context interpretation. The regression suite passed 849/849 tests.
 
 ## Practical observations worth preserving
 

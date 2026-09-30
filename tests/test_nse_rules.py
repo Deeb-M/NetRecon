@@ -197,6 +197,51 @@ class NseRulesTests(unittest.TestCase):
         self.assertIn("does not establish", finding.recommendation)
         self.assertEqual(finding.evidence_source, "nse:mysql-info")
 
+    def test_vnc_security_context_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=5900,
+                    protocol="tcp",
+                    state="open",
+                    service="vnc",
+                    scripts=(
+                        ScriptResult(
+                            script_id="vnc-info",
+                            output=(
+                                "Protocol version: 3.3\n"
+                                "Security types:\n"
+                                "  VNC Authentication (2)"
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 30, tzinfo=timezone.utc),
+        )
+
+        vnc_findings = [
+            finding
+            for finding in findings
+            if finding.finding_id == "vnc.security.context"
+        ]
+
+        self.assertEqual(len(vnc_findings), 1)
+        finding = vnc_findings[0]
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "info")
+        self.assertIn("Protocol version: 3.3", finding.evidence)
+        self.assertIn("VNC Authentication (2)", finding.evidence)
+        self.assertIn("does not establish", finding.recommendation)
+        self.assertEqual(finding.evidence_source, "nse:vnc-info")
+
     def test_smtp_capability_inventory_finding(self) -> None:
         host = Host(
             address="192.0.2.10",

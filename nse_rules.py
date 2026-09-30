@@ -238,6 +238,62 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                     )
                 )
 
+        if script_id == "vnc-info":
+            normalized_vnc_output = " ".join(output.split())
+            protocol_label = "Protocol version:"
+            security_label = "Security types:"
+            protocol_start = normalized_vnc_output.find(protocol_label)
+            security_start = normalized_vnc_output.find(security_label)
+            vnc_context = []
+
+            if protocol_start >= 0:
+                value_start = protocol_start + len(protocol_label)
+                value_end = (
+                    security_start
+                    if security_start > protocol_start
+                    else len(normalized_vnc_output)
+                )
+                protocol_value = normalized_vnc_output[
+                    value_start:value_end
+                ].strip()
+                if protocol_value:
+                    vnc_context.append(
+                        f"Protocol version: {protocol_value}"
+                    )
+
+            if security_start >= 0:
+                security_value = normalized_vnc_output[
+                    security_start + len(security_label):
+                ].strip()
+                if security_value:
+                    vnc_context.append(
+                        f"Security types: {security_value}"
+                    )
+
+            if vnc_context:
+                findings.append(
+                    _script_finding(
+                        script.script_id,
+                        finding_id="vnc.security.context",
+                        category="protocol",
+                        host=host.address,
+                        port=script_port,
+                        protocol=script_protocol,
+                        severity="info",
+                        title="VNC protocol and security context collected",
+                        evidence=(
+                            "Nmap vnc-info reported VNC protocol and advertised "
+                            "security context: " + "; ".join(vnc_context)
+                        ),
+                        recommendation=(
+                            "Use the advertised VNC protocol version and security types "
+                            "as service context. Observing VNC Authentication (2) does not "
+                            "establish password strength, credential validity, or successful "
+                            "authenticated access."
+                        ),
+                    )
+                )
+
         if script_id == "smtp-commands":
             capabilities = tuple(
                 item.strip()
