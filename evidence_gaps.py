@@ -93,6 +93,26 @@ EVIDENCE_REQUIREMENTS: dict[str, EvidenceRequirement] = {
         "review SMB signing configuration",
         ("smb2-security-mode",),
     ),
+    "ftp-syst": EvidenceRequirement(
+        "ftp_system_context",
+        "review FTP server system and protocol context",
+        ("ftp-syst",),
+    ),
+    "ftp-anon": EvidenceRequirement(
+        "ftp_anonymous_access",
+        "review anonymous FTP access behavior",
+        ("ftp-anon",),
+    ),
+    "smtp-commands": EvidenceRequirement(
+        "smtp_capability_context",
+        "review advertised SMTP capabilities",
+        ("smtp-commands",),
+    ),
+    "nfs-showmount": EvidenceRequirement(
+        "nfs_export_context",
+        "review NFS export and client-scope context",
+        ("nfs-showmount",),
+    ),
 }
 
 
