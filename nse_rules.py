@@ -238,6 +238,52 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                     )
                 )
 
+        if script_id == "vnc-info":
+            normalized_vnc_output = " ".join(output.split())
+            protocol_match = re.search(
+                r"Protocol version:\\s*([^\\s]+)",
+                normalized_vnc_output,
+                re.IGNORECASE,
+            )
+            security_match = re.search(
+                r"Security types?:\\s*(.+)$",
+                normalized_vnc_output,
+                re.IGNORECASE,
+            )
+            vnc_context = []
+            if protocol_match:
+                vnc_context.append(
+                    f"Protocol version: {protocol_match.group(1)}"
+                )
+            if security_match:
+                vnc_context.append(
+                    f"Security types: {security_match.group(1).strip()}"
+                )
+
+            if vnc_context:
+                findings.append(
+                    _script_finding(
+                        script.script_id,
+                        finding_id="vnc.security.context",
+                        category="protocol",
+                        host=host.address,
+                        port=script_port,
+                        protocol=script_protocol,
+                        severity="info",
+                        title="VNC protocol and security context collected",
+                        evidence=(
+                            "Nmap vnc-info reported VNC protocol and advertised "
+                            "security context: " + "; ".join(vnc_context)
+                        ),
+                        recommendation=(
+                            "Use the advertised VNC protocol version and security types "
+                            "as service context. Observing VNC Authentication (2) does not "
+                            "establish password strength, credential validity, or successful "
+                            "authenticated access."
+                        ),
+                    )
+                )
+
         if script_id == "smtp-commands":
             capabilities = tuple(
                 item.strip()
