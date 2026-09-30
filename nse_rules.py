@@ -183,17 +183,36 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                 )
 
         if script_id == "mysql-info":
+            retained_labels = (
+                "Protocol:",
+                "Version:",
+                "Capabilities flags:",
+                "Some Capabilities:",
+                "Status:",
+            )
+            ignored_labels = ("Thread ID:", "Salt:")
+            all_labels = retained_labels + ignored_labels
             retained_fields = []
-            for line in output.splitlines():
-                field = line.strip()
-                if field.startswith((
-                    "Protocol:",
-                    "Version:",
-                    "Capabilities flags:",
-                    "Some Capabilities:",
-                    "Status:",
-                )):
-                    retained_fields.append(field)
+
+            normalized_mysql_output = " ".join(output.split())
+            label_positions = sorted(
+                (
+                    normalized_mysql_output.find(label),
+                    label,
+                )
+                for label in all_labels
+                if normalized_mysql_output.find(label) >= 0
+            )
+            for index, (start, label) in enumerate(label_positions):
+                end = (
+                    label_positions[index + 1][0]
+                    if index + 1 < len(label_positions)
+                    else len(normalized_mysql_output)
+                )
+                if label in retained_labels:
+                    retained_fields.append(
+                        normalized_mysql_output[start:end].strip()
+                    )
 
             if retained_fields:
                 findings.append(
