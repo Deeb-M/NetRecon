@@ -1,6 +1,7 @@
 """Tests for bounded FTP protocol evidence collection."""
 
 import unittest
+from unittest.mock import patch
 
 from ftp_evidence_collector import (
     FtpProtocolEvidence,
@@ -74,6 +75,31 @@ class FtpEvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(plan.commands, ("SYST", "STAT"))
         self.assertTrue(plan.check_anonymous)
         self.assertFalse(hasattr(plan, "password_candidates"))
+
+    @patch("ftp_evidence_collector.ftplib.FTP")
+    def test_executes_only_bounded_read_only_ftp_operations(self, ftp_cls) -> None:
+        from ftp_evidence_collector import (
+            build_ftp_protocol_collection_plan,
+            collect_ftp_protocol_evidence,
+        )
+
+        ftp = ftp_cls.return_value
+        ftp.getwelcome.return_value = "220 ProFTPD 1.3.1 Server"
+        ftp.sendcmd.side_effect = ["215 UNIX Type: L8", "211 FTP server status"]
+        ftp.login.return_value = "230 Anonymous access granted"
+
+        plan = build_ftp_protocol_collection_plan("192.0.2.10", 2121, timeout=5)
+        evidence = collect_ftp_protocol_evidence(plan)
+
+        ftp.connect.assert_called_once_with("192.0.2.10", 2121, timeout=5)
+        self.assertEqual(
+            [call.args[0] for call in ftp.sendcmd.call_args_list],
+            ["SYST", "STAT"],
+        )
+        ftp.login.assert_called_once_with("anonymous", "netrecon@")
+        self.assertEqual(evidence.syst, "UNIX Type: L8")
+        self.assertEqual(evidence.stat, "FTP server status")
+        self.assertEqual(evidence.anonymous_login, "allowed")
 
 
 if __name__ == "__main__":
