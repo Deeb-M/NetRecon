@@ -20,6 +20,9 @@ EVIDENCE_PURPOSES: dict[str, str] = {
     "ftp-anon": "review anonymous FTP access behavior",
     "smtp-commands": "review advertised SMTP capabilities",
     "nfs-showmount": "review NFS export and client-scope context",
+    "mysql-info": "review MySQL protocol and server capability context",
+    "vnc-info": "review VNC protocol and advertised security types",
+    "rpcinfo": "review RPC program, version, transport, and service mappings",
 }
 
 
