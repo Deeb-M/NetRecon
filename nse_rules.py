@@ -240,25 +240,35 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
 
         if script_id == "vnc-info":
             normalized_vnc_output = " ".join(output.split())
-            protocol_match = re.search(
-                r"Protocol version:\\s*([^\\s]+)",
-                normalized_vnc_output,
-                re.IGNORECASE,
-            )
-            security_match = re.search(
-                r"Security types?:\\s*(.+)$",
-                normalized_vnc_output,
-                re.IGNORECASE,
-            )
+            protocol_label = "Protocol version:"
+            security_label = "Security types:"
+            protocol_start = normalized_vnc_output.find(protocol_label)
+            security_start = normalized_vnc_output.find(security_label)
             vnc_context = []
-            if protocol_match:
-                vnc_context.append(
-                    f"Protocol version: {protocol_match.group(1)}"
+
+            if protocol_start >= 0:
+                value_start = protocol_start + len(protocol_label)
+                value_end = (
+                    security_start
+                    if security_start > protocol_start
+                    else len(normalized_vnc_output)
                 )
-            if security_match:
-                vnc_context.append(
-                    f"Security types: {security_match.group(1).strip()}"
-                )
+                protocol_value = normalized_vnc_output[
+                    value_start:value_end
+                ].strip()
+                if protocol_value:
+                    vnc_context.append(
+                        f"Protocol version: {protocol_value}"
+                    )
+
+            if security_start >= 0:
+                security_value = normalized_vnc_output[
+                    security_start + len(security_label):
+                ].strip()
+                if security_value:
+                    vnc_context.append(
+                        f"Security types: {security_value}"
+                    )
 
             if vnc_context:
                 findings.append(
