@@ -91,11 +91,13 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-009 — Service Identity/Protocol Labeling Needs Review
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** Both 139/tcp and 445/tcp were presented as `netbios-ssn`/“NetBIOS session service exposed” in the Metasploitable report. The underlying discovery identified Samba on both ports, but the analyst-facing label risks obscuring the SMB context of 445/tcp.
+**Observed:** Both 139/tcp and 445/tcp were presented as `netbios-ssn`/“NetBIOS session service exposed” in the Metasploitable report. The underlying discovery identified Samba on both ports, but the analyst-facing label risked obscuring the SMB context of 445/tcp.
 
-**Expected direction:** Preserve raw scanner evidence while presenting protocol/service context accurately and consistently. Avoid analyst-facing labels that can make distinct transport/service roles look identical.
+**Implemented:** Service interpretation now uses the well-known transport context to distinguish the two analyst-facing roles without rewriting scanner evidence. A `netbios-ssn` label on 139/tcp remains “NetBIOS session service exposed”; the same raw label on 445/tcp is presented as “SMB service exposed”. The evidence text continues to preserve Nmap's original `netbios-ssn` identification. F-008 correlation was updated so the 139/tcp NetBIOS finding and 445/tcp SMB finding remain jointly reviewed.
+
+**Validation:** Focused service-rule and analyst-attention tests passed, followed by the full regression suite. Practical Metasploitable2 validation showed 139/tcp as NetBIOS, 445/tcp as SMB while retaining `identified as netbios-ssn`, and restored the expected two correlated-review groups (multiple FTP instances plus related NetBIOS/SMB transport exposure).
 
 ## F-010 — NFS Export and Access Evidence Collection
 
