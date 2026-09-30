@@ -687,6 +687,37 @@ def execute_protocol_alternative_round(
     )
 
 
+@dataclass(frozen=True)
+class FinalProtocolInvestigationDecision:
+    """Terminal semantic decision after bounded protocol-level alternatives."""
+
+    status: str
+    reason: str
+    remaining_gaps: tuple[EvidenceGap, ...]
+    remaining_requirement_ids: tuple[str, ...]
+
+
+def assess_final_protocol_investigation_decision(
+    protocol_round: ProtocolAlternativeRoundResult,
+) -> FinalProtocolInvestigationDecision:
+    """Assess semantic completion without rewriting primary NSE provenance."""
+    remaining_requirement_ids = protocol_round.remaining_requirement_ids
+    if not remaining_requirement_ids:
+        return FinalProtocolInvestigationDecision(
+            status="complete",
+            reason="all_semantic_requirements_satisfied",
+            remaining_gaps=protocol_round.snapshot.gaps,
+            remaining_requirement_ids=(),
+        )
+
+    return FinalProtocolInvestigationDecision(
+        status="stalled",
+        reason="protocol_evidence_incomplete",
+        remaining_gaps=protocol_round.snapshot.gaps,
+        remaining_requirement_ids=remaining_requirement_ids,
+    )
+
+
 def assess_investigation_continuation(
     before: InvestigationSnapshot,
     after: InvestigationSnapshot,
