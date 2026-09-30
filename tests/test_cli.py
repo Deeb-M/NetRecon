@@ -1396,7 +1396,7 @@ class CliTests(unittest.TestCase):
         self.assertIn("Investigation Explanation", rendered)
         self.assertIn("Investigation Synthesis", rendered)
         self.assertIn("Status: complete", rendered)
-        self.assertIn("Reason: all_gaps_resolved", rendered)
+        self.assertIn("Reason: all_supported_requirements_resolved", rendered)
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
