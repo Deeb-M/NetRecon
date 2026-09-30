@@ -60,6 +60,40 @@ class ScanOrchestrationTests(unittest.TestCase):
         self.assertTrue(plan.explicit_port)
         self.assertEqual(plan.path, "/admin")
 
+    def test_url_uses_web_aware_discovery_profile_and_explicit_port(self) -> None:
+        plan = build_baseline_discovery_plan(
+            "https://example.com:8443/admin"
+        )
+
+        self.assertEqual(plan.profile, "web")
+        self.assertEqual(
+            plan.purpose,
+            "discover the explicitly supplied Web service with version detection",
+        )
+        self.assertEqual(
+            plan.command,
+            ("nmap", "-sV", "-p", "8443", "-oX", "-", "example.com"),
+        )
+
+    def test_https_url_uses_implicit_https_port(self) -> None:
+        plan = build_baseline_discovery_plan("https://example.com/")
+
+        self.assertEqual(plan.profile, "web")
+        self.assertEqual(plan.port, 443)
+        self.assertEqual(
+            plan.command,
+            ("nmap", "-sV", "-p", "443", "-oX", "-", "example.com"),
+        )
+
+    def test_plain_target_keeps_baseline_discovery_profile(self) -> None:
+        plan = build_baseline_discovery_plan("192.0.2.10")
+
+        self.assertEqual(plan.profile, "baseline")
+        self.assertEqual(
+            plan.command,
+            ("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+
     def test_extracts_ip_address_from_http_url(self) -> None:
         plan = build_baseline_discovery_plan(
             "http://192.0.2.10/test"
