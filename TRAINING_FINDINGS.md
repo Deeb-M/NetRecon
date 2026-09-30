@@ -81,11 +81,13 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-008 — Attention Prioritization and Correlation Need Improvement
 
-**Status:** OPEN
+**Status:** CLOSED
 
 **Observed:** The Metasploitable run produced 10 Analyst Attention items but zero Correlated Review groups. Attention mixed transport exposure, missing product identification, legacy configuration evidence, and duplicated/related service observations without a compact priority/correlation view.
 
-**Expected direction:** Improve evidence-based grouping and prioritization without inventing severity. Correlate related ports/services and distinguish actionable configuration/exposure evidence from lower-value visibility notes.
+**Resolution:** Analyst Attention now uses deterministic evidence-review ordering without adding risk scores or changing finding severity: configuration, transport, exposure, then visibility. Correlation now groups multiple FTP service instances on the same host and related 139/tcp + 445/tcp SMB/NetBIOS transport exposure while preserving the original scanner-derived findings and service labels. The existing SMB exposure + signing correlation remains supported.
+
+**Validation:** Full regression suite passed 860/860 tests. Practical validation against the isolated Metasploitable2 lab retained 10 traceable Attention items, placed the legacy SSH configuration evidence before transport/exposure/visibility notes, and produced two Correlated Review groups: multiple FTP instances and related SMB/NetBIOS transport exposure. Service-label interpretation remains intentionally deferred to F-009.
 
 ## F-009 — Service Identity/Protocol Labeling Needs Review
 
