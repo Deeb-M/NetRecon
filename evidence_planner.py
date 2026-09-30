@@ -18,6 +18,9 @@ SERVICE_EVIDENCE: dict[str, tuple[str, ...]] = {
     ),
     "microsoft-ds": ("smb-protocols", "smb2-security-mode"),
     "smb": ("smb-protocols", "smb2-security-mode"),
+    "ftp": ("ftp-syst", "ftp-anon"),
+    "smtp": ("smtp-commands",),
+    "nfs": ("nfs-showmount",),
 }
 
 SMB_EVIDENCE = SERVICE_EVIDENCE["smb"]
