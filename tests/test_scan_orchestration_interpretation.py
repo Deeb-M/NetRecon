@@ -76,6 +76,27 @@ class DiscoveryInterpretationTests(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertIsNone(result.scan)
         self.assertEqual(result.error, "Nmap discovery timed out")
+        self.assertEqual(result.failure_kind, "collector_timeout")
+        self.assertEqual(result.partial_stdout, "partial xml")
+        self.assertEqual(result.partial_stderr, "")
+        self.assertFalse(result.target_unreachable)
+
+    def test_nonzero_failure_is_not_mislabeled_as_timeout_or_unreachable(self) -> None:
+        plan = build_baseline_discovery_plan("192.0.2.10")
+        execution = DiscoveryExecutionResult(
+            plan=plan,
+            returncode=2,
+            stdout="",
+            stderr="nmap failed",
+            timed_out=False,
+        )
+
+        result = interpret_discovery_execution(execution)
+
+        self.assertEqual(result.failure_kind, "collector_failure")
+        self.assertFalse(result.target_unreachable)
+        self.assertEqual(result.partial_stdout, "")
+        self.assertEqual(result.partial_stderr, "nmap failed")
 
 
 if __name__ == "__main__":
