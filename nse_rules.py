@@ -182,6 +182,62 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                     )
                 )
 
+        if script_id == "mysql-info":
+            retained_labels = (
+                "Protocol:",
+                "Version:",
+                "Capabilities flags:",
+                "Some Capabilities:",
+                "Status:",
+            )
+            ignored_labels = ("Thread ID:", "Salt:")
+            all_labels = retained_labels + ignored_labels
+            retained_fields = []
+
+            normalized_mysql_output = " ".join(output.split())
+            label_positions = sorted(
+                (
+                    normalized_mysql_output.find(label),
+                    label,
+                )
+                for label in all_labels
+                if normalized_mysql_output.find(label) >= 0
+            )
+            for index, (start, label) in enumerate(label_positions):
+                end = (
+                    label_positions[index + 1][0]
+                    if index + 1 < len(label_positions)
+                    else len(normalized_mysql_output)
+                )
+                if label in retained_labels:
+                    retained_fields.append(
+                        normalized_mysql_output[start:end].strip()
+                    )
+
+            if retained_fields:
+                findings.append(
+                    _script_finding(
+                        script.script_id,
+                        finding_id="mysql.capabilities.inventory",
+                        category="protocol",
+                        host=host.address,
+                        port=script_port,
+                        protocol=script_protocol,
+                        severity="info",
+                        title="MySQL protocol capability inventory collected",
+                        evidence=(
+                            "Nmap mysql-info reported MySQL handshake and capability context: "
+                            + "; ".join(retained_fields)
+                        ),
+                        recommendation=(
+                            "Use the reported MySQL protocol, server version, capabilities, "
+                            "and status as service context. An advertised capability such as "
+                            "SwitchToSSLAfterHandshake does not establish that TLS was negotiated "
+                            "or that its security properties were validated."
+                        ),
+                    )
+                )
+
         if script_id == "smtp-commands":
             capabilities = tuple(
                 item.strip()

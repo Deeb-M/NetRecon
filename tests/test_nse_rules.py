@@ -142,6 +142,61 @@ class NseRulesTests(unittest.TestCase):
         self.assertIn("status", finding.evidence)
         self.assertEqual(finding.evidence_source, "nse:rpcinfo")
 
+    def test_mysql_capability_inventory_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=3306,
+                    protocol="tcp",
+                    state="open",
+                    service="mysql",
+                    scripts=(
+                        ScriptResult(
+                            script_id="mysql-info",
+                            output=(
+                                "Protocol: 10\n"
+                                "Version: 5.0.51a-3ubuntu5\n"
+                                "Thread ID: 27\n"
+                                "Capabilities flags: 43564\n"
+                                "Some Capabilities: Support41Auth, Speaks41ProtocolNew, "
+                                "SupportsCompression, SwitchToSSLAfterHandshake, "
+                                "SupportsTransactions, LongColumnFlag, ConnectWithDatabase\n"
+                                "Status: Autocommit\n"
+                                "Salt: ephemeral-value"
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 30, tzinfo=timezone.utc),
+        )
+
+        mysql_findings = [
+            finding
+            for finding in findings
+            if finding.finding_id == "mysql.capabilities.inventory"
+        ]
+
+        self.assertEqual(len(mysql_findings), 1)
+        finding = mysql_findings[0]
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "info")
+        self.assertIn("Protocol: 10", finding.evidence)
+        self.assertIn("Version: 5.0.51a-3ubuntu5", finding.evidence)
+        self.assertIn("SwitchToSSLAfterHandshake", finding.evidence)
+        self.assertIn("Status: Autocommit", finding.evidence)
+        self.assertNotIn("Thread ID", finding.evidence)
+        self.assertNotIn("Salt", finding.evidence)
+        self.assertIn("does not establish", finding.recommendation)
+        self.assertEqual(finding.evidence_source, "nse:mysql-info")
+
     def test_smtp_capability_inventory_finding(self) -> None:
         host = Host(
             address="192.0.2.10",
