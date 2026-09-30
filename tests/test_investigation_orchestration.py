@@ -530,6 +530,42 @@ class InvestigationContinuationContractTests(unittest.TestCase):
 
 
     @patch("investigation_orchestration.execute_nmap_command")
+    @patch("investigation_orchestration.execute_nmap_command")
+    def test_selected_smb_action_can_use_credentials_file_without_inline_secret(
+        self,
+        execute_mock,
+    ) -> None:
+        from evidence_collector import CollectionResult, NmapCommand
+        from investigation_orchestration import execute_selected_evidence_actions
+
+        snapshot = self._snapshot(())
+        action = EvidenceAction(
+            "192.0.2.10",
+            445,
+            "tcp",
+            ("smb-enum-shares",),
+            ("SMB access-control context",),
+            ("nmap", "-p", "445", "--script", "smb-enum-shares", "-oX", "-", "192.0.2.10"),
+        )
+        execute_mock.return_value = CollectionResult(
+            NmapCommand(action.command),
+            1,
+            "",
+            "bounded test failure",
+        )
+
+        execute_selected_evidence_actions(
+            snapshot,
+            (action,),
+            smb_credentials_file="/run/user/1000/netrecon-smb.conf",
+        )
+
+        executed = execute_mock.call_args.args[0].arguments
+        self.assertIn("--script-args-file", executed)
+        self.assertIn("/run/user/1000/netrecon-smb.conf", executed)
+        self.assertNotIn("username", " ".join(executed).lower())
+        self.assertNotIn("password", " ".join(executed).lower())
+
     def test_execute_approved_actions_runs_exact_displayed_argv_and_re_evaluates(
         self, execute_mock
     ) -> None:
