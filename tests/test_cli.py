@@ -3461,6 +3461,7 @@ class CliTests(unittest.TestCase):
             ProtocolAlternativeAction,
             ProtocolAlternativeRoundResult,
         )
+        from evidence_gaps import EvidenceGap
         from models import Scan
         from netrecon import main
 
