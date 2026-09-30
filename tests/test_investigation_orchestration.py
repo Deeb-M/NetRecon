@@ -1931,6 +1931,43 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         plan = collect_mock.call_args.args[0]
         self.assertEqual((plan.host, plan.port, plan.timeout), ("192.0.2.62", 2121, 5))
 
+    @patch("investigation_orchestration.collect_ftp_protocol_evidence")
+    def test_protocol_alternative_round_satisfies_ftp_requirements_without_closing_primary_gaps(self, collect_mock) -> None:
+        from ftp_evidence_collector import FtpProtocolEvidence
+        from investigation_orchestration import (
+            ProtocolAlternativeAction,
+            execute_protocol_alternative_round,
+        )
+
+        collect_mock.return_value = FtpProtocolEvidence(
+            banner="ProFTPD 1.3.1 Server",
+            syst="UNIX Type: L8",
+            stat="FTP server status",
+            anonymous_login="denied",
+        )
+        gaps = (
+            EvidenceGap("192.0.2.62", 2121, "tcp", "ftp-syst", "purpose"),
+            EvidenceGap("192.0.2.62", 2121, "tcp", "ftp-anon", "purpose"),
+        )
+        snapshot = self._snapshot(gaps)
+        action = ProtocolAlternativeAction(
+            "ftp_protocol",
+            "192.0.2.62",
+            2121,
+            "tcp",
+            ("ftp_anonymous_access", "ftp_system_context"),
+        )
+
+        result = execute_protocol_alternative_round(snapshot, (action,), timeout=5)
+
+        self.assertEqual(
+            result.satisfied_requirement_ids,
+            ("ftp_anonymous_access", "ftp_system_context"),
+        )
+        self.assertEqual(result.remaining_requirement_ids, ())
+        self.assertEqual(result.snapshot.gaps, gaps)
+        self.assertEqual(len(result.results), 1)
+
     def test_exhausted_non_http_action_offers_no_unrelated_alternative(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 
