@@ -644,6 +644,49 @@ def execute_protocol_alternative_action(
     )
 
 
+@dataclass(frozen=True)
+class ProtocolAlternativeRoundResult:
+    """Results of bounded protocol alternatives with semantic requirement accounting."""
+
+    results: tuple[ProtocolAlternativeResult, ...]
+    snapshot: InvestigationSnapshot
+    satisfied_requirement_ids: tuple[str, ...]
+    remaining_requirement_ids: tuple[str, ...]
+
+
+def execute_protocol_alternative_round(
+    snapshot: InvestigationSnapshot,
+    actions: tuple[ProtocolAlternativeAction, ...],
+    *,
+    timeout: float | None = None,
+) -> ProtocolAlternativeRoundResult:
+    """Execute supplied protocol alternatives while preserving primary evidence gaps."""
+    if not snapshot.ready or snapshot.scan is None:
+        raise ValueError("Protocol alternative execution requires a ready investigation")
+
+    results = tuple(
+        execute_protocol_alternative_action(action, timeout=timeout)
+        for action in actions
+    )
+    requested = {
+        requirement_id
+        for action in actions
+        for requirement_id in action.requirement_ids
+    }
+    satisfied = {
+        requirement_id
+        for result in results
+        for requirement_id in result.satisfied_requirement_ids
+    }
+
+    return ProtocolAlternativeRoundResult(
+        results=results,
+        snapshot=snapshot,
+        satisfied_requirement_ids=tuple(sorted(satisfied)),
+        remaining_requirement_ids=tuple(sorted(requested - satisfied)),
+    )
+
+
 def assess_investigation_continuation(
     before: InvestigationSnapshot,
     after: InvestigationSnapshot,
