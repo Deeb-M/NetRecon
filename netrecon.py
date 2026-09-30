@@ -91,6 +91,12 @@ See USER_GUIDE.md for workflow guidance, approvals, history, and exit behavior."
         default=60.0,
         help="Per-command evidence collection timeout in seconds (default: 60)",
     )
+    output.add_argument(
+        "--smb-credentials-file",
+        type=Path,
+        metavar="FILE",
+        help="Read authorized SMB NSE credentials from a file instead of command-line secrets",
+    )
     investigation_controls = parser.add_argument_group("investigation controls")
     investigation_controls.add_argument(
         "--investigation-history",
