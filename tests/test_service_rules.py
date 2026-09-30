@@ -172,6 +172,37 @@ class ServiceRulesTests(unittest.TestCase):
         self.assertEqual(findings[0].severity, "info")
         self.assertEqual(findings[0].evidence_source, "service:detection")
 
+    def test_port_445_netbios_label_uses_smb_context_and_preserves_raw_service_evidence(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=445, protocol="tcp", state="open", service="netbios-ssn", product="Samba"),),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(tuple(finding.finding_id for finding in findings), ("service.smb.exposed",))
+        finding = findings[0]
+        self.assertEqual(finding.category, "exposure")
+        self.assertEqual(finding.title, "SMB service exposed")
+        self.assertEqual(finding.port, 445)
+        self.assertEqual(finding.evidence_source, "service:detection")
+        self.assertIn("identified as netbios-ssn", finding.evidence)
+
+    def test_port_139_netbios_label_remains_netbios_context(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(Port(port=139, protocol="tcp", state="open", service="netbios-ssn", product="Samba"),),
+        )
+
+        findings = analyze_service_context(host)
+
+        self.assertEqual(tuple(finding.finding_id for finding in findings), ("service.netbios.exposed",))
+        self.assertEqual(findings[0].title, "NetBIOS session service exposed")
+        self.assertIn("identified as netbios-ssn", findings[0].evidence)
+
+
     def test_rpc_service_produces_exposure_finding(self) -> None:
         host = Host(
             address="192.0.2.10",
