@@ -89,6 +89,83 @@ class NseRulesTests(unittest.TestCase):
         self.assertEqual(finding.severity, "info")
         self.assertEqual(finding.evidence_source, "nse:http-methods")
 
+    def test_smtp_capability_inventory_finding(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=25,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(
+                        ScriptResult(
+                            script_id="smtp-commands",
+                            output=(
+                                "mail.example.test, PIPELINING, SIZE 10240000, "
+                                "VRFY, ETRN, STARTTLS, ENHANCEDSTATUSCODES, "
+                                "8BITMIME, DSN"
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual(finding.finding_id, "smtp.capabilities.inventory")
+        self.assertEqual(finding.category, "protocol")
+        self.assertEqual(finding.severity, "info")
+        self.assertIn("PIPELINING", finding.evidence)
+        self.assertIn("VRFY", finding.evidence)
+        self.assertIn("STARTTLS", finding.evidence)
+        self.assertIn("DSN", finding.evidence)
+        self.assertEqual(finding.evidence_source, "nse:smtp-commands")
+
+    def test_smtp_starttls_is_advertised_capability_not_tls_validation(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(
+                    port=25,
+                    protocol="tcp",
+                    state="open",
+                    scripts=(
+                        ScriptResult(
+                            script_id="smtp-commands",
+                            output="mail.example.test, PIPELINING, STARTTLS, DSN",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        findings = analyze_nse_scripts(
+            host,
+            user_hostnames=(),
+            reference_time=datetime(2026, 9, 25, tzinfo=timezone.utc),
+        )
+
+        finding = next(
+            finding
+            for finding in findings
+            if finding.finding_id == "smtp.capabilities.inventory"
+        )
+
+        self.assertIn("STARTTLS", finding.evidence)
+        self.assertIn("advertised SMTP capabilities", finding.evidence)
+        self.assertIn("does not establish", finding.recommendation)
+        self.assertIn("TLS was negotiated", finding.recommendation)
+        self.assertIn("security properties were validated", finding.recommendation)
+
     def test_ssh_algorithm_inventory_finding(self) -> None:
         host = Host(
             address="192.0.2.10",

@@ -121,11 +121,17 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-012 — SMTP Capability Evidence Collection
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the isolated Metasploitable lab, NetRecon discovered SMTP on 25/tcp and identified Postfix smtpd, but did not create an SMTP-specific evidence requirement. Manual Nmap validation with `smtp-commands` observed the advertised SMTP identity/capabilities: `metasploitable.localdomain`, PIPELINING, SIZE 10240000, VRFY, ETRN, STARTTLS, ENHANCEDSTATUSCODES, 8BITMIME, and DSN. Follow-up runs using generic TLS scripts and `smtp-ntlm-info` returned no additional evidence.
+**Observed:** In the isolated Metasploitable lab, NetRecon discovered SMTP on 25/tcp and identified Postfix smtpd. Existing F-005 evidence planning already created the `smtp_capability_context` semantic requirement and proposed `smtp-commands`; F-012 identified the remaining gap: successfully collected `smtp-commands` evidence was not interpreted into analyst-facing SMTP capability intelligence.
 
-**Expected direction:** Add protocol-aware SMTP capability evidence collection using `smtp-commands`. Preserve evidence boundaries: an advertised capability such as STARTTLS is evidence that the server announces that capability, not proof that TLS properties were successfully collected or validated. Treat collectors that return no requested evidence as incomplete/unsatisfied rather than inferring a result.
+**Implemented:** Added semantic interpretation of `smtp-commands` NSE evidence. NetRecon now creates the informational finding `smtp.capabilities.inventory` / `SMTP capability inventory collected` and surfaces the advertised SMTP capabilities while preserving NSE provenance as `nse:smtp-commands`.
+
+**Practically verified:** On 192.168.111.130:25/tcp, `smtp-commands` successfully observed PIPELINING, SIZE 10240000, VRFY, ETRN, STARTTLS, ENHANCEDSTATUSCODES, 8BITMIME, and DSN. `netrecon --analyze` surfaced the new SMTP capability inventory finding. The full `--investigate-collect` workflow successfully collected the requested SMTP evidence, resolved `smtp_capability_context`, and reached the final semantic decision `complete / all_semantic_requirements_satisfied`.
+
+**Evidence boundary:** Advertised SMTP capabilities are protocol context only. In particular, observing STARTTLS means that the SMTP server advertised STARTTLS; it does not establish that TLS was negotiated or that certificate, protocol, cipher, or other TLS security properties were validated.
+
+**Validation:** Added focused tests for SMTP capability inventory and the STARTTLS evidence boundary. The NSE rule suite passed 18/18 tests and the full NetRecon regression suite passed 846/846 tests.
 
 ## F-013 — RPC Service Mapping and Correlation
 

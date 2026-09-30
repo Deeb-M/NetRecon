@@ -156,6 +156,35 @@ def analyze_nse_scripts(host, user_hostnames: tuple[str, ...], reference_time: d
                     )
                 )
 
+        if script_id == "smtp-commands":
+            capabilities = tuple(
+                item.strip()
+                for item in output.split(",")[1:]
+                if item.strip()
+            )
+            if capabilities:
+                findings.append(
+                    _script_finding(
+                        script.script_id,
+                        finding_id="smtp.capabilities.inventory",
+                        category="protocol",
+                        host=host.address,
+                        port=script_port,
+                        protocol=script_protocol,
+                        severity="info",
+                        title="SMTP capability inventory collected",
+                        evidence=(
+                            "Nmap smtp-commands reported advertised SMTP capabilities: "
+                            f"{', '.join(capabilities)}."
+                        ),
+                        recommendation=(
+                            "Use the advertised SMTP capabilities as protocol context. "
+                            "An advertised capability such as STARTTLS does not establish "
+                            "that TLS was negotiated or that its security properties were validated."
+                        ),
+                    )
+                )
+
         if script_id == "ssh2-enum-algos":
             sections = tuple(
                 section
