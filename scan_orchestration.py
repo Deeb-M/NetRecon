@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 import subprocess
+from urllib.parse import urlparse
 
 from models import Scan
 from parser import NmapParseError, parse_nmap_xml_text
@@ -20,11 +21,24 @@ class DiscoveryPlan:
     command: tuple[str, ...]
 
 
-def build_baseline_discovery_plan(target: str) -> DiscoveryPlan:
-    """Build the conservative baseline TCP service-discovery plan."""
+def _normalize_discovery_target(target: str) -> str:
+    """Return a hostname/IP/CIDR suitable for Nmap discovery."""
     normalized_target = target.strip()
     if not normalized_target:
         raise ValueError("Discovery target must not be blank")
+
+    parsed = urlparse(normalized_target)
+    if parsed.scheme.lower() in {"http", "https"}:
+        if not parsed.hostname:
+            raise ValueError("Discovery URL must include a hostname")
+        return parsed.hostname
+
+    return normalized_target
+
+
+def build_baseline_discovery_plan(target: str) -> DiscoveryPlan:
+    """Build the conservative baseline TCP service-discovery plan."""
+    normalized_target = _normalize_discovery_target(target)
 
     return DiscoveryPlan(
         target=normalized_target,
@@ -32,7 +46,6 @@ def build_baseline_discovery_plan(target: str) -> DiscoveryPlan:
         purpose="discover open TCP services with version detection",
         command=("nmap", "-sV", "-oX", "-", normalized_target),
     )
-
 
 
 @dataclass(frozen=True)
@@ -94,7 +107,6 @@ def execute_discovery_plan(
         stderr=completed.stderr,
         timed_out=False,
     )
-
 
 
 @dataclass(frozen=True)
