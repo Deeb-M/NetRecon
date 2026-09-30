@@ -49,11 +49,13 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-005 — Investigation Coverage Is Narrower Than Service Discovery
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the isolated Metasploitable lab, baseline discovery found 23 open ports / 20 unique services, but the investigation planner created only five evidence gaps covering SSH and two HTTP services. Numerous other discovered services had no protocol-specific evidence requirements or follow-up collection plan.
+**Observed:** In the isolated Metasploitable lab, baseline discovery found 23 open ports / 20 unique services, but the investigation planner initially created only five evidence gaps covering SSH and two HTTP services. Numerous other discovered services had no protocol-specific evidence requirements or follow-up collection plan.
 
 **Expected direction:** Expand protocol-aware investigation rules and evidence collectors so that supported services can generate meaningful evidence requirements rather than merely appearing in the inventory.
+
+**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VERIFIED. Coverage was expanded for FTP, SMTP, NFS, rpcbind, MySQL, and VNC through the planner, evidence gaps, semantic requirements, and bounded action planning. CI passed after each implementation stage. In the isolated Metasploitable lab, `netrecon --investigate 192.168.111.130` increased the investigation from the original five gaps to 14 evidence gaps and 10 proposed actions. A subsequent `--investigate-collect` run satisfied 11 semantic requirements, including the newly added FTP (port 21), SMTP, rpcbind, MySQL, and VNC requirements, while correctly leaving three requirements unresolved instead of overstating completion. The remaining NFS export requirement and FTP requirements on port 2121 are collection-specific limitations tracked separately by F-010 and F-011. Manual verification showed that NFS export evidence becomes observable when rpcbind (111/tcp) is included with service detection, while the bounded 2049-only action produced no `nfs-showmount` output. For FTP on 2121/tcp, service detection correctly identified ProFTPD 1.3.1, but `ftp-syst` and `ftp-anon` produced no script evidence even when tested separately with `-sV`.
 
 ## F-006 — Completion Semantics Can Overstate Investigation Coverage
 
