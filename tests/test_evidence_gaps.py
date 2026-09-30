@@ -238,9 +238,9 @@ class EvidenceGapTests(unittest.TestCase):
         self.assertEqual(
             tuple(state.requirement.requirement_id for state in states),
             (
+                "nfs_export_context",
                 "ftp_anonymous_access",
                 "ftp_system_context",
-                "nfs_export_context",
                 "smtp_capability_context",
             ),
         )
