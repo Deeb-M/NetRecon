@@ -460,7 +460,7 @@ def assess_final_investigation_decision(
         )
 
     if not remaining:
-        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), (), (), ())
+        return FinalInvestigationDecision("supported_scope_complete", "all_supported_requirements_resolved", (), (), (), (), ())
 
     if not remaining_requirements:
         # Alternative evidence can satisfy primary requirements without resolving
@@ -470,7 +470,7 @@ def assess_final_investigation_decision(
         elif unsatisfied_finding_requirements:
             status, reason = "stalled", "finding_requirement_unsatisfied"
         else:
-            status, reason = "complete", "all_semantic_requirements_satisfied"
+            status, reason = "supported_scope_complete", "all_supported_requirements_resolved"
         return FinalInvestigationDecision(
             status=status,
             reason=reason,
@@ -541,12 +541,12 @@ def finalize_continuation_decision(
     if continuation.status == "progressed" and stop_reason is None:
         raise ValueError("Cannot finalize a non-terminal continuation decision")
 
-    status = "complete" if continuation.status == "complete" else "stalled"
+    status = "supported_scope_complete" if continuation.status == "complete" else "stalled"
     if stop_reason is not None:
         status = "stalled"
         reason = stop_reason
     elif continuation.status == "complete":
-        reason = "all_gaps_resolved"
+        reason = "all_supported_requirements_resolved"
     else:
         reason = continuation.stall_reason or "no_supported_next_step"
 
