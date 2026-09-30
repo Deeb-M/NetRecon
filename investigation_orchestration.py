@@ -695,6 +695,10 @@ class FinalProtocolInvestigationDecision:
     reason: str
     remaining_gaps: tuple[EvidenceGap, ...]
     remaining_requirement_ids: tuple[str, ...]
+    further_actions: tuple[EvidenceAction, ...] = ()
+    remaining_requirements: tuple[EvidenceRequirementState, ...] = ()
+    satisfied_requirements: tuple[EvidenceRequirementState, ...] = ()
+    remaining_finding_requirements: tuple[FindingRequirementState, ...] = ()
 
 
 def assess_final_protocol_investigation_decision(
