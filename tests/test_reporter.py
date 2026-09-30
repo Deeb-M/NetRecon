@@ -808,6 +808,29 @@ class ReporterTests(unittest.TestCase):
         self.assertIn("Command: nmap -sV -oX - 192.0.2.10", report)
         self.assertIn("Error: nmap failed", report)
 
+    def test_renders_timeout_classification_and_partial_context_as_text(self) -> None:
+        plan = DiscoveryPlan(
+            target="192.0.2.10",
+            profile="baseline",
+            purpose="discover open TCP services with version detection",
+            command=("nmap", "-sV", "-oX", "-", "192.0.2.10"),
+        )
+        execution = DiscoveryExecutionResult(plan, 124, "partial xml", "progress note", True)
+        result = DiscoveryResult(
+            execution, False, None, "Nmap discovery timed out",
+            failure_kind="collector_timeout",
+            partial_stdout="partial xml",
+            partial_stderr="progress note",
+            target_unreachable=False,
+        )
+
+        report = render_discovery_execution(result)
+
+        self.assertIn("Failure kind: collector_timeout", report)
+        self.assertIn("Target unreachable: no", report)
+        self.assertIn("Partial stdout: partial xml", report)
+        self.assertIn("Partial stderr: progress note", report)
+
     def test_renders_discovery_execution_json_with_provenance(self) -> None:
         plan = DiscoveryPlan(
             target="192.0.2.10",
@@ -828,6 +851,10 @@ class ReporterTests(unittest.TestCase):
         self.assertEqual(payload["returncode"], 2)
         self.assertFalse(payload["timed_out"])
         self.assertEqual(payload["error"], "nmap failed")
+        self.assertEqual(payload["failure_kind"], None)
+        self.assertEqual(payload["partial_stdout"], "")
+        self.assertEqual(payload["partial_stderr"], "")
+        self.assertFalse(payload["target_unreachable"])
         self.assertIsNone(payload["scan"])
 
 
