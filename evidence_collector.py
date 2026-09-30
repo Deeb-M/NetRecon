@@ -25,6 +25,8 @@ class CollectionSpec:
     port: int
     protocol: str
     script_ids: tuple[str, ...]
+    auth_context: str | None = None
+    credentials_file: str | None = None
 
 
 @dataclass(frozen=True)
@@ -180,6 +182,15 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
 
     scan_type = ("-sU",) if protocol == "udp" else ()
 
+    auth_args: tuple[str, ...] = ()
+    if spec.auth_context is not None or spec.credentials_file is not None:
+        if spec.auth_context != "smb":
+            raise ValueError("Unsupported evidence authentication context")
+        credentials_file = (spec.credentials_file or "").strip()
+        if not credentials_file:
+            raise ValueError("Authenticated SMB collection requires a credentials file")
+        auth_args = ("--script-args-file", credentials_file)
+
     return NmapCommand(
         arguments=(
             "nmap",
@@ -188,6 +199,7 @@ def build_nmap_command(spec: CollectionSpec) -> NmapCommand:
             str(spec.port),
             "--script",
             ",".join(script_ids),
+            *auth_args,
             "-oX",
             "-",
             target,
