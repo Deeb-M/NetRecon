@@ -460,7 +460,7 @@ def assess_final_investigation_decision(
         )
 
     if not remaining:
-        return FinalInvestigationDecision("complete", "all_gaps_resolved", (), (), (), (), ())
+        return FinalInvestigationDecision("complete", "all_supported_requirements_resolved", (), (), (), (), ())
 
     if not remaining_requirements:
         # Alternative evidence can satisfy primary requirements without resolving
@@ -546,7 +546,7 @@ def finalize_continuation_decision(
         status = "stalled"
         reason = stop_reason
     elif continuation.status == "complete":
-        reason = "all_gaps_resolved"
+        reason = "all_supported_requirements_resolved"
     else:
         reason = continuation.stall_reason or "no_supported_next_step"
 

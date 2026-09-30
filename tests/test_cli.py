@@ -1367,7 +1367,7 @@ class CliTests(unittest.TestCase):
         execute_evidence_mock.return_value = continuation
         from investigation_orchestration import InvestigationContinuationDecision, FinalInvestigationDecision
         decision = InvestigationContinuationDecision("complete", (), (), ())
-        final_decision = FinalInvestigationDecision("complete", "all_gaps_resolved", ())
+        final_decision = FinalInvestigationDecision("complete", "all_supported_requirements_resolved", ())
         decision_mock.return_value = decision
         output = StringIO()
 
@@ -1396,7 +1396,7 @@ class CliTests(unittest.TestCase):
         self.assertIn("Investigation Explanation", rendered)
         self.assertIn("Investigation Synthesis", rendered)
         self.assertIn("Status: complete", rendered)
-        self.assertIn("Reason: all_gaps_resolved", rendered)
+        self.assertIn("Reason: all_supported_requirements_resolved", rendered)
 
 
     @patch("netrecon.render_investigation_continuation", return_value="Investigation continuation")
@@ -1479,7 +1479,7 @@ class CliTests(unittest.TestCase):
             continuation,
             decision,
             alternative_result,
-            FinalInvestigationDecision("complete", "all_gaps_resolved", (), ()),
+            FinalInvestigationDecision("complete", "all_supported_requirements_resolved", (), ()),
             (),
             (),
             final_snapshot=updated,
@@ -1530,7 +1530,7 @@ class CliTests(unittest.TestCase):
         execute_evidence_mock.return_value = continuation
         from investigation_orchestration import InvestigationContinuationDecision, FinalInvestigationDecision
         decision = InvestigationContinuationDecision("complete", (), (), ())
-        final_decision = FinalInvestigationDecision("complete", "all_gaps_resolved", ())
+        final_decision = FinalInvestigationDecision("complete", "all_supported_requirements_resolved", ())
         decision_mock.return_value = decision
         output = StringIO()
 
@@ -1564,7 +1564,7 @@ class CliTests(unittest.TestCase):
         )
         self.assertEqual(
             render_json_mock.call_args.args[3].reason,
-            "all_gaps_resolved",
+            "all_supported_requirements_resolved",
         )
 
 
@@ -1742,7 +1742,7 @@ class CliTests(unittest.TestCase):
             "stalled", (), (), (), (), "repeated_actions_exhausted", (alternative,)
         )
         alternative_result = AlternativeEvidenceRoundResult((), (), final_snapshot)
-        final_decision = FinalInvestigationDecision("complete", "all_gaps_resolved", ())
+        final_decision = FinalInvestigationDecision("complete", "all_supported_requirements_resolved", ())
 
         build_plan_mock.return_value = object()
         execute_discovery_mock.return_value = object()
@@ -1928,7 +1928,7 @@ class CliTests(unittest.TestCase):
             "target": "192.0.2.244",
             "synthesis": {
                 "status": "complete",
-                "reason": "all_gaps_resolved",
+                "reason": "all_supported_requirements_resolved",
                 "attention_items": 0,
                 "correlated_review_groups": 0,
                 "remaining_requirements": [],
@@ -2077,7 +2077,7 @@ class CliTests(unittest.TestCase):
         from models import Scan
         from netrecon import main
 
-        complete_synthesis = InvestigationSynthesis("complete", "all_gaps_resolved", 0, 0, ())
+        complete_synthesis = InvestigationSynthesis("complete", "all_supported_requirements_resolved", 0, 0, ())
         synthesis_mock.return_value = complete_synthesis
         snapshot = InvestigationSnapshot(True, Scan("complete.xml"), (), (), (), None)
         snapshot_mock.return_value = snapshot
@@ -2107,7 +2107,7 @@ class CliTests(unittest.TestCase):
         self.assertIs(appended.synthesis, complete_synthesis)
         self.assertEqual(appended.schema_version, 2)
         self.assertEqual(appended.synthesis.status, "complete")
-        self.assertEqual(appended.synthesis.reason, "all_gaps_resolved")
+        self.assertEqual(appended.synthesis.reason, "all_supported_requirements_resolved")
 
 
     @patch("netrecon.append_investigation_history_record")
@@ -2217,7 +2217,7 @@ class CliTests(unittest.TestCase):
 
         snapshot = InvestigationSnapshot(True, Scan("e2e.xml"), (), (), (), None)
         decision = InvestigationContinuationDecision("complete", (), (), ())
-        current = InvestigationSynthesis("complete", "all_gaps_resolved", 0, 0, ())
+        current = InvestigationSynthesis("complete", "all_supported_requirements_resolved", 0, 0, ())
         previous_synthesis = InvestigationSynthesis(
             "stalled", "no_supported_actions", 0, 0, ()
         )
@@ -2236,7 +2236,7 @@ class CliTests(unittest.TestCase):
             "complete",
             True,
             "no_supported_actions",
-            "all_gaps_resolved",
+            "all_supported_requirements_resolved",
             0,
             0,
             (),
@@ -2269,7 +2269,7 @@ class CliTests(unittest.TestCase):
         self.assertIs(appended.synthesis, current)
         self.assertEqual(appended.schema_version, 2)
         self.assertEqual(appended.synthesis.status, "complete")
-        self.assertEqual(appended.synthesis.reason, "all_gaps_resolved")
+        self.assertEqual(appended.synthesis.reason, "all_supported_requirements_resolved")
 
     @patch("netrecon.append_investigation_history_record")
     @patch("netrecon.compare_investigation_syntheses")
@@ -2317,7 +2317,7 @@ class CliTests(unittest.TestCase):
         )
         current = InvestigationSynthesis("stalled", "no_supported_actions", 0, 0, ())
         previous_synthesis = InvestigationSynthesis(
-            "complete", "all_gaps_resolved", 0, 0, ()
+            "complete", "all_supported_requirements_resolved", 0, 0, ()
         )
         previous = InvestigationHistoryRecord(100, "192.0.2.204", previous_synthesis)
 
@@ -2329,7 +2329,7 @@ class CliTests(unittest.TestCase):
         latest_mock.return_value = previous
         compare_mock.return_value = InvestigationMemory(
             True, "complete", "stalled", True,
-            "all_gaps_resolved", "no_supported_actions",
+            "all_supported_requirements_resolved", "no_supported_actions",
             0, 0, (), (),
         )
 
@@ -2420,7 +2420,7 @@ class CliTests(unittest.TestCase):
             "stalled", "explicit_approval_required", 0, 0, (), (pending,)
         )
         previous_synthesis = InvestigationSynthesis(
-            "complete", "all_gaps_resolved", 0, 0, ()
+            "complete", "all_supported_requirements_resolved", 0, 0, ()
         )
         previous = InvestigationHistoryRecord(100, "192.0.2.205", previous_synthesis)
 
@@ -2432,7 +2432,7 @@ class CliTests(unittest.TestCase):
         latest_mock.return_value = previous
         compare_mock.return_value = InvestigationMemory(
             True, "complete", "stalled", True,
-            "all_gaps_resolved", "explicit_approval_required",
+            "all_supported_requirements_resolved", "explicit_approval_required",
             0, 0, (), (), (pending,), (),
         )
 
@@ -3187,7 +3187,7 @@ class CliTests(unittest.TestCase):
         )
         self.assertEqual(
             render_mock.call_args.args[3].reason,
-            "all_gaps_resolved",
+            "all_supported_requirements_resolved",
         )
 
 
@@ -3286,7 +3286,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(render_mock.call_args.args[3].status, "complete")
         self.assertEqual(
             render_mock.call_args.args[3].reason,
-            "all_gaps_resolved",
+            "all_supported_requirements_resolved",
         )
 
 
@@ -3466,7 +3466,7 @@ class CliTests(unittest.TestCase):
         )
         self.assertIs(render_mock.call_args.kwargs["final_snapshot"], updated)
         self.assertEqual(render_mock.call_args.args[3].status, "complete")
-        self.assertEqual(render_mock.call_args.args[3].reason, "all_gaps_resolved")
+        self.assertEqual(render_mock.call_args.args[3].reason, "all_supported_requirements_resolved")
         self.assertIsNone(render_mock.call_args.args[2])
         self.assertEqual(render_mock.call_args.args[3].remaining_gaps, ())
         self.assertEqual(
@@ -3790,7 +3790,7 @@ class CliTests(unittest.TestCase):
         self.assertIs(render_mock.call_args.args[1], complete)
         self.assertIs(render_mock.call_args.kwargs["final_snapshot"], final)
         self.assertEqual(render_mock.call_args.args[3].status, "complete")
-        self.assertEqual(render_mock.call_args.args[3].reason, "all_gaps_resolved")
+        self.assertEqual(render_mock.call_args.args[3].reason, "all_supported_requirements_resolved")
         self.assertIsNone(render_mock.call_args.args[2])
 
 

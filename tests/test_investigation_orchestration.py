@@ -1233,7 +1233,7 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
         decision = assess_final_investigation_decision(round_result)
 
         self.assertEqual(decision.status, "complete")
-        self.assertEqual(decision.reason, "all_gaps_resolved")
+        self.assertEqual(decision.reason, "all_supported_requirements_resolved")
 
     def test_final_decision_exposes_distinct_remaining_semantic_requirements(self) -> None:
         from investigation_orchestration import (
@@ -3979,7 +3979,7 @@ class DynamicContinuationSemanticTests(unittest.TestCase):
         final = finalize_continuation_decision(decision)
         self.assertIsNot(final, decision)
         self.assertEqual(final.status, "complete")
-        self.assertEqual(final.reason, "all_gaps_resolved")
+        self.assertEqual(final.reason, "all_supported_requirements_resolved")
         self.assertEqual(final.remaining_gaps, ())
         self.assertEqual(final.further_actions, ())
         self.assertEqual(final.remaining_requirements, ())
