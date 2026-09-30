@@ -466,6 +466,17 @@ def assess_final_investigation_decision(
 
 
 @dataclass(frozen=True)
+class ProtocolAlternativeAction:
+    """One bounded non-NSE protocol evidence alternative."""
+
+    kind: str
+    host: str
+    port: int
+    protocol: str
+    requirement_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class InvestigationContinuationDecision:
     """Describe whether a re-evaluated investigation can safely continue."""
 
@@ -476,6 +487,7 @@ class InvestigationContinuationDecision:
     repeat_blocked_actions: tuple[EvidenceAction, ...] = ()
     stall_reason: str | None = None
     alternative_actions: tuple[EvidenceAction, ...] = ()
+    protocol_alternative_actions: tuple[ProtocolAlternativeAction, ...] = ()
     resolved_requirements: tuple[EvidenceRequirementState, ...] = ()
     remaining_finding_requirements: tuple[FindingRequirementState, ...] = ()
 
@@ -548,6 +560,42 @@ def _build_alternative_actions(
         )
 
     return tuple(alternatives[key] for key in sorted(alternatives))
+
+
+
+def _build_protocol_alternative_actions(
+    decision_gaps: tuple[EvidenceGap, ...],
+    repeat_blocked: tuple[EvidenceAction, ...],
+) -> tuple[ProtocolAlternativeAction, ...]:
+    """Offer bounded protocol collectors only for exhausted supported endpoints."""
+    blocked_endpoints = {
+        (action.host.strip(), action.port, action.protocol.strip().lower())
+        for action in repeat_blocked
+    }
+    ftp_requirements: dict[tuple[str, int, str], set[str]] = {}
+
+    for gap in decision_gaps:
+        endpoint = (gap.host.strip(), gap.port, gap.protocol.strip().lower())
+        if endpoint not in blocked_endpoints or endpoint[2] != "tcp":
+            continue
+        state = requirement_state_for_gap(gap)
+        if state is None:
+            continue
+        requirement_id = state.requirement.requirement_id
+        if requirement_id not in {"ftp_anonymous_access", "ftp_system_context"}:
+            continue
+        ftp_requirements.setdefault(endpoint, set()).add(requirement_id)
+
+    return tuple(
+        ProtocolAlternativeAction(
+            kind="ftp_protocol",
+            host=host,
+            port=port,
+            protocol=protocol,
+            requirement_ids=tuple(sorted(requirement_ids)),
+        )
+        for (host, port, protocol), requirement_ids in sorted(ftp_requirements.items())
+    )
 
 
 def assess_investigation_continuation(
@@ -651,8 +699,10 @@ def assess_investigation_continuation(
             stall_reason = "no_progress"
 
     alternative_actions = ()
+    protocol_alternative_actions = ()
     if stall_reason == "repeated_actions_exhausted":
         alternative_actions = _build_alternative_actions(after.gaps, repeat_blocked)
+        protocol_alternative_actions = _build_protocol_alternative_actions(after.gaps, repeat_blocked)
 
     return InvestigationContinuationDecision(
         status=status,
@@ -662,6 +712,7 @@ def assess_investigation_continuation(
         repeat_blocked_actions=repeat_blocked,
         stall_reason=stall_reason,
         alternative_actions=alternative_actions,
+        protocol_alternative_actions=protocol_alternative_actions,
         resolved_requirements=resolved_requirement_states(before.gaps, after.gaps),
         remaining_finding_requirements=tuple(
             state
