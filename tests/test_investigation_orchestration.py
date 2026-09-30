@@ -1865,6 +1865,39 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             ("nmap", "-p", "5357", "--script", "http-headers", "-oX", "-", "192.0.2.60"),
         )
 
+    def test_exhausted_ftp_action_offers_protocol_collector_alternative(self) -> None:
+        from investigation_orchestration import assess_investigation_continuation
+
+        gaps = (
+            EvidenceGap("192.0.2.62", 2121, "tcp", "ftp-syst", "purpose"),
+            EvidenceGap("192.0.2.62", 2121, "tcp", "ftp-anon", "purpose"),
+        )
+        attempted = EvidenceAction(
+            host="192.0.2.62",
+            port=2121,
+            protocol="tcp",
+            script_ids=("ftp-syst", "ftp-anon"),
+            purposes=("purpose",),
+            command=("nmap", "-sV", "-p", "2121", "--script", "ftp-syst,ftp-anon", "-oX", "-", "192.0.2.62"),
+        )
+
+        decision = assess_investigation_continuation(
+            self._snapshot(gaps, (attempted,)),
+            self._snapshot(gaps, (attempted,)),
+            attempted_actions=(attempted,),
+        )
+
+        self.assertEqual(decision.status, "stalled")
+        self.assertEqual(decision.stall_reason, "repeated_actions_exhausted")
+        self.assertEqual(len(decision.protocol_alternative_actions), 1)
+        alternative = decision.protocol_alternative_actions[0]
+        self.assertEqual(alternative.kind, "ftp_protocol")
+        self.assertEqual((alternative.host, alternative.port, alternative.protocol), ("192.0.2.62", 2121, "tcp"))
+        self.assertEqual(
+            alternative.requirement_ids,
+            ("ftp_anonymous_access", "ftp_system_context"),
+        )
+
     def test_exhausted_non_http_action_offers_no_unrelated_alternative(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 
