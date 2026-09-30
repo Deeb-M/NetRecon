@@ -77,7 +77,7 @@ This file records findings discovered during authorized practical training. Find
 
 **Expected direction:** Make the default report concise and decision-oriented. Show target/status, important findings/attention, unresolved requirements, and correlated review without repeating the investigation lifecycle. Move detailed evidence/state/explanation sections behind a detail mode.
 
-**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VALIDATED. Text `--investigate-collect` now renders a concise `Investigation Summary` by default. The previous full evidence/provenance report remains available with `--detail`. JSON output remains structurally unchanged. Full regression suite passed 856/856 tests. Windows lab validation confirmed both concise default output and restored full detail output.
+**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VALIDATED. Text `--investigate-collect` now renders a concise `Investigation Summary` by default. The previous full evidence/provenance report remains available with `--detail`. JSON output remains structurally unchanged. Full regression suite passed 857/857 tests. Windows lab validation confirmed both concise default output and restored full detail output.
 
 ## F-008 — Attention Prioritization and Correlation Need Improvement
 
