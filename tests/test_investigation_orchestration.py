@@ -1898,6 +1898,39 @@ class InvestigationContinuationDecisionTests(unittest.TestCase):
             ("ftp_anonymous_access", "ftp_system_context"),
         )
 
+    @patch("investigation_orchestration.collect_ftp_protocol_evidence")
+    def test_executes_ftp_protocol_alternative_and_preserves_semantic_evidence(self, collect_mock) -> None:
+        from ftp_evidence_collector import FtpProtocolEvidence
+        from investigation_orchestration import (
+            ProtocolAlternativeAction,
+            execute_protocol_alternative_action,
+        )
+
+        collect_mock.return_value = FtpProtocolEvidence(
+            banner="ProFTPD 1.3.1 Server",
+            syst="UNIX Type: L8",
+            stat="FTP server status",
+            anonymous_login="denied",
+        )
+        action = ProtocolAlternativeAction(
+            "ftp_protocol",
+            "192.0.2.62",
+            2121,
+            "tcp",
+            ("ftp_anonymous_access", "ftp_system_context"),
+        )
+
+        result = execute_protocol_alternative_action(action, timeout=5)
+
+        self.assertEqual(result.action, action)
+        self.assertEqual(
+            result.satisfied_requirement_ids,
+            ("ftp_anonymous_access", "ftp_system_context"),
+        )
+        self.assertEqual(result.evidence.anonymous_login, "denied")
+        plan = collect_mock.call_args.args[0]
+        self.assertEqual((plan.host, plan.port, plan.timeout), ("192.0.2.62", 2121, 5))
+
     def test_exhausted_non_http_action_offers_no_unrelated_alternative(self) -> None:
         from investigation_orchestration import assess_investigation_continuation
 
