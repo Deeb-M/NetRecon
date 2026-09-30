@@ -25,6 +25,7 @@ from ftp_evidence_collector import (
 from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, finding_requirement_states, FindingCollectionPlan, FindingRequirementState, FindingRequirementVerification, verify_finding_collection_plan
 from models import Scan
 from scan_orchestration import DiscoveryResult
+from smb_evidence_collector import collect_authenticated_smb_shares
 
 
 @dataclass(frozen=True)
@@ -193,18 +194,27 @@ def execute_selected_evidence_actions(
     if not snapshot.ready or snapshot.scan is None:
         raise ValueError("Selected evidence execution requires a ready investigation")
 
-    outcomes = tuple(
-        parse_collection_outcome(
-            execute_nmap_command(
-                _runtime_command_for_action(
-                    action,
-                    smb_credentials_file=smb_credentials_file,
-                ),
-                timeout=timeout,
+    outcomes_list: list[ParsedCollectionResult] = []
+    for action in actions:
+        if smb_credentials_file and "smb-enum-shares" in action.script_ids:
+            outcomes_list.append(
+                collect_authenticated_smb_shares(
+                    action.host,
+                    action.port,
+                    smb_credentials_file,
+                    timeout=timeout,
+                )
+            )
+            continue
+        outcomes_list.append(
+            parse_collection_outcome(
+                execute_nmap_command(
+                    _runtime_command_for_action(action),
+                    timeout=timeout,
+                )
             )
         )
-        for action in actions
-    )
+    outcomes = tuple(outcomes_list)
 
     updated_snapshot = re_evaluate_investigation(
         snapshot.scan,
