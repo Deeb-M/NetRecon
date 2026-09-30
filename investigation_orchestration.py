@@ -25,6 +25,7 @@ from ftp_evidence_collector import (
 from finding_collection_planner import build_authorized_finding_evidence_actions, build_finding_collection_plans, evidence_action_for_finding_collection_plan, finding_requirement_states, FindingCollectionPlan, FindingRequirementState, FindingRequirementVerification, verify_finding_collection_plan
 from models import Scan
 from scan_orchestration import DiscoveryResult
+from smb_evidence_collector import collect_authenticated_smb_shares
 
 
 @dataclass(frozen=True)
@@ -160,26 +161,60 @@ class InvestigationContinuationResult:
     finding_requirement_verifications: tuple[FindingRequirementVerification, ...] = ()
 
 
+def _runtime_command_for_action(
+    action: EvidenceAction,
+    *,
+    smb_credentials_file: str | None = None,
+) -> NmapCommand:
+    """Build an execution-only command without persisting credential context in the action."""
+    arguments = action.command
+    if (
+        smb_credentials_file
+        and "smb-enum-shares" in action.script_ids
+        and "--script-args-file" not in arguments
+    ):
+        arguments = (
+            *arguments[:-1],
+            "--script-args-file",
+            smb_credentials_file,
+            arguments[-1],
+        )
+    return NmapCommand(arguments=arguments)
+
+
 def execute_selected_evidence_actions(
     snapshot: InvestigationSnapshot,
     actions: tuple[EvidenceAction, ...],
     *,
     timeout: float | None = None,
     explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
+    smb_credentials_file: str | None = None,
 ) -> InvestigationContinuationResult:
     """Execute exactly the supplied bounded actions and re-evaluate once."""
     if not snapshot.ready or snapshot.scan is None:
         raise ValueError("Selected evidence execution requires a ready investigation")
 
-    outcomes = tuple(
-        parse_collection_outcome(
-            execute_nmap_command(
-                NmapCommand(arguments=action.command),
-                timeout=timeout,
+    outcomes_list: list[ParsedCollectionResult] = []
+    for action in actions:
+        if smb_credentials_file and "smb-enum-shares" in action.script_ids:
+            outcomes_list.append(
+                collect_authenticated_smb_shares(
+                    action.host,
+                    action.port,
+                    smb_credentials_file,
+                    timeout=timeout,
+                )
+            )
+            continue
+        outcomes_list.append(
+            parse_collection_outcome(
+                execute_nmap_command(
+                    _runtime_command_for_action(action),
+                    timeout=timeout,
+                )
             )
         )
-        for action in actions
-    )
+    outcomes = tuple(outcomes_list)
 
     updated_snapshot = re_evaluate_investigation(
         snapshot.scan,

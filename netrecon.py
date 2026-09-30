@@ -233,6 +233,16 @@ def main() -> int:
         parser.error("--adaptive-plan requires --investigate-collect")
     if args.approve_requirement and args.investigate_collect is None:
         parser.error("--approve-requirement requires --investigate-collect")
+    if args.smb_credentials_file is not None and args.investigate_collect is None:
+        parser.error("--smb-credentials-file requires --investigate-collect")
+    if (
+        args.smb_credentials_file is not None
+        and "smb_access_control_context" not in args.approve_requirement
+    ):
+        parser.error(
+            "--smb-credentials-file requires explicit approval of "
+            "smb_access_control_context"
+        )
 
     approved_requirement_ids = frozenset(args.approve_requirement)
 
@@ -284,11 +294,18 @@ def main() -> int:
             and adaptive_round_count < max_adaptive_rounds
         ):
             if approved_requirement_ids:
+                selected_kwargs = {
+                    "timeout": args.evidence_timeout,
+                    "explicitly_approved_requirement_ids": approved_requirement_ids,
+                }
+                if args.smb_credentials_file is not None:
+                    selected_kwargs["smb_credentials_file"] = str(
+                        args.smb_credentials_file
+                    )
                 continued = execute_selected_evidence_actions(
                     updated,
                     adaptive_actions,
-                    timeout=args.evidence_timeout,
-                    explicitly_approved_requirement_ids=approved_requirement_ids,
+                    **selected_kwargs,
                 )
             else:
                 continued = execute_selected_evidence_actions(

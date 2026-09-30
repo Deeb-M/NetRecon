@@ -77,6 +77,48 @@ class CliTests(unittest.TestCase):
         self.assertNotIn("--smb-password", help_text)
         self.assertNotIn("--smb-username", help_text)
 
+    def test_smb_credentials_file_requires_investigate_collect(self) -> None:
+        from netrecon import main
+
+        stderr = StringIO()
+        with patch(
+            "sys.argv",
+            ["netrecon", "--smb-credentials-file", "/run/user/1000/netrecon-smb.conf"],
+        ):
+            with redirect_stderr(stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    main()
+
+        self.assertEqual(raised.exception.code, 2)
+        self.assertIn(
+            "--smb-credentials-file requires --investigate-collect",
+            stderr.getvalue(),
+        )
+
+    def test_smb_credentials_file_requires_smb_requirement_approval(self) -> None:
+        from netrecon import main
+
+        stderr = StringIO()
+        with patch(
+            "sys.argv",
+            [
+                "netrecon",
+                "--investigate-collect",
+                "192.0.2.10",
+                "--smb-credentials-file",
+                "/run/user/1000/netrecon-smb.conf",
+            ],
+        ):
+            with redirect_stderr(stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    main()
+
+        self.assertEqual(raised.exception.code, 2)
+        self.assertIn(
+            "--smb-credentials-file requires explicit approval of smb_access_control_context",
+            stderr.getvalue(),
+        )
+
     def test_accepts_combined_diff_mode(self) -> None:
         parser = build_parser()
 

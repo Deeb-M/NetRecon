@@ -41,11 +41,13 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-004 — Authenticated SMB Evidence Collection
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** In the Windows lab, the approval-gated `smb-enum-shares` collection completed successfully at the collector/process level but the requested SMB access-control evidence was not observed. Manual anonymous SMB enumeration was denied. This exposed a limitation in the current evidence workflow when useful SMB evidence requires authenticated collection.
+**Observed:** In the Windows lab, the approval-gated `smb-enum-shares` NSE path could not collect the requested authenticated SMB access-control evidence against a modern SMB2/SMB3 target. Direct validation showed that the authorized account could enumerate shares with `smbclient`, isolating the limitation to the NSE collection path rather than the credentials or target.
 
 **Expected direction:** Add an authorized authenticated SMB evidence path with explicit credential handling, clear separation between anonymous and authenticated evidence, and no credentials written into reports or command history.
+
+**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VERIFIED. NetRecon now uses an SMB2/SMB3-capable `smbclient` collection path for explicitly approved authenticated share evidence while preserving the existing finding-requirement lifecycle. Credentials are read from the existing credentials file, passed through a temporary mode-0600 authentication file, excluded from argv/report output, and the temporary file is removed after collection. The full regression suite passed 856/856 tests. In the isolated Windows lab, `--investigate-collect` with explicit approval completed the authenticated dynamic evidence round successfully; `smb_access_control_context` became `satisfied`, `smb-enum-shares` evidence was observed, and the final investigation reported zero remaining finding requirements.
 
 ## F-005 — Investigation Coverage Is Narrower Than Service Discovery
 
