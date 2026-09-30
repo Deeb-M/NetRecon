@@ -225,5 +225,25 @@ class EvidenceGapTests(unittest.TestCase):
         )
         self.assertTrue(all(gap.purpose for gap in gaps))
 
+    def test_new_protocol_gaps_have_semantic_requirements(self) -> None:
+        gaps = (
+            EvidenceGap("192.0.2.10", 2121, "tcp", "ftp-syst", "x"),
+            EvidenceGap("192.0.2.10", 2121, "tcp", "ftp-anon", "x"),
+            EvidenceGap("192.0.2.10", 2525, "tcp", "smtp-commands", "x"),
+            EvidenceGap("192.0.2.10", 2049, "tcp", "nfs-showmount", "x"),
+        )
+
+        states = requirement_states_for_gaps(gaps)
+
+        self.assertEqual(
+            tuple(state.requirement.requirement_id for state in states),
+            (
+                "ftp_anonymous_access",
+                "ftp_system_context",
+                "nfs_export_context",
+                "smtp_capability_context",
+            ),
+        )
+
 if __name__ == "__main__":
     unittest.main()
