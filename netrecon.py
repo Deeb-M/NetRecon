@@ -196,6 +196,33 @@ See USER_GUIDE.md for workflow guidance, approvals, history, and exit behavior."
     return parser
 
 
+def render_protocol_alternative_progress(protocol_round) -> str:
+    """Render protocol-level evidence without rewriting primary NSE provenance."""
+    if protocol_round is None:
+        return ""
+
+    lines = [
+        "Protocol Alternative Evidence",
+        "-----------------------------",
+        f"Satisfied by Protocol Alternative: {len(protocol_round.satisfied_requirement_ids)}",
+    ]
+    for requirement_id in protocol_round.satisfied_requirement_ids:
+        lines.append(f"Satisfied: {requirement_id}")
+
+    for result in protocol_round.results:
+        evidence = result.evidence
+        endpoint = f"{result.action.host}:{result.action.port}/{result.action.protocol}"
+        lines.append(f"Endpoint: {endpoint}")
+        lines.append(f"Anonymous Login: {evidence.anonymous_login}")
+        if evidence.syst is not None:
+            lines.append(f"SYST: {evidence.syst}")
+        if evidence.stat is not None:
+            lines.append(f"STAT: {evidence.stat}")
+
+    lines.append(f"Primary NSE Gaps Preserved: {len(protocol_round.snapshot.gaps)}")
+    return "\n".join(lines)
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -295,6 +322,7 @@ def main() -> int:
             adaptive_actions = ()
         final_continuation_decision = decision
         alternative_round = None
+        protocol_round = None
         final_decision = None
         if adaptive_plan.decision == "alternative" and adaptive_actions:
             alternative_round = execute_alternative_evidence_round(
@@ -406,7 +434,7 @@ def main() -> int:
                 continuation, final_continuation_decision, alternative_round, final_decision, attention, correlations,
                 final_snapshot=final_snapshot,
             )
-            report += "\n\n" + render_investigation_explanation(explanation)
+            if protocol_round is not None:\n                report += "\n\n" + render_protocol_alternative_progress(protocol_round)\n            report += "\n\n" + render_investigation_explanation(explanation)
             if dynamic_rounds:
                 report += "\n\n" + render_dynamic_evidence_rounds(dynamic_rounds)
             if args.adaptive_plan:
