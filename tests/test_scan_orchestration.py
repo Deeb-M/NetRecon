@@ -36,6 +36,28 @@ class ScanOrchestrationTests(unittest.TestCase):
         self.assertEqual(plan.target, "192.0.2.0/24")
         self.assertEqual(plan.command[-1], "192.0.2.0/24")
 
+    def test_extracts_hostname_from_https_url_for_nmap(self) -> None:
+        plan = build_baseline_discovery_plan("https://example.com/")
+
+        self.assertEqual(plan.target, "example.com")
+        self.assertEqual(plan.command[-1], "example.com")
+
+    def test_extracts_hostname_from_url_with_port_and_path(self) -> None:
+        plan = build_baseline_discovery_plan(
+            "https://example.com:8443/admin"
+        )
+
+        self.assertEqual(plan.target, "example.com")
+        self.assertEqual(plan.command[-1], "example.com")
+
+    def test_extracts_ip_address_from_http_url(self) -> None:
+        plan = build_baseline_discovery_plan(
+            "http://192.0.2.10/test"
+        )
+
+        self.assertEqual(plan.target, "192.0.2.10")
+        self.assertEqual(plan.command[-1], "192.0.2.10")
+
 
 if __name__ == "__main__":
     unittest.main()
