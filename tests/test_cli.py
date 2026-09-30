@@ -1373,7 +1373,7 @@ class CliTests(unittest.TestCase):
 
         with patch(
             "sys.argv",
-            ["netrecon", "--investigate-collect", "--detail", "192.0.2.10"],
+            ["netrecon", "--investigate-collect", "192.0.2.10", "--detail"],
         ):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
@@ -1464,7 +1464,7 @@ class CliTests(unittest.TestCase):
         alternative_round_mock.return_value = alternative_result
         output = StringIO()
 
-        with patch("sys.argv", ["netrecon", "--investigate-collect", "--detail", "192.0.2.10", "--evidence-timeout", "7"]):
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.10", "--detail", "--evidence-timeout", "7"]):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
@@ -1754,7 +1754,7 @@ class CliTests(unittest.TestCase):
         final_decision_mock.return_value = final_decision
         output = StringIO()
 
-        with patch("sys.argv", ["netrecon", "--investigate-collect", "--detail", "192.0.2.10"]):
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.10", "--detail"]):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
@@ -1841,7 +1841,7 @@ class CliTests(unittest.TestCase):
         final_decision_mock.return_value = final_decision
         output = StringIO()
 
-        with patch("sys.argv", ["netrecon", "--investigate-collect", "--detail", "192.0.2.120"]):
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.120", "--detail"]):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
@@ -2664,8 +2664,7 @@ class CliTests(unittest.TestCase):
                 "sys.argv",
                 [
                     "netrecon",
-                    "--investigate-collect", "--detail",
-                    "192.0.2.180",
+                    "--investigate-collect", "192.0.2.180", "--detail",
                     "--investigation-history",
                     str(history_path),
                 ],
@@ -2799,8 +2798,7 @@ class CliTests(unittest.TestCase):
                 "sys.argv",
                 [
                     "netrecon",
-                    "--investigate-collect", "--detail",
-                    "192.0.2.190",
+                    "--investigate-collect", "192.0.2.190", "--detail",
                     "--investigation-history",
                     str(history_path),
                 ],
@@ -3012,7 +3010,7 @@ class CliTests(unittest.TestCase):
         build_adaptive_mock.return_value = adaptive_plan
 
         output = StringIO()
-        with patch("sys.argv", ["netrecon", "--investigate-collect", "--detail", "192.0.2.210", "--adaptive-plan"]):
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.210", "--detail", "--adaptive-plan"]):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
@@ -3160,7 +3158,7 @@ class CliTests(unittest.TestCase):
         assess_continuation_mock.side_effect = (first_decision, second_decision)
         execute_selected_mock.return_value = InvestigationContinuationResult((), continued)
 
-        with patch("sys.argv", ["netrecon", "--investigate-collect", "--detail", "192.0.2.220"]):
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.220", "--detail"]):
             with redirect_stdout(StringIO()):
                 self.assertEqual(main(), 0)
 
@@ -3261,7 +3259,7 @@ class CliTests(unittest.TestCase):
             InvestigationContinuationResult((), final),
         )
 
-        with patch("sys.argv", ["netrecon", "--investigate-collect", "--detail", "192.0.2.221"]):
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.221", "--detail"]):
             with redirect_stdout(StringIO()):
                 self.assertEqual(main(), 0)
 
@@ -3349,7 +3347,7 @@ class CliTests(unittest.TestCase):
 
         output = StringIO()
         with patch("sys.argv", [
-            "netrecon", "--investigate-collect", "--detail", "192.0.2.230", "--adaptive-plan"
+            "netrecon", "--investigate-collect", "192.0.2.230", "--detail", "--adaptive-plan"
         ]):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
@@ -3445,8 +3443,7 @@ class CliTests(unittest.TestCase):
             "sys.argv",
             [
                 "netrecon",
-                "--investigate-collect", "--detail",
-                "192.0.2.10",
+                "--investigate-collect", "192.0.2.10", "--detail",
                 "--approve-requirement",
                 "smb_access_control_context",
             ],
@@ -3627,7 +3624,7 @@ class CliTests(unittest.TestCase):
         assess_protocol_mock.return_value = protocol_final
 
         output = StringIO()
-        with patch("sys.argv", ["netrecon", "--investigate-collect", "--detail", "192.0.2.62"]):
+        with patch("sys.argv", ["netrecon", "--investigate-collect", "192.0.2.62", "--detail"]):
             with redirect_stdout(output):
                 self.assertEqual(main(), 0)
 
@@ -3724,8 +3721,7 @@ class CliTests(unittest.TestCase):
             "sys.argv",
             [
                 "netrecon",
-                "--investigate-collect", "--detail",
-                "192.0.2.10",
+                "--investigate-collect", "192.0.2.10", "--detail",
                 "--approve-requirement",
                 "smb_access_control_context",
                 "--adaptive-plan",
