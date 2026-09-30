@@ -38,6 +38,27 @@ def build_evidence_action_plan(scan: Scan) -> tuple[EvidenceAction, ...]:
                 continue
 
             command = build_nmap_command(spec)
+            command_arguments = command.arguments
+            if "nfs-showmount" in script_ids:
+                rpcbind_ports = tuple(
+                    port.port
+                    for port in host.ports
+                    if port.state == "open"
+                    and port.protocol == spec.protocol
+                    and port.service.strip().lower() == "rpcbind"
+                )
+                if rpcbind_ports:
+                    collection_ports = ",".join(
+                        str(port)
+                        for port in (*rpcbind_ports, spec.port)
+                    )
+                    arguments = list(command_arguments)
+                    port_index = arguments.index("-p") + 1
+                    arguments[port_index] = collection_ports
+                    if "-sV" not in arguments:
+                        arguments.insert(1, "-sV")
+                    command_arguments = tuple(arguments)
+
             actions.append(
                 EvidenceAction(
                     host=spec.target,
@@ -48,7 +69,7 @@ def build_evidence_action_plan(scan: Scan) -> tuple[EvidenceAction, ...]:
                         EVIDENCE_PURPOSES[script_id]
                         for script_id in script_ids
                     ),
-                    command=command.arguments,
+                    command=command_arguments,
                 )
             )
 
