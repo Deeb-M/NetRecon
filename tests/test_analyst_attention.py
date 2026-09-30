@@ -129,8 +129,8 @@ class AnalystAttentionTests(unittest.TestCase):
                 "NetBIOS session service exposed", "139/tcp is open.", "Review NetBIOS.", "service:detection",
             ),
             AnalystAttentionItem(
-                "service.netbios.exposed", "exposure", "192.0.2.71", 445, "tcp",
-                "NetBIOS session service exposed", "445/tcp is open.", "Review SMB context.", "service:detection",
+                "service.smb.exposed", "exposure", "192.0.2.71", 445, "tcp",
+                "SMB service exposed", "445/tcp is open and identified as netbios-ssn.", "Review SMB context.", "service:detection",
             ),
         )
 
@@ -138,7 +138,7 @@ class AnalystAttentionTests(unittest.TestCase):
 
         self.assertEqual(len(correlations), 1)
         self.assertEqual(correlations[0].correlation_id, "smb.netbios_transport_context")
-        self.assertEqual(correlations[0].finding_ids, ("service.netbios.exposed", "service.netbios.exposed"))
+        self.assertEqual(correlations[0].finding_ids, ("service.netbios.exposed", "service.smb.exposed"))
 
 if __name__ == "__main__":
     unittest.main()
