@@ -137,6 +137,31 @@ class EvidenceActionPlanTests(unittest.TestCase):
         )
         self.assertTrue(all(a.command[-1] == "192.0.2.10" for a in actions))
 
+    def test_nfs_action_includes_rpcbind_context_for_showmount(self) -> None:
+        scan = Scan(
+            source="nfs-lab.xml",
+            hosts=(
+                Host(
+                    address="192.0.2.10",
+                    status="up",
+                    ports=(
+                        Port(port=111, protocol="tcp", state="open", service="rpcbind"),
+                        Port(port=2049, protocol="tcp", state="open", service="nfs"),
+                    ),
+                ),
+            ),
+        )
+
+        nfs_action = next(
+            action
+            for action in build_evidence_action_plan(scan)
+            if "nfs-showmount" in action.script_ids
+        )
+
+        self.assertEqual(nfs_action.port, 2049)
+        self.assertIn("-sV", nfs_action.command)
+        self.assertIn("111,2049", nfs_action.command)
+
     def test_mysql_vnc_rpcbind_rules_create_bounded_actions(self) -> None:
         scan = Scan(
             source="lab.xml",
