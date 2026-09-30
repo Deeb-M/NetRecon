@@ -4,7 +4,9 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-001 — URL Target Normalization
 
-**Status:** OPEN
+**Status:** CLOSED
+
+**Verification:** IMPLEMENTED → REGRESSION TESTED → PRACTICALLY VERIFIED. CI passed after the implementation. A repeat test in the isolated VMware lab using `netrecon --discovery-plan http://192.168.111.130:8180/` preserved URL context internally while the analyst-facing discovery plan correctly normalized the Nmap target to `192.168.111.130` and proposed `nmap -sV -oX - 192.168.111.130`.
 
 **Observed:** NetRecon accepted a full HTTPS URL as a discovery target and passed the URL unchanged to Nmap.
 
