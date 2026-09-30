@@ -76,7 +76,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
         service = display_service.lower()
         specific_context = False
 
-        if service in {"microsoft-ds", "smb"} or (port.port == 445 and not service):
+        if service in {"microsoft-ds", "smb"} or (port.port == 445 and service in {"", "netbios-ssn"}):
             specific_context = True
             findings.append(
                 Finding(
@@ -93,7 +93,7 @@ def analyze_service_context(host) -> tuple[Finding, ...]:
                 )
             )
 
-        if service == "netbios-ssn" or (port.port == 139 and not service):
+        if (service == "netbios-ssn" and port.port != 445) or (port.port == 139 and not service):
             specific_context = True
             findings.append(
                 Finding(

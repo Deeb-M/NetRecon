@@ -124,19 +124,22 @@ def correlate_analyst_attention(
                 )
             )
 
-        netbios_items = [
+        netbios_smb_items = [
             item for item in host_items
-            if item.finding_id == "service.netbios.exposed" and item.port in {139, 445}
+            if (
+                (item.finding_id == "service.netbios.exposed" and item.port == 139)
+                or (item.finding_id == "service.smb.exposed" and item.port == 445)
+            )
         ]
-        if {item.port for item in netbios_items} == {139, 445}:
+        if {item.port for item in netbios_smb_items} == {139, 445}:
             correlations.append(
                 AnalystAttentionCorrelation(
                     correlation_id="smb.netbios_transport_context",
                     host=host,
                     title="NetBIOS and SMB transport exposure require joint review",
-                    finding_ids=tuple(item.finding_id for item in netbios_items),
+                    finding_ids=tuple(item.finding_id for item in netbios_smb_items),
                     evidence_sources=tuple(
-                        item.evidence_source for item in netbios_items if item.evidence_source is not None
+                        item.evidence_source for item in netbios_smb_items if item.evidence_source is not None
                     ),
                     review=(
                         "Review ports 139/tcp and 445/tcp together as related SMB/NetBIOS "
