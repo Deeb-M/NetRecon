@@ -416,6 +416,57 @@ class EvidencePlannerTests(unittest.TestCase):
         self.assertEqual(plan, ())
 
 
+    def test_open_ftp_service_requests_protocol_evidence(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(port=2121, protocol="tcp", state="open", service="ftp"),
+            ),
+        )
+
+        plan = plan_evidence_requests(host)
+
+        self.assertEqual(
+            plan,
+            (
+                EvidenceRequest(2121, "tcp", "ftp-syst"),
+                EvidenceRequest(2121, "tcp", "ftp-anon"),
+            ),
+        )
+
+    def test_open_smtp_service_requests_capability_evidence(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(port=2525, protocol="tcp", state="open", service="smtp"),
+            ),
+        )
+
+        plan = plan_evidence_requests(host)
+
+        self.assertEqual(
+            plan,
+            (EvidenceRequest(2525, "tcp", "smtp-commands"),),
+        )
+
+    def test_open_nfs_service_requests_export_evidence(self) -> None:
+        host = Host(
+            address="192.0.2.10",
+            status="up",
+            ports=(
+                Port(port=2049, protocol="tcp", state="open", service="nfs"),
+            ),
+        )
+
+        plan = plan_evidence_requests(host)
+
+        self.assertEqual(
+            plan,
+            (EvidenceRequest(2049, "tcp", "nfs-showmount"),),
+        )
+
     def test_unsupported_open_service_requests_no_evidence(self) -> None:
         host = Host(
             address="192.0.2.10",
