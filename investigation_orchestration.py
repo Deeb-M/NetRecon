@@ -160,12 +160,34 @@ class InvestigationContinuationResult:
     finding_requirement_verifications: tuple[FindingRequirementVerification, ...] = ()
 
 
+def _runtime_command_for_action(
+    action: EvidenceAction,
+    *,
+    smb_credentials_file: str | None = None,
+) -> NmapCommand:
+    """Build an execution-only command without persisting credential context in the action."""
+    arguments = action.command
+    if (
+        smb_credentials_file
+        and "smb-enum-shares" in action.script_ids
+        and "--script-args-file" not in arguments
+    ):
+        arguments = (
+            *arguments[:-1],
+            "--script-args-file",
+            smb_credentials_file,
+            arguments[-1],
+        )
+    return NmapCommand(arguments=arguments)
+
+
 def execute_selected_evidence_actions(
     snapshot: InvestigationSnapshot,
     actions: tuple[EvidenceAction, ...],
     *,
     timeout: float | None = None,
     explicitly_approved_requirement_ids: frozenset[str] = frozenset(),
+    smb_credentials_file: str | None = None,
 ) -> InvestigationContinuationResult:
     """Execute exactly the supplied bounded actions and re-evaluate once."""
     if not snapshot.ready or snapshot.scan is None:
@@ -174,7 +196,10 @@ def execute_selected_evidence_actions(
     outcomes = tuple(
         parse_collection_outcome(
             execute_nmap_command(
-                NmapCommand(arguments=action.command),
+                _runtime_command_for_action(
+                    action,
+                    smb_credentials_file=smb_credentials_file,
+                ),
                 timeout=timeout,
             )
         )
