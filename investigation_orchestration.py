@@ -470,7 +470,7 @@ def assess_final_investigation_decision(
         elif unsatisfied_finding_requirements:
             status, reason = "stalled", "finding_requirement_unsatisfied"
         else:
-            status, reason = "complete", "all_supported_requirements_resolved"
+            status, reason = "complete", "all_semantic_requirements_satisfied"
         return FinalInvestigationDecision(
             status=status,
             reason=reason,
