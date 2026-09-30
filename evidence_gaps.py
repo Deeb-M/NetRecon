@@ -16,6 +16,10 @@ EVIDENCE_PURPOSES: dict[str, str] = {
     "ssl-enum-ciphers": "review TLS protocol and cipher configuration",
     "smb-protocols": "review SMB protocol dialect support",
     "smb2-security-mode": "review SMB signing configuration",
+    "ftp-syst": "review FTP server system and protocol context",
+    "ftp-anon": "review anonymous FTP access behavior",
+    "smtp-commands": "review advertised SMTP capabilities",
+    "nfs-showmount": "review NFS export and client-scope context",
 }
 
 
