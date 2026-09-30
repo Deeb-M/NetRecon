@@ -21,6 +21,9 @@ SERVICE_EVIDENCE: dict[str, tuple[str, ...]] = {
     "ftp": ("ftp-syst", "ftp-anon"),
     "smtp": ("smtp-commands",),
     "nfs": ("nfs-showmount",),
+    "mysql": ("mysql-info",),
+    "vnc": ("vnc-info",),
+    "rpcbind": ("rpcinfo",),
 }
 
 SMB_EVIDENCE = SERVICE_EVIDENCE["smb"]
