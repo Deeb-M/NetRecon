@@ -61,11 +61,13 @@ This file records findings discovered during authorized practical training. Find
 
 ## F-006 — Completion Semantics Can Overstate Investigation Coverage
 
-**Status:** OPEN
+**Status:** CLOSED
 
-**Observed:** The Metasploitable investigation ended with `Status: complete`, `Reason: all_gaps_resolved`, and zero remaining requirements after resolving the five requirements known to the current planner. This does not mean all discovered services were investigated in depth.
+**Observed:** The Metasploitable investigation ended with `Status: complete`, `Reason: all_gaps_resolved`, and zero remaining requirements after resolving the requirements known to the current planner. This did not mean all discovered services were investigated in depth.
 
 **Expected direction:** Make completion language scope-aware. Distinguish “all currently supported/planned requirements resolved” from “target investigation complete” so users do not interpret planner completeness as comprehensive target coverage.
+
+**Verification:** IMPLEMENTED → REGRESSION TESTED. Terminal completion retains the stable `Status: complete` API value but now reports `Reason: all_supported_requirements_resolved` when no supported requirements remain. The distinct `all_semantic_requirements_satisfied` reason is preserved when alternative evidence satisfies semantic requirements while raw gaps remain. Stalled outcomes such as `explicit_approval_required` remain unchanged, as confirmed by the Windows SMB lab. The full regression suite passed 856/856 tests.
 
 ## F-007 — Default Investigation Report Is Too Verbose and Repetitive
 
