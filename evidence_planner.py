@@ -52,6 +52,14 @@ def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
     host_scripts = {
         script.script_id.strip().lower()
         for script in host.scripts
+        if script.output.strip()
+    }
+    cross_port_scripts = {
+        script.script_id.strip().lower()
+        for port in host.ports
+        for script in port.scripts
+        if script.output.strip()
+        and script.script_id.strip().lower() == "nfs-showmount"
     }
 
     for port in host.ports:
@@ -80,7 +88,9 @@ def plan_evidence_requests(host: Host) -> tuple[EvidenceRequest, ...]:
                 script_id=script_id,
             )
             for script_id in requested
-            if script_id not in existing_scripts and script_id not in host_scripts
+            if script_id not in existing_scripts
+            and script_id not in host_scripts
+            and script_id not in cross_port_scripts
         )
 
     return tuple(requests)
