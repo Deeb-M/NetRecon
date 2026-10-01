@@ -185,6 +185,21 @@ This file records findings discovered during authorized practical training. Find
 
 **Validation:** Added a focused test for VNC protocol and security-context interpretation. The regression suite passed 849/849 tests.
 
+
+## F-016 — Collected Evidence Is Not Persisted for Reuse
+
+**Status:** OPEN
+
+**Observed:** During authorized Metasploitable2 training, a baseline Nmap XML contained 14 planner-supported evidence gaps. Running `netrecon metasploitable_baseline.xml --collect-evidence` successfully collected additional evidence and increased the analyst-facing result from 24 findings to 30 findings, including SSH algorithm, SMTP capability, RPC mapping, MySQL capability, and VNC security-context evidence. Reopening the unchanged baseline XML with `--evidence-gaps` immediately reported the same 14 gaps again.
+
+A separate `--investigate-collect` run with `--investigation-history investigation-history.jsonl` confirmed that investigation history persists terminal synthesis state, such as status, reason, attention-item count, correlated-review count, and remaining requirements. It does not persist the collected raw/merged evidence needed to reconstruct the enriched analysis without recollection.
+
+**Impact:** Evidence collection can succeed during a run but cannot currently be reloaded from the original baseline XML in a later session. Reusing that XML therefore causes already-collected evidence to appear missing again and can require repeated collection.
+
+**Expected direction:** Evaluate a provenance-safe persistence mechanism for enriched investigation evidence. Do not silently overwrite or mutate the original Nmap XML. Possible designs include an explicitly saved enriched artifact or a NetRecon-owned evidence format that preserves the distinction between original Nmap discovery evidence and subsequently collected evidence. The exact storage format and CLI are intentionally undecided until the persistence architecture is reviewed.
+
+**Practical validation still required before closure:** A future implementation should demonstrate that collected evidence can be saved, reloaded in a new NetRecon process, and recognized as already observed without losing source/provenance boundaries or changing the original baseline XML.
+
 ## Practical observations worth preserving
 
 - NetRecon successfully separated discovery from investigation and generated targeted evidence collection rather than blindly repeating broad scans.
